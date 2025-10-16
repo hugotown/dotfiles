@@ -1,3 +1,65 @@
+# gitignore
+
+# Browsers and web applications
+chromium/
+brave-flags.conf
+
+# GitHub CLI - contains sensitive authentication data
+gh/
+
+# Go configuration and telemetry
+go/
+
+# IBus input method - contains runtime state
+ibus/
+
+# direnv - contains runtime state
+direnv/
+
+# wofi - contains configuration files that may be user-specific
+wofi/
+
+# Sensitive files
+pulse/cookie
+qalculate/qalc.history
+fcitx/dbus/
+fcitx5/conf/cached_layouts
+
+# Temporary and cache files
+*.log
+*.cache
+*.tmp
+*token*
+*session*
+*history*
+*cookie*
+*password*
+
+# Auto-generated files that shouldn't be tracked
+CLAUDE.md
+WARP.md
+CLAUDE,nd
+
+# Environment variables - machine specific configuration
+environment.d/
+
+# Browser data (VERY SENSITIVE - contains passwords, cookies, history)
+chromium/
+brave-flags.conf
+chromium-flags.conf
+
+# System configuration files (machine-specific)
+dconf/user
+user-dirs.dirs
+user-dirs.locale
+
+# System services with hardcoded paths
+systemd/user/timers.target.wants/
+systemd/user/tray.target
+
+# Archivos de backup de home-manager
+*.backup
+
 # Ignore build outputs from performing a nix-build or `nix build` command
 result
 result-*
