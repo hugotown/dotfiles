@@ -4,6 +4,8 @@ TERM = "xterm-256color"
 
 [font]
 size = 17
+normal.family = "JetBrainsMono Nerd Font"
+normal.style= "Regular"
 
 [window]
 decorations = "Transparent"
