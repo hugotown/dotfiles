@@ -12,14 +12,25 @@
     configuration = { pkgs, ... }: {
       # List packages installed in system profile. To search by name, run:
       # $ nix-env -qaP | grep wget
+
+      # Habilitar paquetes no libres
+      nixpkgs.config.allowUnfree = true;
+
       environment.systemPackages =
         [
           pkgs.alacritty
           pkgs.fastfetch
           pkgs.gh
+          pkgs.ghostty
+          pkgs.git
           pkgs.neovim
           pkgs.vim
         ];
+
+      programs.direnv = {
+         enable = true;
+         nix-direnv.enable = true;
+      };
 
       # Necessary for using flakes on this system.
       nix.settings.experimental-features = "nix-command flakes";
