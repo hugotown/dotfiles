@@ -3,6 +3,9 @@
 {
   programs.home-manager.enable = true;
   
+  # Especificar explícitamente el homeDirectory para macOS
+  home.homeDirectory = "/Users/hugoruiz";
+  
   programs.bash = {
     enable = true;
     historyFileSize = 0;
@@ -23,5 +26,5 @@
   home.packages = [
   ];
 
-  home.stateVersion = "24.05";
+  home.stateVersion = "25.05";
 }

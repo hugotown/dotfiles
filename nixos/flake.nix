@@ -12,53 +12,7 @@
 
   outputs = inputs@{ self, nix-darwin, nixpkgs, home-manager }:
   let
-    configuration = { pkgs, ... }: {
-
-      nixpkgs.config.allowUnfree = true;
-
-      environment.systemPackages =
-        [
-          pkgs.alacritty
-          pkgs.atuin
-          pkgs.btop
-          pkgs.eza
-          pkgs.fastfetch
-          pkgs.fd
-          pkgs.fzf
-          pkgs.gh
-          pkgs.nushell
-          pkgs.git
-          pkgs.neovim
-          pkgs.ripgrep
-          pkgs.vim
-          pkgs.zoxide
-        ];
-
-      fonts.packages = with pkgs; [
-        nerd-fonts.jetbrains-mono
-      ];
-
-      programs.direnv = {
-         enable = true;
-         nix-direnv.enable = true;
-      };
-
-      nix.settings.experimental-features = "nix-command flakes";
-      
-      programs.bash = {
-        enable = true;
-      };
-
-      users.users.hugoruiz.shell = pkgs.bash;
-
-      home-manager.users.hugoruiz = import ./home.nix;
-
-      system.configurationRevision = self.rev or self.dirtyRev or null;
-
-      system.stateVersion = 6;
-
-      nixpkgs.hostPlatform = "x86_64-darwin";
-    };
+    homeConfiguration = import ./home.nix;
   in
   {
     # Build darwin flake using:
@@ -67,7 +21,56 @@
       system = "x86_64-darwin";
       modules = [
         home-manager.darwinModules.home-manager
-        configuration
+        
+        # This is the module that defines your system configuration
+        ({ pkgs, ... }: {
+          nixpkgs.config.allowUnfree = true;
+
+          environment.systemPackages = with pkgs; [
+            alacritty
+            atuin
+            btop
+            eza
+            fastfetch
+            fd
+            fzf
+            gh
+            nushell
+            git
+            neovim
+            ripgrep
+            vim
+            zoxide
+          ];
+
+          fonts.packages = with pkgs; [
+            nerd-fonts.jetbrains-mono
+          ];
+
+          programs.direnv = {
+             enable = true;
+             nix-direnv.enable = true;
+          };
+
+          nix.settings.experimental-features = "nix-command flakes";
+          
+          programs.bash = {
+            enable = true;
+          };
+
+          users.users.hugoruiz = {
+            shell = pkgs.bash;
+            home = "/Users/hugoruiz";
+          };
+
+          home-manager.users.hugoruiz = homeConfiguration;
+
+          system.configurationRevision = self.rev or self.dirtyRev or null;
+
+          system.stateVersion = 6;
+
+          nixpkgs.hostPlatform = "x86_64-darwin";
+        })
       ];
     };
 
