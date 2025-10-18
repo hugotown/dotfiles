@@ -2,16 +2,14 @@
 {
   mkDarwin = { hostname, username ? "hugoruiz", system ? "x86_64-darwin",}:
   let
-    inherit (inputs.nixpkgs) lib;
-    # Paquetes stable (base del sistema)
-    stablePkgs = inputs.nixpkgs-darwin.legacyPackages.${system};
-    # Paquetes unstable (para casos específicos)
-    unstablePkgs = inputs.nixpkgs-unstable.legacyPackages.${system};
+    inherit (inputs.nixpkgs-darwin) lib;
+    # Paquetes unstable unificados
+    pkgs = inputs.nixpkgs-darwin.legacyPackages.${system};
     customConfPath = ./../hosts/darwin/${hostname};
     customConf = if builtins.pathExists (customConfPath) then (customConfPath + "/default.nix") else ./../hosts/common/darwin-common-dock.nix;
   in
     inputs.nix-darwin.lib.darwinSystem {
-      specialArgs = { inherit system inputs outputs username stablePkgs unstablePkgs hostname; };
+      specialArgs = { inherit system inputs outputs username pkgs hostname; };
       modules = [
         ../hosts/common/common-packages.nix
         ../hosts/common/darwin-common.nix
@@ -22,7 +20,7 @@
             home-manager.useUserPackages = true;
             home-manager.backupFileExtension = "backup";
             home-manager.extraSpecialArgs = { inherit inputs; };
-            home-manager.users.${username} = { imports = [ ./../home/${username}.nix ]; };
+            home-manager.users.${username} = { imports = [ ./../../hosts/darwin/${hostname}/home/${username}/home.nix ]; };
         }
 
       ];
