@@ -2,11 +2,11 @@
   description = "hugotown nix-darwin system flake";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-24.11-darwin";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     nix-darwin.url = "github:nix-darwin/nix-darwin/master";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
-    home-manager.url = "github:nix-community/home-manager/release-24.11";
+    home-manager.url = "github:nix-community/home-manager/master";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
@@ -25,6 +25,13 @@
         # This is the module that defines your system configuration
         ({ pkgs, ... }: {
           nixpkgs.config.allowUnfree = true;
+          
+          # Configuración para evitar problemas de compilación de Ruby en macOS
+          nixpkgs.config.packageOverrides = pkgs: {
+            ruby = pkgs.ruby.override {
+              docSupport = false;
+            };
+          };
 
           environment.systemPackages = with pkgs; [
             alacritty
