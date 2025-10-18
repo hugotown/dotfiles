@@ -2,9 +2,14 @@
   description = "hugotown nix-darwin system flake";
 
   inputs = {
+    # Stable nixpkgs - base sólida para el sistema
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    
+    # Unstable nixpkgs - para paquetes específicos que necesites más actualizados
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    
+    # Usar stable para darwin como base (evita problemas como nokogiri)
+    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixos-24.11";
 
     nix-darwin.url = "github:lnl7/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs-darwin";
