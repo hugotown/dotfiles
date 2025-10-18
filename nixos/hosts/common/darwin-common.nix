@@ -1,4 +1,4 @@
-{ inputs, outputs, config, lib, hostname, system, username, pkgs, unstablePkgs, ... }:
+{ inputs, outputs, config, lib, hostname, system, username, pkgs, ... }:
 let
   inherit (inputs) nixpkgs nixpkgs-unstable;
 in

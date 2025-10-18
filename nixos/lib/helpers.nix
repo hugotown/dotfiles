@@ -20,7 +20,7 @@
             home-manager.useUserPackages = true;
             home-manager.backupFileExtension = "backup";
             home-manager.extraSpecialArgs = { inherit inputs; };
-            home-manager.users.${username} = { imports = [ ./../../hosts/darwin/${hostname}/home/${username}/home.nix ]; };
+            home-manager.users.${username} = { imports = [ ../hosts/darwin/${hostname}/home/${username}/home.nix ]; };
         }
 
       ];
