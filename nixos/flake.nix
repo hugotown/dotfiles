@@ -2,19 +2,21 @@
   description = "hugotown nix-darwin system flake";
 
   inputs = {
-    # Stable nixpkgs - base sólida para el sistema
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    # Nixpkgs para Darwin - usar la rama específica de darwin 24.11
+    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-24.11-darwin";
     
     # Unstable nixpkgs - para paquetes específicos que necesites más actualizados
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     
-    # Usar stable para darwin como base (evita problemas como nokogiri)
-    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixos-24.11";
+    # Alias para compatibilidad
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-24.11-darwin";
 
-    nix-darwin.url = "github:lnl7/nix-darwin";
+    # nix-darwin con la rama correspondiente a 24.11
+    nix-darwin.url = "github:lnl7/nix-darwin/nix-darwin-24.11";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs-darwin";
 
-    home-manager.url = "github:nix-community/home-manager";
+    # Home Manager correspondiente a 24.11
+    home-manager.url = "github:nix-community/home-manager/release-24.11";
     home-manager.inputs.nixpkgs.follows = "nixpkgs-darwin";
   };
 
