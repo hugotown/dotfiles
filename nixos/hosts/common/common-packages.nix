@@ -6,41 +6,27 @@ in
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
-    ## CLI tools estables (base del sistema)
+    ## CLI tools básicos estables (como en el commit que funcionaba)
     # Estos vienen de nixos-24.11 (stable) - más confiables
     alacritty
-    atuin
-    btop
-    eza
-    fastfetch
-    fd
-    fzf
-    gh
-    git
     neovim
-    ripgrep
-    vim
-    zoxide
-    
-    # Herramientas del sistema (stable)
+    git
     curl
     wget
-    tree
-    htop
-    jq
-  ] ++ [
-    ## Paquetes unstable (cuando necesites versiones más recientes)
-    # Usa unstablePkgs.nombrePaquete para obtener la versión más reciente
-    unstablePkgs.yt-dlp      # YouTube downloader (siempre la última versión)
-    unstablePkgs.get_iplayer # BBC iPlayer downloader
-    unstablePkgs.bat         # cat con syntax highlighting (funciona en Linux y Darwin)
-    unstablePkgs.ffmpeg      # Última versión con más codecs (cross-platform)
     
-    # Ejemplos de cuándo usar unstable:
+    # Herramientas básicas del sistema (stable)
+    tree
+    
+  ] ++ [
+    ## Ejemplos de paquetes unstable (comentados para ir agregando gradualmente)
+    # unstablePkgs.bat         # cat con syntax highlighting
+    # unstablePkgs.yt-dlp      # YouTube downloader
+    # unstablePkgs.ffmpeg      # Última versión con más codecs
+    
+    # Para ir agregando uno por uno:
     # unstablePkgs.nodejs      # Para desarrollo web con última versión
     # unstablePkgs.rust        # Para desarrollo Rust con toolchain reciente
     # unstablePkgs.go          # Para desarrollo Go con última versión
   ];
 
-  # Fonts are managed in darwin-common.nix to avoid duplication
 }

@@ -5,104 +5,105 @@
   home.homeDirectory = "/Users/hugoruiz";
 
   programs.home-manager.enable = true;
-  programs.nix-index.enable = true;
+  # programs.nix-index.enable = true;  # Comentado temporalmente
 
-  programs.direnv = {
-    enable = true;
-    nix-direnv.enable = true;
-  };
+  # programs.direnv = {              # Comentado temporalmente
+  #   enable = true;
+  #   nix-direnv.enable = true;
+  # };
 
-  programs.bash = {
-    enable = true;
-    historyFileSize = 0;
-    historySize = 0;
-    initExtra = "unset HISTFILE";
-  };
+  # programs.bash = {                # Comentado temporalmente
+  #   enable = true;
+  #   historyFileSize = 0;
+  #   historySize = 0;
+  #   initExtra = "unset HISTFILE";
+  # };
 
-  programs.zsh = {
-    enable = true;
-    enableCompletion = true;
-    autosuggestion.enable = true;
-    syntaxHighlighting.enable = true;
-    
-    shellAliases = {
-      ll = "eza -l --icons --git -a";
-      lt = "eza --tree --level=2 --long --icons --git";
-      cat = "bat --paging=never";
-      grep = "rg";
-      find = "fd";
-    };
-  };
+  # programs.zsh = {                 # Comentado temporalmente
+  #   enable = true;
+  #   enableCompletion = true;
+  #   autosuggestion.enable = true;
+  #   syntaxHighlighting.enable = true;
+  #   
+  #   shellAliases = {
+  #     ll = "eza -l --icons --git -a";
+  #     lt = "eza --tree --level=2 --long --icons --git";
+  #     cat = "bat --paging=never";
+  #     grep = "rg";
+  #     find = "fd";
+  #   };
+  # };
   
-  programs.atuin = {
-    enable = true;
-    enableBashIntegration = true;
-    enableZshIntegration = true;
-  };
+  # programs.atuin = {               # Comentado temporalmente
+  #   enable = true;
+  #   enableBashIntegration = true;
+  #   enableZshIntegration = true;
+  # };
 
-  programs.eza = {
-    enable = true;
-    enableZshIntegration = true;
-    enableBashIntegration = true;
-    icons = "auto";
-    git = true;
-    extraOptions = [
-      "--group-directories-first"
-      "--header"
-      "--color=auto"
-    ];
-  };
+  # programs.eza = {                 # Comentado temporalmente
+  #   enable = true;
+  #   enableZshIntegration = true;
+  #   enableBashIntegration = true;
+  #   icons = "auto";
+  #   git = true;
+  #   extraOptions = [
+  #     "--group-directories-first"
+  #     "--header"
+  #     "--color=auto"
+  #   ];
+  # };
 
-  programs.fzf = {
-    enable = true;
-    enableBashIntegration = true;
-    enableZshIntegration = true;
-    defaultOptions = [
-      "--no-mouse"
-      "--height 50%"
-      "--border"
-    ];
-  };
+  # programs.fzf = {                 # Comentado temporalmente
+  #   enable = true;
+  #   enableBashIntegration = true;
+  #   enableZshIntegration = true;
+  #   defaultOptions = [
+  #     "--no-mouse"
+  #     "--height 50%"
+  #     "--border"
+  #   ];
+  # };
 
-  programs.git = {
-    enable = true;
-    userEmail = "7987506+hugotown@users.noreply.github.com";
-    userName = "Hugo Ruiz";
-    extraConfig = {
-      init = {
-        defaultBranch = "main";
-      };
-      merge = {
-        conflictStyle = "diff3";
-      };
-      pull = {
-        rebase = true;
-      };
-      push = {
-        autoSetupRemote = true;
-      };
-      core = {
-        editor = "nvim";
-      };
-    };
-  };
+  # programs.git = {                 # Comentado temporalmente
+  #   enable = true;
+  #   userEmail = "7987506+hugotown@users.noreply.github.com";
+  #   userName = "Hugo Ruiz";
+  #   extraConfig = {
+  #     init = {
+  #       defaultBranch = "main";
+  #     };
+  #     merge = {
+  #       conflictStyle = "diff3";
+  #     };
+  #     pull = {
+  #       rebase = true;
+  #     };
+  #     push = {
+  #       autoSetupRemote = true;
+  #     };
+  #     core = {
+  #       editor = "nvim";
+  #     };
+  #   };
+  # };
 
-  programs.starship = {
-    enable = true;
-    enableZshIntegration = true;
-    enableBashIntegration = true;
-  };
+  # programs.starship = {            # Comentado temporalmente
+  #   enable = true;
+  #   enableZshIntegration = true;
+  #   enableBashIntegration = true;
+  # };
   
-  programs.bat.enable = true;
-  programs.ripgrep.enable = true;
+  # programs.bat.enable = true;      # Comentado temporalmente
+  # programs.ripgrep.enable = true;  # Comentado temporalmente
   
-  programs.zoxide = {
-    enable = true;
-    enableBashIntegration = true;
-    enableZshIntegration = true;
-    # Usa configuración por defecto
-  };
+  # programs.zoxide = {              # Comentado temporalmente
+  #   enable = true;
+  #   enableBashIntegration = true;
+  #   enableZshIntegration = true;
+  #   # Usa configuración por defecto
+  # };
 
+  # Solo mantenemos alacritty y neovim como en el commit que funcionaba
   programs.alacritty.enable = true;
   
   programs.neovim = {
@@ -118,10 +119,10 @@
     # Core CLI tools are managed in common-packages.nix for better system integration
   ];
 
-  # Shell environment variables
+  # Shell environment variables (mínimas)
   home.sessionVariables = {
     EDITOR = "nvim";
-    BROWSER = "open";
+    # BROWSER = "open";              # Comentado temporalmente
     TERMINAL = "alacritty";
   };
 
