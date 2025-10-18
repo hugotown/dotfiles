@@ -3,8 +3,8 @@
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
-    ## CLI tools básicos estables (como en el commit que funcionaba)
-    # Estos vienen de nixos-24.11 (stable) - más confiables
+    ## CLI tools básicos (como en el commit que funcionaba)
+    # Paquetes base necesarios para ambas plataformas
     alacritty
     neovim
     git
@@ -15,15 +15,15 @@
     tree
     
   ] ++ [
-    ## Ejemplos de paquetes unstable (comentados para ir agregando gradualmente)
-    # unstablePkgs.bat         # cat con syntax highlighting
-    # unstablePkgs.yt-dlp      # YouTube downloader
-    # unstablePkgs.ffmpeg      # Última versión con más codecs
+    ## Paquetes adicionales pueden agregarse aquí según sea necesario
+    # bat         # cat con syntax highlighting
+    # yt-dlp      # YouTube downloader
+    # ffmpeg      # Procesamiento de medios
     
-    # Para ir agregando uno por uno:
-    # unstablePkgs.nodejs      # Para desarrollo web con última versión
-    # unstablePkgs.rust        # Para desarrollo Rust con toolchain reciente
-    # unstablePkgs.go          # Para desarrollo Go con última versión
+    # Herramientas de desarrollo:
+    # nodejs      # Para desarrollo web
+    # rustc       # Para desarrollo Rust
+    # go          # Para desarrollo Go
   ];
 
 }

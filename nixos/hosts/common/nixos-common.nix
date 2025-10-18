@@ -1,7 +1,4 @@
 { inputs, outputs, config, lib, hostname, system, username, pkgs, ... }:
-let
-  inherit (inputs) nixpkgs nixpkgs-unstable;
-in
 {
   nixpkgs.config.allowUnfree = true;
 
@@ -22,7 +19,7 @@ in
   };
 
   # System state version - this should not change after installation
-  system.stateVersion = "24.05";
+  system.stateVersion = "25.05";
 
   # Localization
   time.timeZone = lib.mkDefault "America/Mexico_City";

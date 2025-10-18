@@ -1,190 +1,290 @@
-# Hugo's Nix-Darwin Configuration
+# 🏠 Hugo's Dotfiles
 
-Esta es mi configuración personal de nix-darwin para macOS, inspirada en las mejores prácticas del repositorio [ironicbadger/nix-config](https://github.com/ironicbadger/nix-config).
+Una configuración completa de NixOS y nix-darwin para gestionar sistemas Linux y macOS con configuraciones específicas y optimizadas para cada plataforma.
 
-## Estructura del Proyecto
+## 📋 Tabla de Contenidos
+
+- [🎯 Filosofía](#-filosofía)
+- [🏗️ Estructura del Proyecto](#️-estructura-del-proyecto)
+- [⚙️ Configuraciones de Sistema](#️-configuraciones-de-sistema)
+- [🚀 Uso](#-uso)
+- [🔧 Instalación](#-instalación)
+- [📝 Notas Importantes](#-notas-importantes)
+
+## 🎯 Filosofía
+
+Este repositorio sigue el principio de **"diferentes herramientas para diferentes necesidades"**:
+
+- **Linux NixOS**: Configuración cutting-edge con las últimas features para desarrollo y gaming
+- **macOS Darwin**: Configuración estable y confiable para productividad y trabajo
+
+### ¿Por qué versiones diferentes?
+
+**Linux (Unstable)**:
+- ✅ Hyprland con las últimas features de Wayland
+- ✅ Drivers actualizados para hardware nuevo
+- ✅ Stack de desarrollo más reciente
+- ✅ Gaming con soporte actualizado
+
+**macOS (Estable)**:
+- ✅ Máxima estabilidad para trabajo productivo
+- ✅ Configuración nativa con nix-darwin
+- ✅ Menos breakage en workflow diario
+- ✅ Compatibilidad consistente con APIs de macOS
+
+## 🏗️ Estructura del Proyecto
 
 ```
 nixos/
-├── flake.nix                 # Configuración principal del flake
+├── flake.nix                    # Configuración principal de inputs y outputs
+├── lib/
+│   ├── default.nix             # Exports de funciones helper
+│   └── helpers.nix             # Funciones para construir configuraciones
 ├── hosts/
-│   ├── common/
-│   │   ├── darwin-common.nix        # Configuración base de macOS
-│   │   ├── darwin-common-dock.nix   # Configuración por defecto del dock
-│   │   └── common-packages.nix      # Paquetes comunes
-│   └── darwin/
-│       └── mp-i9-16i/              # Configuración específica de la máquina
-│           ├── default.nix
-│           └── custom-dock.nix
-├── home/
-│   └── hugoruiz.nix         # Configuración de home-manager
-└── lib/
-    ├── default.nix          # Exportaciones de la librería
-    └── helpers.nix          # Funciones helper para crear configuraciones
+│   ├── common/                 # Configuraciones compartidas
+│   │   ├── common-packages.nix # Paquetes base para ambos sistemas
+│   │   ├── darwin-common.nix   # Configuración común de macOS
+│   │   └── nixos-common.nix    # Configuración común de Linux
+│   ├── darwin/                 # Hosts de macOS
+│   │   └── mp-i9-16i/          # Mac Studio personal
+│   │       ├── default.nix     # Configuración del sistema
+│   │       ├── custom-dock.nix # Configuración del Dock
+│   │       └── home/           # Home Manager específico del host
+│   │           └── hugoruiz/
+│   │               └── home.nix
+│   └── nixos/                  # Hosts de Linux
+│       └── lenovo-nixos-btw/   # Laptop Lenovo
+│           ├── default.nix     # Configuración del sistema
+│           ├── hardware-configuration.nix # Hardware específico
+│           └── home/           # Home Manager específico del host
+│               └── hugoruiz/
+│                   └── home.nix
+└── home/
+    └── hugoruiz.nix           # Configuración legacy (en proceso de migración)
 ```
 
-## Instalación Inicial
+### 🤔 ¿Por qué Home Manager dentro de cada host?
 
-1. **Instalar Nix** (si no lo tienes):
-```bash
-sh <(curl -L https://nixos.org/nix/install)
-```
+**Ventajas de esta estructura**:
 
-2. **Instalar nix-darwin**:
-```bash
-nix-build https://github.com/LnL7/nix-darwin/archive/master.tar.gz -A installer
-./result/bin/darwin-installer
-```
+1. **Configuraciones específicas por máquina**: Cada host puede tener configuraciones de usuario completamente diferentes
+2. **Escalabilidad**: Fácil agregar nuevos usuarios a hosts específicos
+3. **Separación clara**: Linux puede tener paquetes Wayland/Hyprland, macOS puede tener apps específicas
+4. **Mantenimiento sencillo**: Es evidente qué usuarios están configurados en cada máquina
+5. **Flexibilidad**: Un usuario puede tener configuraciones diferentes en diferentes hosts
 
-3. **Clonar esta configuración**:
-```bash
-git clone <tu-repo> ~/.config/nixos
-cd ~/.config/nixos
-```
+**Ejemplo práctico**:
+- `darwin/mp-i9-16i/home/hugoruiz/` → Configuración de trabajo con apps de productividad
+- `nixos/lenovo-nixos-btw/home/hugoruiz/` → Configuración personal con gaming y development tools
 
-4. **Construir y aplicar**:
-```bash
-# Construir la configuración
-nix --extra-experimental-features 'nix-command flakes' build '.#darwinConfigurations.mp-i9-16i.system'
+## ⚙️ Configuraciones de Sistema
 
-# Aplicar la configuración
-sudo ./result/sw/bin/darwin-rebuild switch --flake '.#mp-i9-16i'
-```
+### 🐧 NixOS Linux (`lenovo-nixos-btw`)
 
-## Uso Diario
+**Sistema**:
+- **Base**: nixos-unstable (rolling release)
+- **Home Manager**: release-25.05
+- **StateVersion**: 25.05
+- **Desktop**: Hyprland con UWSM
+- **Display Manager**: SDDM con Wayland
+- **Audio**: PipeWire
 
-### Comandos Principales
+**Features**:
+- Auto-login configurado
+- Soporte completo para Wayland
+- Stack de desarrollo moderno
+- Gaming optimizado
+- Paquetes cutting-edge
 
-```bash
-# Construir y aplicar la configuración
-sudo darwin-rebuild switch --flake '.#mp-i9-16i'
-
-# Solo construir sin aplicar
-sudo darwin-rebuild build --flake '.#mp-i9-16i'
-
-# Actualizar inputs del flake
-nix flake update
-
-# Limpiar generaciones antiguas
-nix-collect-garbage -d
-sudo nix-collect-garbage -d
-
-# Verificar el flake
-nix flake check
-```
-
-## Características Principales
-
-### Sistema Base
-- ✅ **Nix Flakes** habilitado
-- ✅ **Home Manager** integrado
-- ✅ **Homebrew** configurado con nix-homebrew
-- ✅ **TouchID para sudo** habilitado
-- ✅ **Configuraciones optimizadas de macOS**
-
-### Aplicaciones Incluidas
-- **Terminal**: Alacritty con configuración personalizada
-- **Shell**: Zsh con Starship prompt
-- **Editor**: Neovim como editor por defecto
-- **CLI Tools**: eza, ripgrep, fd, fzf, atuin, zoxide, bat
-- **Git**: Configurado con mejores defaults
-- **Homebrew Casks**: Chrome, Firefox, VS Code, Discord, Spotify, etc.
-
-### Configuraciones de macOS
-- Finder optimizado (mostrar extensiones, pathbar, etc.)
-- Dock personalizado por máquina
-- Trackpad con tap-to-click y three-finger drag
-- Desactivar creación de .DS_Store en redes
-- Configuraciones de privacidad mejoradas
-
-## Personalización
-
-### Agregar Aplicaciones
-
-**Via Nix** (editar `hosts/common/common-packages.nix`):
+**Paquetes destacados**:
 ```nix
+# Sistema
 environment.systemPackages = with pkgs; [
-  # ... existing packages
-  nueva-aplicacion
+  alacritty neovim git          # Core tools
+  waybar brightnessctl btop     # System utilities
+  localsend fastfetch starship  # Modern tools
+  adwaita-icon-theme            # GTK theming
+];
+
+# Home Manager (usuario específico)
+home.packages = with pkgs; [
+  chromium claude-code gemini-cli  # Development tools
+  hypridle hyprlock hyprsunset     # Hyprland session
+  rofi wofi swaybg mako            # Wayland utilities  
+  nautilus pcmanfm warp-terminal   # File & terminal apps
+  gh nil nitch opencode            # Development utilities
 ];
 ```
 
-**Via Homebrew** (editar `hosts/common/darwin-common.nix`):
+### 🍎 macOS Darwin (`mp-i9-16i`)
+
+**Sistema**:
+- **Base**: nixpkgs-24.11-darwin (stable)
+- **Home Manager**: release-24.11  
+- **nix-darwin**: nix-darwin-24.11
+- **StateVersion**: 24.05
+
+**Features**:
+- Gestión completa con Nix (sin Homebrew)
+- Dock personalizado via nix-darwin
+- Configuración de productividad minimalista
+- Estabilidad prioritaria
+
+**Paquetes**:
 ```nix
-homebrew = {
-  # ...
-  casks = [
-    # ... existing casks
-    "nueva-app"
-  ];
-  masApps = {
-    "Nueva App Store App" = 123456789;
-  };
+# Solo lo esencial para estabilidad
+programs.alacritty.enable = true;
+programs.neovim.enable = true;
+
+# Configuración macOS nativa
+system.defaults = {
+  dock.orientation = "left";
+  finder.FXPreferredViewStyle = "Nlsv";
+  NSGlobalDomain.AppleShowAllExtensions = true;
 };
 ```
 
-### Modificar Dock
+**Focus**:
+- Alacritty + Neovim como stack principal
+- TODO comentado temporalmente para máxima estabilidad
+- Configuración macOS via system.defaults
+- Sin dependencias externas (no Homebrew)
 
-Editar `hosts/darwin/mp-i9-16i/custom-dock.nix`:
-```nix
-system.defaults.dock = {
-  persistent-apps = [
-    "/Applications/Mi App Favorita.app"
-    # ... otras apps
-  ];
-};
-```
+## 🚀 Uso
 
-### Configurar Home Manager
+### Para NixOS Linux
 
-Editar `home/hugoruiz.nix` para personalizar:
-- Configuraciones de shell (aliases, funciones)
-- Configuraciones de aplicaciones (alacritty, git, etc.)
-- Variables de entorno
-- Dotfiles adicionales
-
-## Resolución de Problemas
-
-### Build Failures
 ```bash
-# Ver errores detallados
-sudo darwin-rebuild switch --flake '.#mp-i9-16i' --show-trace
+# Build y apply
+sudo nixos-rebuild switch --flake ~/.config/nixos#lenovo-nixos-btw
 
-# Verificar flake
-nix flake check
+# Solo build (para testing)
+sudo nixos-rebuild build --flake ~/.config/nixos#lenovo-nixos-btw
 
-# Limpiar cache
-nix-collect-garbage -d
+# Update flake inputs
+nix flake update ~/.config/nixos
+```
+
+### Para macOS Darwin
+
+```bash
+# Build y apply
+sudo darwin-rebuild switch --flake ~/.config/nixos#mp-i9-16i
+
+# Solo build (para testing)  
+sudo darwin-rebuild build --flake ~/.config/nixos#mp-i9-16i
+
+# Update flake inputs
+nix flake update ~/.config/nixos
+```
+
+### Comandos útiles
+
+```bash
+# Ver configuraciones disponibles
+nix flake show ~/.config/nixos
+
+# Limpiar store
 sudo nix-collect-garbage -d
+
+# Rollback a generación anterior
+sudo nixos-rebuild --rollback switch    # Linux
+sudo darwin-rebuild --rollback switch   # macOS
 ```
 
-### Homebrew Issues
+## 🔧 Instalación
+
+### Prerequisitos
+
+1. **NixOS**: Instalación base funcionando
+2. **macOS**: Nix package manager instalado
+3. **Flakes habilitados**: 
+   ```bash
+   # En ~/.config/nix/nix.conf o /etc/nix/nix.conf
+   experimental-features = nix-command flakes
+   ```
+
+### Setup inicial
+
 ```bash
-# Limpiar homebrew
-brew cleanup --prune=all
+# 1. Clonar dotfiles
+git clone https://github.com/hugotown/dotfiles.git ~/.config/nixos
+cd ~/.config/nixos
 
-# Re-instalar formulae/casks
-darwin-rebuild switch --flake '.#mp-i9-16i'
+# 2. Linux: Backup configuración existente
+sudo mv /etc/nixos/hardware-configuration.nix ~/.config/nixos/nixos/hosts/nixos/lenovo-nixos-btw/
+
+# 3. Aplicar configuración
+# Linux:
+sudo nixos-rebuild switch --flake .#lenovo-nixos-btw
+# macOS:
+sudo darwin-rebuild switch --flake .#mp-i9-16i
 ```
 
-### Rollback a Generación Anterior
-```bash
-# Ver generaciones disponibles
-sudo darwin-rebuild --list-generations
+## 📝 Notas Importantes
 
-# Rollback
-sudo darwin-rebuild rollback
-```
+### 🔄 Versionado y Compatibilidad
 
-## Estructura Modular
+**¿Por qué diferentes versiones?**
+- Las versiones unstable y stable tienen diferentes ciclos de release
+- Linux unstable da acceso a Hyprland y Wayland más recientes
+- macOS stable evita breakage en entorno de trabajo
+- Home Manager versions están sincronizadas con sus respectivos nixpkgs
 
-La configuración está organizada modularmente para facilitar:
+### 🏠 Home Manager Strategy
 
-1. **Reutilización**: Configuraciones comunes compartidas
-2. **Mantenimiento**: Cada host tiene su configuración específica
-3. **Escalabilidad**: Fácil agregar nuevas máquinas
-4. **Flexibilidad**: Overrides específicos por máquina
+**Legacy vs Nueva Estructura**:
+- `nixos/home/hugoruiz.nix` → **Legacy** (será eliminado)
+- `nixos/hosts/*/home/*/home.nix` → **Nueva estructura**
 
-## Créditos
+La nueva estructura permite configuraciones específicas por host, lo cual es especialmente útil cuando el mismo usuario tiene diferentes necesidades en diferentes máquinas.
 
-Inspirado en el excelente trabajo de [ironicbadger](https://github.com/ironicbadger/nix-config).
+### 🔧 StateVersions
+
+- **NixOS**: `25.05` (matches system.stateVersion en configuración funcional)
+- **Darwin**: `24.05` (stable baseline para macOS)
+- **Home Manager**: Sigue la versión del sistema respectivo
+
+### ⚖️ **Diferencias con out.nix**
+
+La configuración actual está **organizada y modularizada**, mientras que `out.nix` es la configuración funcional **monolítica** original:
+
+- **out.nix**: Configuración única, todo en un archivo, ya probada y funcionando
+- **Configuración actual**: Separada por módulos, hosts específicos, más mantenible
+
+**¿Por qué la diferencia?**
+- Mejor organización para múltiples hosts/usuarios
+- Separación de responsabilidades (sistema vs home vs hardware)
+- Reutilización de componentes comunes
+- Escalabilidad para nuevos hosts
+
+### 🚨 Troubleshooting
+
+**Error común**: `path does not exist`
+- Verificar que los archivos home.nix existen en la estructura correcta
+- Revisar que las rutas en helpers.nix sean correctas
+- Asegurar que los inputs del flake coincidan con las referencias
+
+**Darwin build fails**:
+- Verificar que Xcode Command Line Tools estén instalados
+- Revisar permisos en `/nix/store`
+- Confirmar que nix-darwin esté instalado correctamente
+
+**NixOS differs from out.nix**:
+- La configuración modular puede requerir ajustes para match exacto
+- Si hay problemas, usar temporalmente el out.nix como base
+- Migración gradual de out.nix a estructura modular
+
+---
+
+## 📚 Referencias
+
+- [NixOS Manual](https://nixos.org/manual/nixos/stable/)
+- [nix-darwin](https://github.com/LnL7/nix-darwin)
+- [Home Manager](https://github.com/nix-community/home-manager)
+- [Hyprland](https://hyprland.org/)
+
+---
+
+**Mantenido por**: [@hugotown](https://github.com/hugotown)  
+**Último update**: Octubre 2025

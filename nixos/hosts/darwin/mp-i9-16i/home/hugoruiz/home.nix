@@ -1,6 +1,6 @@
 { config, inputs, pkgs, lib, ... }:
 {
-  home.stateVersion = "25.05";
+  home.stateVersion = "24.11";
 
   home.homeDirectory = "/Users/hugoruiz";
 

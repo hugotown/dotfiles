@@ -1,4 +1,4 @@
-{ inputs, outputs, stateVersion, ... }:
+{ inputs, outputs, ... }:
 {
   mkDarwin = { hostname, username ? "hugoruiz", system ? "x86_64-darwin",}:
   let
@@ -14,7 +14,7 @@
         ../hosts/common/common-packages.nix
         ../hosts/common/darwin-common.nix
         customConf
-        inputs.home-manager.darwinModules.home-manager {
+        inputs.home-manager-darwin.darwinModules.home-manager {
             networking.hostName = hostname;
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
