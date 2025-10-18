@@ -44,7 +44,7 @@ in
   # Shell programs are configured in home-manager for better user-specific customization
 
   # Add ability to used TouchID for sudo authentication
-  security.pam.services.sudo_local.touchIdAuth = true;
+  # security.pam.services.sudo_local.touchIdAuth = true;
 
   # macOS configuration
   system.defaults = {
