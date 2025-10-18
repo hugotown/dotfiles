@@ -124,7 +124,6 @@ in
 
   environment.systemPackages = with pkgs; [
     # macOS-specific tools only
-    lima            # Linux VMs on macOS (macOS-specific)
     nix             # Nix package manager (self-reference for system)
   ];
 

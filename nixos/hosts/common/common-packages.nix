@@ -28,17 +28,9 @@ in
     htop
     jq
     
-    # Herramientas multiplataforma (movidas desde darwin-common)
-    comma           # Nix package runner
-    hcloud          # Hetzner Cloud CLI  
-    just            # Command runner
-    nodejs          # JavaScript runtime
-    pass            # Password manager
-    
-    ## unstable packages (multiplataforma)
+    ## unstable packages (herramientas de usuario)
     unstablePkgs.yt-dlp      # YouTube downloader
     unstablePkgs.get_iplayer # BBC iPlayer downloader
-    unstablePkgs.colmena     # NixOS deployment
   ];
 
   # Fonts are managed in darwin-common.nix to avoid duplication

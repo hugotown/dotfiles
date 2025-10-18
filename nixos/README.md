@@ -7,7 +7,6 @@ Esta es mi configuración personal de nix-darwin para macOS, inspirada en las me
 ```
 nixos/
 ├── flake.nix                 # Configuración principal del flake
-├── justfile                  # Comandos útiles para administrar el sistema
 ├── hosts/
 │   ├── common/
 │   │   ├── darwin-common.nix        # Configuración base de macOS
@@ -45,50 +44,33 @@ cd ~/.config/nixos
 
 4. **Construir y aplicar**:
 ```bash
-# Usando just (recomendado)
-just build
-just switch
-
-# O manualmente
+# Construir la configuración
 nix --extra-experimental-features 'nix-command flakes' build '.#darwinConfigurations.mp-i9-16i.system'
+
+# Aplicar la configuración
 sudo ./result/sw/bin/darwin-rebuild switch --flake '.#mp-i9-16i'
 ```
 
 ## Uso Diario
 
-### Comandos Principales (usando `just`)
+### Comandos Principales
 
 ```bash
-# Construir y cambiar a la nueva configuración
-just switch
+# Construir y aplicar la configuración
+sudo darwin-rebuild switch --flake '.#mp-i9-16i'
 
-# Solo construir sin cambiar
-just build
+# Solo construir sin aplicar
+sudo darwin-rebuild build --flake '.#mp-i9-16i'
 
-# Actualizar los inputs del flake
-just update
-
-# Limpiar generaciones antiguas
-just gc
-
-# Ver información del sistema
-just show
-
-# Verificar el flake
-just check
-```
-
-### Comandos Manuales
-
-```bash
-# Reconstruir sistema
-darwin-rebuild switch --flake '.#mp-i9-16i'
-
-# Actualizar flake
+# Actualizar inputs del flake
 nix flake update
 
-# Limpiar sistema
+# Limpiar generaciones antiguas
 nix-collect-garbage -d
+sudo nix-collect-garbage -d
+
+# Verificar el flake
+nix flake check
 ```
 
 ## Características Principales
@@ -166,13 +148,14 @@ Editar `home/hugoruiz.nix` para personalizar:
 ### Build Failures
 ```bash
 # Ver errores detallados
-just trace
+sudo darwin-rebuild switch --flake '.#mp-i9-16i' --show-trace
 
 # Verificar flake
-just check
+nix flake check
 
 # Limpiar cache
 nix-collect-garbage -d
+sudo nix-collect-garbage -d
 ```
 
 ### Homebrew Issues
@@ -187,7 +170,7 @@ darwin-rebuild switch --flake '.#mp-i9-16i'
 ### Rollback a Generación Anterior
 ```bash
 # Ver generaciones disponibles
-just generations
+sudo darwin-rebuild --list-generations
 
 # Rollback
 sudo darwin-rebuild rollback
