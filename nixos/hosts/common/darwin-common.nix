@@ -18,10 +18,10 @@ in
   # system.primaryUser = username;
 
   fonts.packages = [
-    pkgs.nerd-fonts.fira-code
-    pkgs.nerd-fonts.fira-mono
-    pkgs.nerd-fonts.hack
-    pkgs.nerd-fonts.jetbrains-mono
+    # pkgs.nerd-fonts.fira-code
+    # pkgs.nerd-fonts.fira-mono
+    # pkgs.nerd-fonts.hack
+    # pkgs.nerd-fonts.jetbrains-mono
   ];
 
   # pins to stable as unstable updates very often
