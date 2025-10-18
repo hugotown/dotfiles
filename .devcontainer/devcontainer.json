@@ -1,0 +1,11 @@
+{
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+    "features": {
+        "ghcr.io/devcontainer-community/devcontainer-features/nixos.org:1": {},
+        "docker-in-docker": "latest",
+        "docker-from-docker": "latest"
+    },
+    "customizations": {
+        "vscode": { }
+    }
+}
