@@ -15,7 +15,7 @@ in
   system.stateVersion = 5;
 
   # Set primary user for system-wide activation
-  system.primaryUser = username;
+  # system.primaryUser = username;
 
   fonts.packages = [
     pkgs.nerd-fonts.fira-code
