@@ -7,5 +7,9 @@
     curl
     wget
     tree
+    
+    ## Python
+    python312
+    pipx
   ];
 }

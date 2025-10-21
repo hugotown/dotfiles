@@ -12,10 +12,7 @@
   system.stateVersion = 5;
 
   fonts.packages = [
-    # pkgs.nerd-fonts.fira-code
-    # pkgs.nerd-fonts.fira-mono
-    # pkgs.nerd-fonts.hack
-    # pkgs.nerd-fonts.jetbrains-mono
+    pkgs.nerd-fonts.jetbrains-mono
   ];
 
   # Pin registry to unstable
@@ -42,12 +39,7 @@
 
   programs.nix-index.enable = true;
 
-  programs.zsh = {
-    enable = true;
-    enableCompletion = true;
-  };
-
   environment.systemPackages = with pkgs; [
-    # macOS-specific tools only
+    nodejs_22
   ];
 }
