@@ -1,11 +1,10 @@
-
 [env]
 TERM = "xterm-256color"
 
 [font]
 size = 17
 normal.family = "JetBrainsMono Nerd Font"
-normal.style= "Regular"
+normal.style = "Regular"
 
 [window]
 decorations = "Transparent"
@@ -18,9 +17,7 @@ position.x = 550
 position.y = 200
 
 [keyboard]
-bindings = [
-{ key = "F11", action = "ToggleFullscreen" }
-]
+bindings = [{ key = "F11", action = "ToggleFullscreen" }]
 
 [colors]
 [colors.primary]
