@@ -92,35 +92,42 @@
   # };
 
   environment.systemPackages = with pkgs; [
-    alacritty
+    # Paquetes específicos de NixOS (los comunes están en common-packages.nix)
+    
+    ## Terminales adicionales
+    ghostty
+    
+    ## Sistema
     avahi
     bash-completion
-    bat
     brightnessctl
-    btop
     fastfetch
     fontconfig
-    gcc
-    ghostty
-    git
-    kitty
-    localsend
-    neovim
-    nil
-    nixpkgs-fmt
     plocate
     plymouth
     power-profiles-daemon
-    ripgrep
-    starship
     tzupdate
-    vim
-    waybar
-    adwaita-icon-theme
-    wget
     whois
     wireless-regdb
-    zoxide
+    
+    ## Desarrollo
+    gcc
+    git
+    vim
+    nil
+    nixpkgs-fmt
+    
+    ## Aplicaciones
+    localsend
+    
+    ## Wayland/Hyprland
+    waybar
+    
+    ## Temas
+    adwaita-icon-theme
+    
+    ## Prompt
+    starship
   ];
 
   fonts.packages = with pkgs; [

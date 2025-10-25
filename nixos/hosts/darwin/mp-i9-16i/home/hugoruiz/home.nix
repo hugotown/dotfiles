@@ -5,26 +5,33 @@
 
   programs.home-manager.enable = true;
 
+  # ===== Shells y Herramientas CLI =====
+  
+  programs.fish.enable = true;
+  programs.nushell.enable = true;
+  
   programs.direnv = {
     enable = true;
     nix-direnv.enable = true;
   };
-
-  # Solo habilita alacritty, NO gestiona su configuración
+  
+  # Navegación inteligente de directorios
+  programs.zoxide.enable = true;
+  
+  # ls moderno con colores e iconos
+  programs.eza.enable = true;
+  
+  # cat mejorado con syntax highlighting
+  programs.bat.enable = true;
+  
+  # Gestor de archivos en terminal
+  programs.yazi.enable = true;
+  
+  # ===== Terminales =====
   programs.alacritty.enable = true;
-  
-  programs.neovim = {
-    enable = true;
-    defaultEditor = true;
-    viAlias = true;
-    vimAlias = true;
-    vimdiffAlias = true;
-  };
-  
-  programs.atuin = {
-    enable = true;
-    enableZshIntegration = true;
-  };
+  programs.wezterm.enable = true;
+  programs.neovim.enable = true;
+  programs.atuin.enable = true;
 
   home.packages = with pkgs; [
     claude-code
@@ -36,6 +43,8 @@
   home.sessionVariables = {
     EDITOR = "nvim";
     TERMINAL = "alacritty";
+    # Asegurar que yazi use nvim
+    YAZI_FILE_ONE = "nvim";
   };
   
   home.sessionPath = [

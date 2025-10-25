@@ -5,17 +5,29 @@
   home.homeDirectory = "/home/hugoruiz";
   home.stateVersion = "25.05";
   
+  # ===== Configuración de Shells y Herramientas CLI =====
+  
+  # Bash solo en Linux (macOS usa bash del sistema)
   programs.bash = {
     enable = true;
+    enableCompletion = true;
     shellAliases = {
       btw = "echo i use hyprland btw";
     };
   };
+  
+  programs.fish.enable = true;
+  programs.nushell.enable = true;
 
   programs.direnv = {
     enable = true;
     nix-direnv.enable = true;
   };
+  
+  programs.zoxide.enable = true;
+  programs.eza.enable = true;
+  programs.bat.enable = true;
+  programs.yazi.enable = true;
 
   home.packages = with pkgs; [
     chromium
@@ -48,4 +60,10 @@
       text = ''exec "${pkgs.nix-search-tv.src}/nixpkgs.sh" "$@"'';
     })
   ];
+
+  home.sessionVariables = {
+    EDITOR = "nvim";
+    # Asegurar que yazi use nvim
+    YAZI_FILE_ONE = "nvim";
+  };
 }
