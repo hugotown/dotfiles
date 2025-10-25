@@ -7,12 +7,13 @@ normal.family = "JetBrainsMono Nerd Font"
 normal.style = "Regular"
 
 [window]
+startup_mode = "Maximized"
 decorations = "Transparent"
 opacity = 0.93
 padding.x = 13
 padding.y = 13
-dimensions.columns = 120
-dimensions.lines = 43
+dimensions.columns = 0
+dimensions.lines = 0
 position.x = 550
 position.y = 200
 
