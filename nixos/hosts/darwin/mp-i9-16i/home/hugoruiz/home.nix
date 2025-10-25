@@ -5,35 +5,32 @@
 
   programs.home-manager.enable = true;
 
-  # ===== Shells y Herramientas CLI =====
+  # ===== REGLA HÍBRIDA: NIX INSTALA, USUARIO CONFIGURA =====
+  # Solo instalamos paquetes, NO configuramos
+  # Las configuraciones están en ~/.config/ (dotfiles)
   
-  programs.fish.enable = true;
-  programs.nushell.enable = true;
-  
-  programs.direnv = {
-    enable = true;
-    nix-direnv.enable = true;
-  };
-  
-  # Navegación inteligente de directorios
-  programs.zoxide.enable = true;
-  
-  # ls moderno con colores e iconos
-  programs.eza.enable = true;
-  
-  # cat mejorado con syntax highlighting
-  programs.bat.enable = true;
-  
-  # Gestor de archivos en terminal
-  programs.yazi.enable = true;
-  
-  # ===== Terminales =====
-  programs.alacritty.enable = true;
-  programs.wezterm.enable = true;
-  programs.neovim.enable = true;
-  programs.atuin.enable = true;
-
   home.packages = with pkgs; [
+    # Shells (instalamos, tú configuras en ~/.config/)
+    fish
+    nushell
+    
+    # Herramientas CLI
+    direnv
+    nix-direnv
+    zoxide
+    eza  
+    bat
+    yazi
+    
+    # Terminales
+    alacritty
+    wezterm
+    
+    # Editor
+    neovim
+    
+    # Herramientas adicionales
+    atuin
     claude-code
     python312
     pipx
@@ -43,8 +40,6 @@
   home.sessionVariables = {
     EDITOR = "nvim";
     TERMINAL = "alacritty";
-    # Asegurar que yazi use nvim
-    YAZI_FILE_ONE = "nvim";
   };
   
   home.sessionPath = [

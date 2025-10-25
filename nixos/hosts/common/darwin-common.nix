@@ -41,5 +41,7 @@
 
   environment.systemPackages = with pkgs; [
     nodejs_22
+    skhd
+    # yazi se instala via home-manager para seguir regla híbrida
   ];
 }
