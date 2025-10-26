@@ -51,16 +51,8 @@
 
   nixpkgs.config.allowUnfree = true;
 
-  # Workaround for broken fcitx5-qt6 in nixos-unstable
-  # See: https://github.com/NixOS/nixpkgs/issues/...
-  nixpkgs.overlays = [
-    (final: prev: {
-      fcitx5-qt6 = prev.runCommand "fcitx5-qt6-stub" {} ''
-        mkdir -p $out
-        echo "fcitx5-qt6 is broken, using stub" > $out/README
-      '';
-    })
-  ];
+  # Note: fcitx5-qt6 works properly with pinned nixpkgs-nixos (pre-CMake-4)
+  # No overlay needed when using correct nixpkgs version
 
   services.pipewire = {
     enable = true;
