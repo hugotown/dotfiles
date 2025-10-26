@@ -19,17 +19,23 @@
     
     ## Navegación y productividad
     zoxide        # cd inteligente
+    atuin         # shell history sync
     btop          # monitor de sistema
-    
+
     ## Gestores de archivos
     yazi          # file manager en terminal
-    
+
+    ## Desarrollo
+    direnv        # auto-load environment variables
+    nix-direnv    # direnv integration with nix
+
     ## Shells
     fish
     nushell
-    
+
     ## Python
     python312
     pipx
+    uv            # ultra-fast python package manager
   ];
 }
