@@ -68,9 +68,10 @@
     pulse.enable = true;
   };
 
-  # Input method support (fcitx5)
+  # Input method support (fcitx5) - Updated to modern syntax
   i18n.inputMethod = {
-    enabled = "fcitx5";
+    enable = true;
+    type = "fcitx5";
     fcitx5.addons = with pkgs; [
       fcitx5-gtk
     ];
