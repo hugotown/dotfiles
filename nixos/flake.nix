@@ -22,19 +22,29 @@
 
       darwinConfigurations = {
         # personal machine - hugoruiz
-        mp-i9-16i = libx.mkDarwin { 
-          hostname = "mp-i9-16i"; 
+        mp-i9-16i = libx.mkDarwin {
+          hostname = "mp-i9-16i";
           username = "hugoruiz";
           system = "x86_64-darwin";
         };
       };
 
       nixosConfigurations = {
-        # lenovo laptop - hugoruiz
-        lenovo-nixos-btw = libx.mkNixOS {
-          hostname = "lenovo-nixos-btw";
-          username = "hugoruiz";
+        # lenovo laptop - hugoruiz - USING OLD WORKING CONFIGURATION
+        lenovo-nixos-btw = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
+          modules = [
+            ./hosts/nixos/lenovo-nixos-btw/default.nix
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                users.hugoruiz = import ./hosts/nixos/lenovo-nixos-btw/home/hugoruiz/home.nix;
+                backupFileExtension = "backup";
+              };
+            }
+          ];
         };
       };
 
