@@ -24,4 +24,25 @@
         }
       ];
     };
+
+  mkNixOS = { hostname, username ? "hugoruiz", system ? "x86_64-linux" }:
+  let
+    inherit (inputs.nixpkgs) lib;
+  in
+    inputs.nixpkgs.lib.nixosSystem {
+      inherit system;
+      specialArgs = { inherit system inputs outputs username hostname; };
+      modules = [
+        ../hosts/nixos/${hostname}/default.nix
+        inputs.home-manager.nixosModules.home-manager
+        {
+          home-manager = {
+            useGlobalPkgs = true;
+            useUserPackages = true;
+            users.${username} = import ../hosts/nixos/${hostname}/home/${username}/home.nix;
+            backupFileExtension = "backup";
+          };
+        }
+      ];
+    };
 }

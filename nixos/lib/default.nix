@@ -9,5 +9,6 @@ in
 {
   inherit (helpers)
     mkDarwin
+    mkNixOS
     ;
 }
