@@ -25,7 +25,6 @@
   time.timeZone = lib.mkDefault "America/Mexico_City";
   i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
   console = {
-    keyMap = "us";
     useXkbConfig = true;
   };
 
