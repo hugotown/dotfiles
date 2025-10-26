@@ -5,9 +5,10 @@
     # Nixpkgs Unstable para Darwin (latest)
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # Nixpkgs para NixOS - pinned to pre-CMake-4 commit (Oct 9, 2025)
+    # Nixpkgs Unstable para NixOS - pinned to Oct 9, 2025 (pre-CMake-4)
+    # Commit: 0b4defa2584313f3b781240b29d61f6f9f7e0df3
     # This avoids fcitx5-qt6 build failures from CMake 4 update
-    nixpkgs-nixos.url = "github:NixOS/nixpkgs/nixos-unstable-2024-10-09";
+    nixpkgs-nixos.url = "github:NixOS/nixpkgs/0b4defa2584313f3b781240b29d61f6f9f7e0df3";
 
     # nix-darwin - usar master para mejor soporte con unstable
     nix-darwin.url = "github:lnl7/nix-darwin";
