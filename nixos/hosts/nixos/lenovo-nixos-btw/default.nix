@@ -6,6 +6,9 @@
     ../../common/common-packages.nix
   ];
 
+  # System label (appears in bootloader menu)
+  system.nixos.label = "fcitx5-wayland-fix";
+
   # Boot configuration
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -67,13 +70,16 @@
   #   pulse.enable = true;
   # };
 
-  # Input method support (fcitx5)
+  # Input method support (fcitx5 with Wayland native frontend)
   i18n.inputMethod = {
     enable = true;
     type = "fcitx5";
-    fcitx5.addons = with pkgs; [
-      fcitx5-gtk
-    ];
+    fcitx5 = {
+      waylandFrontend = true;  # Use native Wayland protocol, avoid Qt dependencies
+      addons = with pkgs; [
+        fcitx5-gtk
+      ];
+    };
   };
 
   # Polkit authentication agent
