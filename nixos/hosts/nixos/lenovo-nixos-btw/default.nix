@@ -51,6 +51,17 @@
 
   nixpkgs.config.allowUnfree = true;
 
+  # Workaround for broken fcitx5-qt6 in nixos-unstable
+  # See: https://github.com/NixOS/nixpkgs/issues/...
+  nixpkgs.overlays = [
+    (final: prev: {
+      fcitx5-qt6 = prev.runCommand "fcitx5-qt6-stub" {} ''
+        mkdir -p $out
+        echo "fcitx5-qt6 is broken, using stub" > $out/README
+      '';
+    })
+  ];
+
   services.pipewire = {
     enable = true;
     alsa.enable = true;
