@@ -7,7 +7,7 @@
   ];
 
   # System label (appears in bootloader menu)
-  system.nixos.label = "fcitx5-qt6-build-fix";
+  system.nixos.label = "25.05-hyprland-fcitx5";
 
   # Boot configuration
   boot.loader.systemd-boot.enable = true;
@@ -70,17 +70,13 @@
   #   pulse.enable = true;
   # };
 
-  # Input method support (fcitx5 with Wayland native frontend)
+  # Input method support (fcitx5 for Hyprland/Wayland)
   i18n.inputMethod = {
     enable = true;
     type = "fcitx5";
-    fcitx5 = {
-      waylandFrontend = true;  # Use native Wayland protocol, avoid Qt dependencies
-      plasma6Support = false;  # Explicitly disable Qt6/Plasma 6 support to prevent fcitx5-qt6 build
-      addons = with pkgs; [
-        fcitx5-gtk  # GTK integration only, no Qt dependencies
-      ];
-    };
+    fcitx5.addons = with pkgs; [
+      fcitx5-gtk
+    ];
   };
 
   # Polkit authentication agent
