@@ -14,3 +14,5 @@ else
     abbr --erase zi &>/dev/null
     alias zi=__zoxide_zi
 end
+
+source ~/.yazi.fish

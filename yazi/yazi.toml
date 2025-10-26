@@ -1,0 +1,206 @@
+# =============================================================================
+# Yazi Configuration File
+# =============================================================================
+# Archivo: ~/.config/yazi/yazi.toml
+# Documentación: https://yazi-rs.github.io/docs/configuration/yazi
+# =============================================================================
+
+[mgr]
+# Mostrar archivos ocultos por defecto
+show_hidden = true
+# Mostrar información de symlinks
+show_symlink = true
+# Ordenamiento natural por defecto (1, 2, 10 en vez de 1, 10, 2)
+sort_by = "natural"
+sort_sensitive = false
+sort_reverse = false
+sort_dir_first = true
+# Modo de línea por defecto: "none", "size", "mtime", "permissions"
+linemode = "size"
+# Scroll offset (mantener cursor alejado de los bordes)
+scrolloff = 5
+
+[preview]
+# =============================================================================
+# CONFIGURACIÓN DE PREVIEW DE IMÁGENES (Optimizado para macOS - Bajo Consumo)
+# =============================================================================
+
+# Tamaño máximo para preview (reducido para menor consumo de memoria)
+tab_size = 2
+max_width = 600   # Reducido de 900 para menor consumo de memoria
+max_height = 600  # Reducido de 900 para menor consumo de memoria
+
+# Cache de imágenes
+cache_dir = ""  # Usar directorio temporal del sistema
+
+# CRÍTICO: Reducir calidad de imágenes para menor consumo de memoria
+image_quality = 60  # Reducido de 75 para optimizar memoria (0-100)
+
+# Delay de imagen (0 = sin delay, mejor performance)
+image_delay = 0
+
+# Filtro de imagen: bilinear (más rápido y eficiente en memoria)
+# Opciones: bilinear < triangle < catmull-rom < mitchell < lanczos3
+# bilinear es el más rápido y consume menos memoria
+image_filter = "bilinear"
+
+# Protocolo de imagen para macOS
+# Opciones: "kitty", "iterm2", "sixel", "auto"
+# Para WezTerm en macOS: usa "auto" que detectará el mejor protocolo
+ueberzug_scale = 1
+ueberzug_offset_x = 0
+ueberzug_offset_y = 0
+
+[opener]
+# =============================================================================
+# OPENERS - Programas para abrir archivos
+# =============================================================================
+
+# Editor de texto por defecto
+edit = [
+    { run = 'nvim "$@"', block = true, desc = "Editar con Neovim", for = "unix" },
+]
+
+text = [
+    { run = 'nvim "$@"', block = true, desc = "Editar con Neovim", for = "unix" },
+]
+
+# Archivos de código
+code = [
+    { run = 'nvim "$@"', block = true, desc = "Editar con Neovim", for = "unix" },
+]
+
+# Imágenes (en macOS con Preview.app o alternativas)
+image = [
+    { run = 'open "$@"', desc = "Abrir con Preview", for = "macos" },
+    { run = 'qlmanage -p "$@" &> /dev/null', desc = "Quick Look", for = "macos" },
+]
+
+# Videos
+video = [
+    { run = 'open "$@"', desc = "Abrir con reproductor por defecto", for = "macos" },
+]
+
+# PDFs
+pdf = [
+    { run = 'open "$@"', desc = "Abrir con Preview", for = "macos" },
+]
+
+# Archivos de audio
+audio = [
+    { run = 'open "$@"', desc = "Abrir con reproductor por defecto", for = "macos" },
+]
+
+# Archivos comprimidos
+archive = [
+    { run = 'open "$@"', desc = "Abrir con Archive Utility", for = "macos" },
+]
+
+# Reveal en Finder (macOS)
+reveal = [
+    { run = 'open -R "$@"', desc = "Mostrar en Finder", for = "macos" },
+]
+
+# Abrir directorio
+folder = [
+    { run = 'open "$@"', desc = "Abrir en Finder", for = "macos" },
+]
+
+[open]
+# =============================================================================
+# REGLAS PARA ABRIR ARCHIVOS
+# =============================================================================
+rules = [
+    # Directorios
+    { name = "*/", use = ["folder", "reveal"] },
+    
+    # Archivos de texto plano
+    { mime = "text/*", use = ["edit", "reveal"] },
+    { mime = "application/json", use = ["edit", "reveal"] },
+    { mime = "application/x-yaml", use = ["edit", "reveal"] },
+    { mime = "application/toml", use = ["edit", "reveal"] },
+    { mime = "application/xml", use = ["edit", "reveal"] },
+    
+    # Imágenes
+    { mime = "image/*", use = ["image", "reveal"] },
+    
+    # Videos
+    { mime = "video/*", use = ["video", "reveal"] },
+    
+    # Audio
+    { mime = "audio/*", use = ["audio", "reveal"] },
+    
+    # PDFs
+    { mime = "application/pdf", use = ["pdf", "reveal"] },
+    
+    # Archivos comprimidos
+    { mime = "application/{zip,gzip,x-tar,x-bzip*,x-7z-compressed,x-rar}", use = ["archive", "reveal"] },
+    
+    # Archivos de código por extensión
+    { name = "*.{rs,py,js,ts,jsx,tsx,vue,go,c,cpp,h,hpp,java,kt,swift,rb,php,lua,nix}", use = ["edit", "reveal"] },
+    { name = "*.{md,txt,conf,config,cfg,ini,log,csv,tsv}", use = ["edit", "reveal"] },
+    { name = "*.{html,htm,css,scss,sass,less,xml,svg}", use = ["edit", "reveal"] },
+    { name = "*.{sh,bash,zsh,fish,ps1,bat,cmd}", use = ["edit", "reveal"] },
+    { name = "*.{toml,yaml,yml,json}", use = ["edit", "reveal"] },
+    
+    # Archivos de configuración sin extensión
+    { name = "{Dockerfile,Makefile,Justfile,Brewfile,Gemfile,Rakefile}", use = ["edit", "reveal"] },
+    { name = "{README,LICENSE,CHANGELOG,TODO,FIXME,CONTRIBUTING,AUTHORS}", use = ["edit", "reveal"] },
+    { name = ".*rc", use = ["edit", "reveal"] },
+    { name = ".*ignore", use = ["edit", "reveal"] },
+    { name = ".*env*", use = ["edit", "reveal"] },
+]
+
+[plugin]
+# =============================================================================
+# PREVIEWERS - Configuración optimizada para imágenes
+# =============================================================================
+previewers = [
+    # Directorios
+    { name = "*/", run = "folder", sync = true },
+    
+    # Código y texto
+    { mime = "text/*", run = "code" },
+    { mime = "*/xml", run = "code" },
+    { mime = "*/javascript", run = "code" },
+    { mime = "*/x-wine-extension-ini", run = "code" },
+    
+    # IMÁGENES - Optimizado para bajo consumo de memoria
+    { mime = "image/vnd.djvu", run = "noop" },
+    { mime = "image/*", run = "image" },
+    
+    # Videos (solo primer frame para preview)
+    { mime = "video/*", run = "video" },
+    
+    # PDFs (preview optimizado)
+    { mime = "application/pdf", run = "pdf" },
+]
+
+preloaders = [
+    # DESHABILITADO: No precargar imágenes para optimizar memoria
+    # Solo se cargarán cuando se navegue a ellas
+    # { mime = "image/*", run = "image" },
+    # { mime = "video/*", run = "video" },
+]
+
+# =============================================================================
+# TASKS - Configuración de tareas (Optimizado para bajo consumo de memoria)
+# =============================================================================
+[tasks]
+# Máximo de tareas concurrentes (reducido para menor consumo de memoria)
+micro_workers = 3   # Reducido de 5 para optimizar memoria
+macro_workers = 5   # Reducido de 10 para optimizar memoria
+bizarre_retry = 3   # Reducido de 5 para optimizar recursos
+
+# =============================================================================
+# INPUT - Configuración de input
+# =============================================================================
+[input]
+# Cursor parpadeante
+cursor_blink = true
+
+# =============================================================================
+# LOG - Configuración de logs
+# =============================================================================
+[log]
+enabled = false

@@ -1,0 +1,247 @@
+# =============================================================================
+# Yazi Keymap Configuration
+# =============================================================================
+# Archivo: ~/.config/yazi/keymap.toml
+# Documentación: https://yazi-rs.github.io/docs/configuration/keymap
+#
+# ESTRUCTURA:
+# - prepend_keymap: Mayor prioridad, sobrescribe defaults
+# - append_keymap: Menor prioridad, complementa defaults
+# 
+# Para ver todos los keybindings activos: presiona ~ o F1 dentro de yazi
+# =============================================================================
+
+"$schema" = "https://yazi-rs.github.io/schemas/keymap.json"
+
+# =============================================================================
+# [mgr] - File Manager (Gestor de archivos principal)
+# =============================================================================
+[mgr]
+
+# -----------------------------------------------------------------------------
+# prepend_keymap - Keybindings personalizados con MAYOR prioridad
+# -----------------------------------------------------------------------------
+prepend_keymap = [
+    # =========================================================================
+    # NAVEGACIÓN Y DIRECTORIOS
+    # =========================================================================
+    
+    # Bookmarks - Serie 'g' (go to)
+    { on = ["g", "h"], run = "cd ~",                    desc = "Ir a home (~)" },
+    { on = ["g", "c"], run = "cd ~/.config",            desc = "Ir a ~/.config" },
+    { on = ["g", "n"], run = "cd ~/.config/nixos",      desc = "Ir a config nixos" },
+    { on = ["g", "d"], run = "cd ~/Downloads",          desc = "Ir a Downloads" },
+    { on = ["g", "D"], run = "cd ~/Desktop",            desc = "Ir a Desktop" },
+    { on = ["g", "p"], run = "cd ~/Pictures",           desc = "Ir a Pictures" },
+    { on = ["g", "v"], run = "cd ~/Videos",             desc = "Ir a Videos" },
+    { on = ["g", "m"], run = "cd ~/Music",              desc = "Ir a Music" },
+    { on = ["g", "w"], run = "cd ~/Documents",          desc = "Ir a Documents" },
+    { on = ["g", "r"], run = "cd /",                    desc = "Ir a root (/)" },
+    { on = ["g", "t"], run = "cd /tmp",                 desc = "Ir a /tmp" },
+    
+    # =========================================================================
+    # ABRIR/EDITAR ARCHIVOS
+    # =========================================================================
+    
+    # Editor principal
+    { on = ["e"],      run = "open",                    desc = "Abrir archivo" },
+    { on = ["E"],      run = "open --interactive",      desc = "Abrir con selector interactivo" },
+    { on = ["o"],      run = "open",                    desc = "Abrir archivo (alias)" },
+    { on = ["O"],      run = "open --interactive",      desc = "Abrir interactivo (alias)" },
+    
+    # Abrir con nvim directamente en shell
+    { on = ["I"],      run = '''shell 'nvim "$0"' --block''', desc = "Editar con nvim (bloqueante)" },
+    
+    # =========================================================================
+    # BÚSQUEDA Y FILTRADO
+    # =========================================================================
+    
+    # Búsqueda mejorada (según documentación de Yazi)
+    { on = ["<C-f>"],  run = "search --via=fd",         desc = "Buscar archivos (fd)" },
+    { on = ["<C-s>"],  run = "search --via=rg",         desc = "Buscar contenido (ripgrep)" },
+    { on = ["/"],      run = "find",                    desc = "Buscar en archivos actuales" },
+    
+    # Filtros rápidos
+    { on = ["f", "h"], run = "filter --smart",          desc = "Filtrar (smart-case)" },
+    { on = ["f", "i"], run = "filter --insensitive",    desc = "Filtrar (case-insensitive)" },
+    
+    # Flat view (vista plana)
+    { on = ["g", "f"], run = '''search_do --via=fd --args="-d 5"''', desc = "Vista plana (depth=5)" },
+    
+    # =========================================================================
+    # OPERACIONES DE ARCHIVOS
+    # =========================================================================
+    
+    # Copiar paths
+    { on = ["c", "p"], run = "copy path",               desc = "Copiar path absoluto" },
+    { on = ["c", "d"], run = "copy dirname",            desc = "Copiar directorio padre" },
+    { on = ["c", "f"], run = "copy filename",           desc = "Copiar nombre de archivo" },
+    { on = ["c", "n"], run = "copy name_without_ext",   desc = "Copiar nombre sin extensión" },
+    
+    # Yank/Paste mejorado
+    { on = ["y", "y"], run = "yank",                    desc = "Copiar archivos" },
+    { on = ["y", "x"], run = "yank --cut",              desc = "Cortar archivos" },
+    { on = ["p", "p"], run = "paste",                   desc = "Pegar archivos" },
+    { on = ["p", "f"], run = "paste --force",           desc = "Pegar forzado (sobrescribir)" },
+    { on = ["p", "l"], run = "paste --follow",          desc = "Pegar siguiendo symlinks" },
+    
+    # Links
+    { on = ["l", "s"], run = "link",                    desc = "Crear symlink" },
+    { on = ["l", "r"], run = "link --relative",         desc = "Crear symlink relativo" },
+    { on = ["l", "h"], run = "hardlink",                desc = "Crear hardlink" },
+    
+    # Delete mejorado
+    { on = ["d", "d"], run = "remove",                  desc = "Mover a papelera" },
+    { on = ["d", "D"], run = "remove --permanently",    desc = "Borrar permanentemente" },
+    { on = ["d", "f"], run = "remove --force",          desc = "Borrar sin confirmar" },
+    
+    # Create y Rename mejorado
+    { on = ["a", "f"], run = "create",                  desc = "Crear archivo" },
+    { on = ["a", "d"], run = "create --dir",            desc = "Crear directorio" },
+    { on = ["r", "r"], run = "rename",                  desc = "Renombrar" },
+    { on = ["r", "a"], run = "rename --cursor=start",   desc = "Renombrar (cursor al inicio)" },
+    { on = ["r", "e"], run = "rename --cursor=before_ext", desc = "Renombrar (antes de extensión)" },
+    
+    # =========================================================================
+    # SELECCIÓN Y MODO VISUAL
+    # =========================================================================
+    
+    { on = ["v"],      run = "visual_mode",             desc = "Entrar modo visual" },
+    { on = ["V"],      run = "visual_mode --unset",     desc = "Salir modo visual" },
+    { on = ["<C-a>"],  run = "toggle_all --state=on",   desc = "Seleccionar todo" },
+    { on = ["<C-x>"],  run = "toggle_all --state=off",  desc = "Deseleccionar todo" },
+    
+    # =========================================================================
+    # VISTA Y PRESENTACIÓN
+    # =========================================================================
+    
+    # Hidden files
+    { on = ["z", "h"], run = "hidden toggle",           desc = "Toggle archivos ocultos" },
+    { on = ["z", "s"], run = "hidden show",             desc = "Mostrar archivos ocultos" },
+    { on = ["z", "n"], run = "hidden hide",             desc = "Ocultar archivos ocultos" },
+    
+    # Line modes
+    { on = ["m", "s"], run = "linemode size",           desc = "Mostrar tamaño" },
+    { on = ["m", "p"], run = "linemode permissions",    desc = "Mostrar permisos" },
+    { on = ["m", "m"], run = "linemode mtime",          desc = "Mostrar fecha modificación" },
+    { on = ["m", "o"], run = "linemode owner",          desc = "Mostrar propietario" },
+    { on = ["m", "n"], run = "linemode none",           desc = "Sin line mode" },
+    
+    # =========================================================================
+    # ORDENAMIENTO
+    # =========================================================================
+    
+    { on = ["s", "n"], run = "sort natural",            desc = "Ordenar natural (1,2,10)" },
+    { on = ["s", "a"], run = "sort alphabetical",       desc = "Ordenar alfabético" },
+    { on = ["s", "s"], run = "sort size",               desc = "Ordenar por tamaño" },
+    { on = ["s", "m"], run = "sort mtime",              desc = "Ordenar por fecha" },
+    { on = ["s", "e"], run = "sort extension",          desc = "Ordenar por extensión" },
+    { on = ["s", "r"], run = "sort random",             desc = "Ordenar aleatorio" },
+    { on = ["s", "R"], run = "sort --reverse",          desc = "Invertir orden" },
+    { on = ["s", "d"], run = "sort --dir-first",        desc = "Directorios primero" },
+    
+    # =========================================================================
+    # TABS
+    # =========================================================================
+    
+    { on = ["t", "n"], run = "tab_create --current",    desc = "Nuevo tab (directorio actual)" },
+    { on = ["t", "h"], run = "tab_create",              desc = "Nuevo tab (home)" },
+    { on = ["t", "c"], run = "tab_close 0",             desc = "Cerrar primer tab" },
+    
+    # =========================================================================
+    # SHELL Y COMANDOS
+    # =========================================================================
+    
+    # Shell commands personalizados
+    { on = [";", "e"], run = '''shell '$EDITOR "$0"' --block''', desc = "Editar con $EDITOR" },
+    { on = [";", "z"], run = '''shell 'zip -r archive.zip "$@"' --interactive''', desc = "Comprimir a ZIP" },
+    { on = [";", "x"], run = '''shell 'chmod +x "$0"' --confirm''', desc = "Hacer ejecutable" },
+    
+    # =========================================================================
+    # UTILIDADES
+    # =========================================================================
+    
+    # Refresh
+    { on = ["<C-r>"],  run = "escape --all",            desc = "Refrescar/Reset todo" },
+    
+    # Spot (file info)
+    { on = ["i"],      run = "spot",                    desc = "Ver info del archivo" },
+]
+
+# =============================================================================
+# [tasks] - Task Manager
+# =============================================================================
+[tasks]
+
+prepend_keymap = [
+    { on = ["<C-c>"], run = "cancel",                   desc = "Cancelar tarea actual" },
+    { on = ["<C-x>"], run = "cancel",                   desc = "Cancelar tarea (alias)" },
+]
+
+# =============================================================================
+# [spot] - Spotter (File Information Panel)
+# =============================================================================
+[spot]
+
+prepend_keymap = [
+    # Copia de contenido del spotter
+    { on = ["c"],     run = "copy cell",                desc = "Copiar celda seleccionada" },
+    { on = ["y"],     run = "copy cell",                desc = "Copiar celda (alias)" },
+]
+
+# =============================================================================
+# [pick] - Picker Component (Open with...)
+# =============================================================================
+[pick]
+
+prepend_keymap = [
+    # Navegación rápida en el picker
+    { on = ["<C-n>"], run = "arrow next",               desc = "Siguiente opción" },
+    { on = ["<C-p>"], run = "arrow prev",               desc = "Opción anterior" },
+]
+
+# =============================================================================
+# [input] - Input Component (Create, Rename, etc.)
+# =============================================================================
+[input]
+
+prepend_keymap = [
+    # Vim-like en modo normal
+    { on = ["<C-a>"], run = "move -999",                desc = "Ir al inicio" },
+    { on = ["<C-e>"], run = "move 999",                 desc = "Ir al final" },
+    { on = ["<C-w>"], run = "kill backward",            desc = "Borrar palabra anterior" },
+    { on = ["<C-u>"], run = "kill bol",                 desc = "Borrar hasta inicio" },
+    { on = ["<C-k>"], run = "kill eol",                 desc = "Borrar hasta final" },
+]
+
+# =============================================================================
+# [confirm] - Confirmation Dialog
+# =============================================================================
+[confirm]
+
+prepend_keymap = [
+    # Confirmación rápida
+    { on = ["y"],     run = "close --submit",           desc = "Confirmar (yes)" },
+    { on = ["n"],     run = "close",                    desc = "Cancelar (no)" },
+]
+
+# =============================================================================
+# [cmp] - Completion Component
+# =============================================================================
+[cmp]
+
+prepend_keymap = [
+    # Navegación en completions
+    { on = ["<C-n>"], run = "arrow next",               desc = "Siguiente completion" },
+    { on = ["<C-p>"], run = "arrow prev",               desc = "Completion anterior" },
+]
+
+# =============================================================================
+# [help] - Help Menu
+# =============================================================================
+[help]
+
+prepend_keymap = [
+    # Filtrado rápido en ayuda
+    { on = ["/"],     run = "filter",                   desc = "Filtrar ayuda" },
+]
