@@ -61,11 +61,11 @@
 
   nixpkgs.config.allowUnfree = true;
 
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    pulse.enable = true;
-  };
+  # services.pipewire = {
+  #   enable = true;
+  #   alsa.enable = true;
+  #   pulse.enable = true;
+  # };
 
   # Input method support (fcitx5)
   i18n.inputMethod = {

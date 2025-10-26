@@ -56,10 +56,10 @@
   };
 
   # Hardware
-  hardware = {
-    pulseaudio.enable = lib.mkDefault false;
-    bluetooth.enable = lib.mkDefault true;
-  };
+  # hardware = {
+  #   pulseaudio.enable = lib.mkDefault false;
+  #   bluetooth.enable = lib.mkDefault true;
+  # };
 
   # Security
   security = {
