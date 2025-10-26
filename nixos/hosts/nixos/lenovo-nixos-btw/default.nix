@@ -7,7 +7,7 @@
   ];
 
   # System label (appears in bootloader menu)
-  system.nixos.label = "fcitx5-wayland-fix";
+  system.nixos.label = "fcitx5-qt6-build-fix";
 
   # Boot configuration
   boot.loader.systemd-boot.enable = true;
@@ -76,8 +76,9 @@
     type = "fcitx5";
     fcitx5 = {
       waylandFrontend = true;  # Use native Wayland protocol, avoid Qt dependencies
+      plasma6Support = false;  # Explicitly disable Qt6/Plasma 6 support to prevent fcitx5-qt6 build
       addons = with pkgs; [
-        fcitx5-gtk
+        fcitx5-gtk  # GTK integration only, no Qt dependencies
       ];
     };
   };
