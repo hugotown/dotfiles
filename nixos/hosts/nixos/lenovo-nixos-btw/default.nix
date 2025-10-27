@@ -97,7 +97,6 @@
     gcc
     ghostty
     git
-    localsend
     nil
     nixpkgs-fmt
     plocate

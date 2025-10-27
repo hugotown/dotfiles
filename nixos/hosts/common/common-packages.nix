@@ -39,6 +39,7 @@
     fish
     nushell
 
+    nodejs_22
     ## Python
     python312
     pipx
@@ -47,6 +48,9 @@
     ## GUI Applications (cross-platform)
     claude-code
     gemini-cli
+
+    localsend
+    brave
   ]
   # Linux-only packages (Chromium, Wayland, Hyprland, Ghostty)
   ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
