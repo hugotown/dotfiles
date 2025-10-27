@@ -16,3 +16,5 @@ else
 end
 
 source ~/.yazi.fish
+
+source ~/.ncrs.fish
