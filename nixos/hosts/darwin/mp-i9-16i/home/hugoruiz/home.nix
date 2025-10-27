@@ -53,6 +53,24 @@ let
     # Nix Darwin Rebuild System alias
     alias ncrs="sudo nix-collect-garbage -d && cd /Users/hugoruiz/.config && git reset --hard && git pull && darwin-rebuild switch --flake /Users/hugoruiz/.config/nixos#mp-i9-16i && sudo nix-store --optimise && echo '✅ nix-darwin-rebuild completado'"
   '';
+
+  # Alias cldy para Fish
+  cldyFishAlias = ''
+    # Claude skip permissions alias
+    alias cldy="claude --dangerously-skip-permissions"
+  '';
+
+  # Alias cldy para Nushell
+  cldyNushellAlias = ''
+    # Claude skip permissions alias
+    alias cldy = claude --dangerously-skip-permissions
+  '';
+
+  # Alias cldy para Zsh
+  cldyZshAlias = ''
+    # Claude skip permissions alias
+    alias cldy="claude --dangerously-skip-permissions"
+  '';
 in
 {
   home.stateVersion = "24.11";
@@ -283,5 +301,61 @@ EOFZSH
     fi
 
     echo "  🎉 Alias ncrs configurado para todas las shells"
+  '';
+
+  # ===== POST-ACTIVATION HOOK: CLDY ALIAS =====
+  home.activation.configureCldyAlias = lib.hm.dag.entryAfter ["linkGeneration" "reloadSystemd"] ''
+    echo "🔧 Configurando alias cldy para shells..."
+
+    echo "  📝 Generando archivos de alias cldy..."
+
+    $DRY_RUN_CMD cat > $HOME/.cldy.fish << 'EOFFISH'
+${cldyFishAlias}
+EOFFISH
+    echo "    ✅ .cldy.fish creado"
+
+    $DRY_RUN_CMD cat > $HOME/.cldy.nu << 'EOFNU'
+${cldyNushellAlias}
+EOFNU
+    echo "    ✅ .cldy.nu creado"
+
+    $DRY_RUN_CMD cat > $HOME/.cldy.zsh << 'EOFZSH'
+${cldyZshAlias}
+EOFZSH
+    echo "    ✅ .cldy.zsh creado"
+
+    echo "  🔗 Verificando integración de alias cldy con shells..."
+
+    if [ -f "$HOME/.config/nushell/config.nu" ] && [ -f "$HOME/.cldy.nu" ]; then
+      if ! grep -q "source.*\.cldy\.nu" "$HOME/.config/nushell/config.nu"; then
+        $DRY_RUN_CMD echo "" >> "$HOME/.config/nushell/config.nu"
+        $DRY_RUN_CMD echo "source ~/.cldy.nu" >> "$HOME/.config/nushell/config.nu"
+        echo "    ✅ Nushell configurado"
+      else
+        echo "    ✅ Nushell ya configurado"
+      fi
+    fi
+
+    if [ -f "$HOME/.config/fish/config.fish" ] && [ -f "$HOME/.cldy.fish" ]; then
+      if ! grep -q "source.*\.cldy\.fish" "$HOME/.config/fish/config.fish"; then
+        $DRY_RUN_CMD echo "" >> "$HOME/.config/fish/config.fish"
+        $DRY_RUN_CMD echo "source ~/.cldy.fish" >> "$HOME/.config/fish/config.fish"
+        echo "    ✅ Fish configurado"
+      else
+        echo "    ✅ Fish ya configurado"
+      fi
+    fi
+
+    if [ -f "$HOME/.zshrc" ] && [ -f "$HOME/.cldy.zsh" ]; then
+      if ! grep -q "source.*\.cldy\.zsh" "$HOME/.zshrc"; then
+        $DRY_RUN_CMD echo "" >> "$HOME/.zshrc"
+        $DRY_RUN_CMD echo "source ~/.cldy.zsh" >> "$HOME/.zshrc"
+        echo "    ✅ Zsh configurado"
+      else
+        echo "    ✅ Zsh ya configurado"
+      fi
+    fi
+
+    echo "  🎉 Alias cldy configurado para todas las shells"
   '';
 }

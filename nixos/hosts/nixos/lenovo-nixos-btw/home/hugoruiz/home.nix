@@ -47,6 +47,18 @@ let
     # NixOS Rebuild System alias
     alias ncrs = sudo nix-collect-garbage -d; cd /home/hugoruiz/.config; git reset --hard; git pull; sudo nixos-rebuild switch --flake /home/hugoruiz/.config/nixos#lenovo-nixos-btw; sudo nix-store --optimise; echo '✅ nix-rebuild completado'
   '';
+
+  # Alias cldy para Fish
+  cldyFishAlias = ''
+    # Claude skip permissions alias
+    alias cldy="claude --dangerously-skip-permissions"
+  '';
+
+  # Alias cldy para Nushell
+  cldyNushellAlias = ''
+    # Claude skip permissions alias
+    alias cldy = claude --dangerously-skip-permissions
+  '';
 in
 {
   # Philosophy: NixOS installs packages → User configures via ~/.config
@@ -63,6 +75,7 @@ in
     shellAliases = {
       btw = "echo i use hyprland btw";
       ncrs = "sudo nix-collect-garbage -d && cd /home/hugoruiz/.config && git reset --hard && git pull && sudo nixos-rebuild switch --flake /home/hugoruiz/.config/nixos#lenovo-nixos-btw && sudo nix-store --optimise && echo '✅ nix-rebuild completado'";
+      cldy = "claude --dangerously-skip-permissions";
     };
     initExtra = ''
       # Auto-source zoxide, yazi and atuin integrations
@@ -205,5 +218,47 @@ EOFNU
 
     echo "  🎉 Alias ncrs configurado para Fish y Nushell"
     echo "  💡 Bash: ncrs ya configurado via programs.bash.shellAliases"
+  '';
+
+  # ===== POST-ACTIVATION HOOK: CLDY ALIAS =====
+  home.activation.configureCldyAlias = lib.hm.dag.entryAfter ["linkGeneration" "reloadSystemd"] ''
+    echo "🔧 Configurando alias cldy para shells..."
+
+    echo "  📝 Generando archivos de alias cldy..."
+
+    $DRY_RUN_CMD cat > $HOME/.cldy.fish << 'EOFFISH'
+${cldyFishAlias}
+EOFFISH
+    echo "    ✅ .cldy.fish creado"
+
+    $DRY_RUN_CMD cat > $HOME/.cldy.nu << 'EOFNU'
+${cldyNushellAlias}
+EOFNU
+    echo "    ✅ .cldy.nu creado"
+
+    echo "  🔗 Verificando integración de alias cldy con shells..."
+
+    if [ -f "$HOME/.config/nushell/config.nu" ] && [ -f "$HOME/.cldy.nu" ]; then
+      if ! grep -q "source.*\.cldy\.nu" "$HOME/.config/nushell/config.nu"; then
+        $DRY_RUN_CMD echo "" >> "$HOME/.config/nushell/config.nu"
+        $DRY_RUN_CMD echo "source ~/.cldy.nu" >> "$HOME/.config/nushell/config.nu"
+        echo "    ✅ Nushell configurado"
+      else
+        echo "    ✅ Nushell ya configurado"
+      fi
+    fi
+
+    if [ -f "$HOME/.config/fish/config.fish" ] && [ -f "$HOME/.cldy.fish" ]; then
+      if ! grep -q "source.*\.cldy\.fish" "$HOME/.config/fish/config.fish"; then
+        $DRY_RUN_CMD echo "" >> "$HOME/.config/fish/config.fish"
+        $DRY_RUN_CMD echo "source ~/.cldy.fish" >> "$HOME/.config/fish/config.fish"
+        echo "    ✅ Fish configurado"
+      else
+        echo "    ✅ Fish ya configurado"
+      fi
+    fi
+
+    echo "  🎉 Alias cldy configurado para Fish y Nushell"
+    echo "  💡 Bash: cldy ya configurado via programs.bash.shellAliases"
   '';
 }
