@@ -35,6 +35,18 @@ let
       rm -f -- "$tmp"
     }
   '';
+
+  # Alias ncrs para Fish (NixOS)
+  ncrsFishAlias = ''
+    # NixOS Rebuild System alias
+    alias ncrs="sudo nix-collect-garbage -d && cd /home/hugoruiz/.config && git reset --hard && git pull && sudo nixos-rebuild switch --flake /home/hugoruiz/.config/nixos#lenovo-nixos-btw && sudo nix-store --optimise && echo '✅ nix-rebuild completado'"
+  '';
+
+  # Alias ncrs para Nushell (NixOS)
+  ncrsNushellAlias = ''
+    # NixOS Rebuild System alias
+    alias ncrs = sudo nix-collect-garbage -d; cd /home/hugoruiz/.config; git reset --hard; git pull; sudo nixos-rebuild switch --flake /home/hugoruiz/.config/nixos#lenovo-nixos-btw; sudo nix-store --optimise; echo '✅ nix-rebuild completado'
+  '';
 in
 {
   # Philosophy: NixOS installs packages → User configures via ~/.config
@@ -151,5 +163,47 @@ EOFBASH
     else
       echo "  ⚠️  Atuin no encontrado en PATH"
     fi
+  '';
+
+  # ===== POST-ACTIVATION HOOK: NCRS ALIAS =====
+  home.activation.configureNcrsAlias = lib.hm.dag.entryAfter ["linkGeneration" "reloadSystemd"] ''
+    echo "🔧 Configurando alias ncrs para shells..."
+
+    echo "  📝 Generando archivos de alias ncrs..."
+
+    $DRY_RUN_CMD cat > $HOME/.ncrs.fish << 'EOFFISH'
+${ncrsFishAlias}
+EOFFISH
+    echo "    ✅ .ncrs.fish creado"
+
+    $DRY_RUN_CMD cat > $HOME/.ncrs.nu << 'EOFNU'
+${ncrsNushellAlias}
+EOFNU
+    echo "    ✅ .ncrs.nu creado"
+
+    echo "  🔗 Verificando integración de alias ncrs con shells..."
+
+    if [ -f "$HOME/.config/nushell/config.nu" ] && [ -f "$HOME/.ncrs.nu" ]; then
+      if ! grep -q "source.*\.ncrs\.nu" "$HOME/.config/nushell/config.nu"; then
+        $DRY_RUN_CMD echo "" >> "$HOME/.config/nushell/config.nu"
+        $DRY_RUN_CMD echo "source ~/.ncrs.nu" >> "$HOME/.config/nushell/config.nu"
+        echo "    ✅ Nushell configurado"
+      else
+        echo "    ✅ Nushell ya configurado"
+      fi
+    fi
+
+    if [ -f "$HOME/.config/fish/config.fish" ] && [ -f "$HOME/.ncrs.fish" ]; then
+      if ! grep -q "source.*\.ncrs\.fish" "$HOME/.config/fish/config.fish"; then
+        $DRY_RUN_CMD echo "" >> "$HOME/.config/fish/config.fish"
+        $DRY_RUN_CMD echo "source ~/.ncrs.fish" >> "$HOME/.config/fish/config.fish"
+        echo "    ✅ Fish configurado"
+      else
+        echo "    ✅ Fish ya configurado"
+      fi
+    fi
+
+    echo "  🎉 Alias ncrs configurado para Fish y Nushell"
+    echo "  💡 Bash: ncrs ya configurado via programs.bash.shellAliases"
   '';
 }
