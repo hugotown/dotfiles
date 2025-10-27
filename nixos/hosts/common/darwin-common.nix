@@ -43,6 +43,7 @@
     nodejs_22
     skhd
     localsend  # P2P file sharing app (Darwin)
+    brave      # Brave browser
     # yazi se instala via home-manager para seguir regla híbrida
   ];
 }

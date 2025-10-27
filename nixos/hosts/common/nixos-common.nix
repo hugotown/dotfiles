@@ -100,9 +100,12 @@
     pathsToLink = [ "/share/fish" "/share/bash-completion" ];
     variables = {
       EDITOR = "nvim";
-      BROWSER = "firefox";
+      BROWSER = "brave";
       TERMINAL = "alacritty";
     };
+    systemPackages = with pkgs; [
+      brave
+    ];
   };
 
   # Fonts
