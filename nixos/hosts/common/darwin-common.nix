@@ -42,6 +42,7 @@
   environment.systemPackages = with pkgs; [
     nodejs_22
     skhd
+    localsend  # P2P file sharing app (Darwin)
     # yazi se instala via home-manager para seguir regla híbrida
   ];
 }

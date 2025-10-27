@@ -1,11 +1,12 @@
-{ inputs, pkgs, ... }:
+{ inputs, pkgs, lib, ... }:
 {
-  # Shared packages across all NixOS hosts
-  # Philosophy: NixOS installs → User configures in ~/.config
+  # Shared packages across all hosts (NixOS and Darwin)
+  # Philosophy: Nix installs → User configures in ~/.config
+  # Platform-aware: Use conditionals for platform-specific packages
   environment.systemPackages = with pkgs; [
     ## Terminales
     alacritty
-    ghostty       # GPU-accelerated terminal
+    # ghostty is Linux-only, exclude on Darwin
     kitty
     wezterm       # Terminal multiplataforma con GPU acelerada
 
@@ -43,17 +44,19 @@
     pipx
     uv            # ultra-fast python package manager
 
-    ## GUI Applications (moved from home.nix)
-    chromium
+    ## GUI Applications (cross-platform)
     claude-code
     gemini-cli
-
-    ## Hyprland ecosystem
+  ]
+  # Linux-only packages (Chromium, Wayland, Hyprland, Ghostty)
+  ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
+    chromium          # Browser (Linux-only in nixpkgs)
+    ghostty           # GPU-accelerated terminal (Linux-only)
     hypridle
     hyprlock
     hyprsunset
 
-    ## Wayland utilities
+    ## Wayland utilities (Linux-only)
     mako              # Notification daemon
     nautilus          # GNOME file manager
     nitch             # System info
