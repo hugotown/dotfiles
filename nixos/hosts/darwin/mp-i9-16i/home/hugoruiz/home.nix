@@ -87,6 +87,7 @@ in
     zoxide
     eza
     bat
+    yabai
     yazi
     alacritty
     wezterm
@@ -113,6 +114,22 @@ in
         "/bin/launchctl setenv XDG_CONFIG_HOME $HOME/.config"
       ];
       RunAtLoad = true;
+    };
+  };
+
+  launchd.agents.sketchybar = {
+    enable = true;
+    config = {
+      ProgramArguments = [
+        "/run/current-system/sw/bin/sketchybar"
+      ];
+      KeepAlive = true;
+      RunAtLoad = true;
+      StandardOutPath = "/tmp/sketchybar.out.log";
+      StandardErrorPath = "/tmp/sketchybar.err.log";
+      EnvironmentVariables = {
+        PATH = "/run/current-system/sw/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+      };
     };
   };
   

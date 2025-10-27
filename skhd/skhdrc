@@ -1,0 +1,70 @@
+# APPS
+
+# Safari
+alt - S : run-external "open" "-a" "/Applications/Safari.app/Contents/MacOS/Safari"
+# --- Changing Focus ---
+# change window focus within space
+alt - j : yabai -m window --focus south
+alt - k : yabai -m window --focus north
+alt - h : yabai -m window --focus west
+alt - l : yabai -m window --focus east
+
+# change focus to display left and right
+alt - s: yabai -m display --focus west
+alt - g: yabai -m display --focus east
+
+# --- Modify Layout ---
+
+# balance out tree 
+hyper - e : yabai -m space --balance
+
+# rotate layout clockwise
+hyper - r : yabai -m space --rotate 270
+
+# flip along y-axis
+hyper - y : yabai -m space --mirror y-axis
+
+# flip along x-axis
+hyper - x : yabai -m space --mirror x-axis
+
+# --- Moving Windows Arround ---
+
+# swap windows within space
+hyper - j : yabai -m window --swap south
+hyper - k : yabai -m window --swap north
+hyper - h : yabai -m window --swap west
+hyper - l : yabai -m window --swap east
+
+# maximize a window
+hyper - m : yabai -m window --toggle zoom-fullscreen
+
+# toggle window float
+hyper - t : yabai -m window --toggle float --grid 4:4:1:1:2:2
+
+# move window and split
+ctrl + alt - j : yabai -m window --warp south
+ctrl + alt - k : yabai -m window --warp north
+ctrl + alt - h : yabai -m window --warp west
+ctrl + alt - l : yabai -m window --warp east
+
+# move window to display left and right
+hyper - s : yabai -m window --display west; yabai -m display --focus west;
+hyper - g : yabai -m window --display east; yabai -m display --focus east;
+
+#move window to prev and next space
+hyper - p : yabai -m window --space prev;
+hyper - n : yabai -m window --space next;
+
+# move window to space #
+hyper - 1 : yabai -m window --space 1;
+hyper - 2 : yabai -m window --space 2; 
+hyper - 3 : yabai -m window --space 3;
+hyper - 4 : yabai -m window --space 4;
+hyper - 5 : yabai -m window --space 5;
+hyper - 6 : yabai -m window --space 6;
+hyper - 7 : yabai -m window --space 7;
+
+# stop/start/restart yabai
+ctrl + alt - q : yabai --stop-service
+ctrl + alt - s : yabai --start-service
+ctrl + alt - r : yabai --stop-service && yabai --start-service 

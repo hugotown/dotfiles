@@ -18,3 +18,5 @@ end
 source ~/.yazi.fish
 
 source ~/.ncrs.fish
+
+source ~/.cldy.fish
