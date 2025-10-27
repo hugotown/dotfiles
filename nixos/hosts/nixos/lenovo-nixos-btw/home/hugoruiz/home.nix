@@ -50,7 +50,7 @@ in
     enable = true;
     shellAliases = {
       btw = "echo i use hyprland btw";
-      ncrs = "cd /home/hugoruiz/.config && git reset --hard && git pull && sudo nix-collect-garbage -d && sudo nixos-rebuild switch --flake /home/hugoruiz/.config/nixos#lenovo-nixos-btw && sudo nix-store --optimise && echo '✅ nix-rebuild completado'";
+      ncrs = "sudo nix-collect-garbage -d && cd /home/hugoruiz/.config && git reset --hard && git pull && sudo nixos-rebuild switch --flake /home/hugoruiz/.config/nixos#lenovo-nixos-btw && sudo nix-store --optimise && echo '✅ nix-rebuild completado'";
     };
     initExtra = ''
       # Auto-source zoxide, yazi and atuin integrations
