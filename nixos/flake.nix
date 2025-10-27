@@ -42,6 +42,12 @@
         # lenovo laptop - hugoruiz - Using pinned nixpkgs-nixos (pre-CMake-4)
         lenovo-nixos-btw = nixpkgs-nixos.lib.nixosSystem {
           system = "x86_64-linux";
+          specialArgs = {
+            inherit inputs outputs;
+            hostname = "lenovo-nixos-btw";
+            username = "hugoruiz";
+            system = "x86_64-linux";
+          };
           modules = [
             ./hosts/nixos/lenovo-nixos-btw/default.nix
             home-manager-nixos.nixosModules.home-manager
