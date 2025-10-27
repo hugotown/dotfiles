@@ -49,7 +49,7 @@ in
     direnv
     nix-direnv
     zoxide
-    eza  
+    eza
     bat
     yazi
     alacritty
@@ -60,6 +60,7 @@ in
     python312
     pipx
     uv
+    # localsend movido a darwin-common.nix para que aparezca en /Applications/Nix Apps/
   ];
 
   home.sessionVariables = {

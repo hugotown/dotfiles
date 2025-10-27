@@ -53,9 +53,10 @@ in
       ncrs = "cd /home/hugoruiz/.config && git reset --hard && git pull && sudo nix-collect-garbage -d && sudo nixos-rebuild switch --flake /home/hugoruiz/.config/nixos#lenovo-nixos-btw && sudo nix-store --optimise && echo '✅ nix-rebuild completado'";
     };
     initExtra = ''
-      # Auto-source zoxide and yazi integrations
+      # Auto-source zoxide, yazi and atuin integrations
       [ -f ~/.zoxide.bash ] && source ~/.zoxide.bash
       [ -f ~/.yazi.bash ] && source ~/.yazi.bash
+      [ -f ~/.atuin.bash ] && source ~/.atuin.bash
     '';
   };
 
@@ -90,6 +91,7 @@ in
   home.extraActivationPath = with pkgs; [
     zoxide
     yazi
+    atuin
   ];
 
   # ===== POST-ACTIVATION HOOK: ZOXIDE =====
@@ -132,6 +134,22 @@ EOFBASH
       echo "  💡 Nushell: Agrega 'source ~/.yazi.nu' a ~/.config/nushell/config.nu"
     else
       echo "  ⚠️  Yazi no encontrado en PATH"
+    fi
+  '';
+
+  # ===== POST-ACTIVATION HOOK: ATUIN =====
+  home.activation.regenerateAtuin = lib.hm.dag.entryAfter ["linkGeneration" "reloadSystemd"] ''
+    echo "🔧 Generando archivos de integración de Atuin..."
+
+    if command -v atuin >/dev/null 2>&1; then
+      $DRY_RUN_CMD atuin init nushell > $HOME/.atuin.nu 2>/dev/null && echo "  ✅ .atuin.nu creado" || echo "  ⚠️  Error al crear .atuin.nu"
+      $DRY_RUN_CMD atuin init fish > $HOME/.atuin.fish 2>/dev/null && echo "  ✅ .atuin.fish creado" || echo "  ⚠️  Error al crear .atuin.fish"
+      $DRY_RUN_CMD atuin init bash > $HOME/.atuin.bash 2>/dev/null && echo "  ✅ .atuin.bash creado" || echo "  ⚠️  Error al crear .atuin.bash"
+      echo "  💡 Bash: Auto-configurado via programs.bash.initExtra"
+      echo "  💡 Fish: Agrega 'source ~/.atuin.fish' a ~/.config/fish/config.fish"
+      echo "  💡 Nushell: Agrega 'source ~/.atuin.nu' a ~/.config/nushell/config.nu"
+    else
+      echo "  ⚠️  Atuin no encontrado en PATH"
     fi
   '';
 }
