@@ -5,3 +5,5 @@ source ~/.yazi.nu
 source ~/.ncrs.nu
 
 source ~/.cldy.nu
+
+source ~/.atuin.nu

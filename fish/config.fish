@@ -20,3 +20,5 @@ source ~/.yazi.fish
 source ~/.ncrs.fish
 
 source ~/.cldy.fish
+
+source ~/.atuin.fish
