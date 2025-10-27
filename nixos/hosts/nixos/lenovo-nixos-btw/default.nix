@@ -1,20 +1,21 @@
 { config, lib, pkgs, ... }:
 
 {
-  imports =
-    [
-      ./hardware-configuration.nix
-    ];
+  imports = [
+    ./hardware-configuration.nix
+    ../../common/nixos-common.nix
+    ../../common/common-packages.nix
+  ];
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "lenovo-nixos-btw";
-  networking.networkmanager.enable = true;
-  networking.firewall = {
-    enable = true;
-    allowedTCPPortRanges = [
-      { from = 53317; to = 53317; } #LocalSend
+  # Networking configuration
+  # networkmanager.enable and firewall.enable inherited from nixos-common.nix
+  networking = {
+    hostName = "lenovo-nixos-btw";
+    firewall.allowedTCPPortRanges = [
+      { from = 53317; to = 53317; } # LocalSend - P2P file sharing
     ];
   };
 
@@ -85,36 +86,30 @@
   #   };
   # };
 
+  # Host-specific packages (hardware, services, system-specific tools)
+  # Common packages inherited from common-packages.nix
   environment.systemPackages = with pkgs; [
-    alacritty
     avahi
     bash-completion
-    bat
     brightnessctl
-    btop
     fastfetch
     fontconfig
     gcc
     ghostty
     git
-    kitty
     localsend
-    neovim
     nil
     nixpkgs-fmt
     plocate
     plymouth
     power-profiles-daemon
-    ripgrep
     starship
     tzupdate
     vim
     waybar
     adwaita-icon-theme
-    wget
     whois
     wireless-regdb
-    zoxide
   ];
 
   fonts.packages = with pkgs; [

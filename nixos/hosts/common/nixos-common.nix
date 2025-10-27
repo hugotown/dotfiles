@@ -83,6 +83,7 @@
   programs = {
     dconf.enable = true;
     fish.enable = true;
+    bash.enable = true;
   };
 
   # User configuration template
@@ -90,13 +91,13 @@
     isNormalUser = true;
     description = lib.mkDefault "${username}";
     extraGroups = [ "wheel" "networkmanager" "audio" "video" ];
-    shell = pkgs.fish;
+    shell = pkgs.bash;  # Default shell for Linux
   };
 
   # Environment
   environment = {
-    shells = with pkgs; [ fish bash ];
-    pathsToLink = [ "/share/fish" ];
+    shells = with pkgs; [ bash fish nushell ];
+    pathsToLink = [ "/share/fish" "/share/bash-completion" ];
     variables = {
       EDITOR = "nvim";
       BROWSER = "firefox";
