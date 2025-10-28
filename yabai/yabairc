@@ -2,14 +2,17 @@ yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
 sudo yabai --load-sa
 
 
-# bsp or float (default: float)
+# ===== LAYOUT CONFIGURATION =====
+# bsp (tiling) or float (default: float)
 yabai -m config layout bsp
 
-# Override default layout for space 2 only
-yabai -m config --space 2 layout float
-
 # New window spawns to the right if vertical split, or bottom if horizontal split
+# This creates the pattern: right → down → right → down
 yabai -m config window_placement second_child
+
+# Split type: vertical splits right, horizontal splits down
+# BSP automatically alternates between vertical and horizontal splits
+yabai -m config split_type auto
 
 # Set all padding and gaps to 20pt (default: 0)
 yabai -m config top_padding    35
@@ -58,3 +61,13 @@ yabai -m config normal_window_opacity 0.9
 # yabai -m config external_bar all:20:20
 yabai -m config external_bar off
 
+# ===== WINDOW RULES =====
+# Float system preferences and other utility windows
+yabai -m rule --add app="^System Preferences$" manage=off
+yabai -m rule --add app="^System Settings$" manage=off
+yabai -m rule --add app="^Archive Utility$" manage=off
+yabai -m rule --add app="^Activity Monitor$" manage=off
+yabai -m rule --add app="^Calculator$" manage=off
+yabai -m rule --add app="^Finder$" title="^(Copy|Info|Preferences)$" manage=off
+
+echo "yabai configuration loaded successfully"
