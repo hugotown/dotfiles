@@ -1,7 +1,7 @@
 # APPS
 
 # Safari
-alt - S : run-external "open" "-a" "/Applications/Safari.app/Contents/MacOS/Safari"
+shift + alt - s : open -a Safari
 # --- Changing Focus ---
 # change window focus within space
 alt - j : yabai -m window --focus south
