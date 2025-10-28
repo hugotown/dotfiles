@@ -1,5 +1,8 @@
 { inputs, outputs, config, lib, hostname, system, username, pkgs, ... }:
 {
+  # Usuario primario para servicios que requieren un usuario específico (skhd, yabai, etc.)
+  system.primaryUser = username;
+
   users.users.${username}.home = "/Users/${username}";
 
   nix = {
@@ -45,4 +48,15 @@
     yabai
     # yazi se instala via home-manager para seguir regla híbrida
   ];
+
+  # Servicios de window management
+  # NixOS instala, usuario configura en ~/.config/skhd y ~/.config/yabai
+  services.skhd = {
+    enable = true;
+  };
+
+  services.yabai = {
+    enable = true;
+    enableScriptingAddition = true;
+  };
 }
