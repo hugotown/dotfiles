@@ -17,6 +17,13 @@
     firewall.allowedTCPPortRanges = [
       { from = 53317; to = 53317; } # LocalSend - P2P file sharing
     ];
+
+    # NetworkManager WiFi optimization
+    # Use iwd backend for better performance and stability
+    networkmanager.wifi.backend = "iwd";
+
+    # Disable WiFi power saving to prevent connectivity issues
+    networkmanager.wifi.powersave = false;
   };
 
   time.timeZone = "America/Mexico_City";
