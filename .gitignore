@@ -1,5 +1,7 @@
 # gitignore
 
+.DS_Store
+
 # Browsers and web applications
 chromium/
 brave-flags.conf
