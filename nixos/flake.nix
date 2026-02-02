@@ -36,6 +36,12 @@
           username = "hugoruiz";
           system = "x86_64-darwin";
         };
+
+        work-mp-m3-max = libx.mkDarwin {
+          hostname = "work-mp-m3-max";
+          username = "hugoruiz";
+          system = "aarch64-darwin";
+        };
       };
 
       nixosConfigurations = {
@@ -55,8 +61,14 @@
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;
-                users.hugoruiz = import ./hosts/nixos/lenovo-nixos-btw/home/hugoruiz/home.nix;
                 backupFileExtension = "backup";
+                extraSpecialArgs = {
+                  inherit inputs outputs;
+                  hostname = "lenovo-nixos-btw";
+                  username = "hugoruiz";
+                  system = "x86_64-linux";
+                };
+                users.hugoruiz = import ./hosts/nixos/lenovo-nixos-btw/home/hugoruiz/home.nix;
               };
             }
           ];

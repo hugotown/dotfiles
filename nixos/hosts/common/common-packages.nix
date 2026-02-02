@@ -1,76 +1,91 @@
 { inputs, pkgs, lib, ... }:
 {
   # Shared packages across all hosts (NixOS and Darwin)
-  # Philosophy: Nix installs → User configures in ~/.config
-  # Platform-aware: Use conditionals for platform-specific packages
+  # Philosophy: Nix installs terminal tools → User configures in ~/.config
+  # Programming languages: Use direnv per-project, NOT system-wide
   environment.systemPackages = with pkgs; [
-    ## Terminales
+    ## Terminals
     alacritty
-    # ghostty is Linux-only, exclude on Darwin
     kitty
-    wezterm       # Terminal multiplataforma con GPU acelerada
+    wezterm
+    tmux
 
-    ## Editores
+    ## Editor
     neovim
 
-    ## CLI tools básicos
+    ## CLI tools - basics
     curl
     wget
     tree
-    bat           # cat mejorado con syntax highlighting
-    ripgrep       # búsqueda rápida (rg)
-    eza           # ls moderno con colores e iconos
+    bat
+    ripgrep
+    eza
 
-    ## Navegación y productividad
-    zoxide        # cd inteligente
-    atuin         # shell history sync
-    btop          # monitor de sistema
+    ## CLI tools - modern replacements
+    delta         # better git diffs
+    dust          # better du
+    duf           # better df
+    procs         # better ps
+    xh            # better curl/httpie
+    httpie        # friendly HTTP client
+    tealdeer      # tldr pages (man simplified)
 
-    ## Gestores de archivos
-    yazi          # file manager en terminal
+    ## Data processing
+    jq            # JSON processor (already have via system)
+    yq-go         # YAML processor
 
-    ## Desarrollo
-    direnv        # auto-load environment variables
-    nix-direnv    # direnv integration with nix
-    gh            # GitHub CLI
+    ## Navigation & Productivity
+    zoxide
+    atuin
+    btop
+    yazi
+    ncdu          # disk usage interactive
+    fzf           # fuzzy finder (already have via system)
+
+    ## Development Environment (NOT languages - use direnv/mise per project)
+    direnv
+    nix-direnv
+    mise
+    just
+    lazygit
+    lazydocker    # docker TUI
+    hyperfine     # benchmarking
+    tokei         # code statistics
+    watchexec     # file watcher
+
+    ## Security & Encryption
+    gnupg
+    age
 
     ## Shells
-    bash          # Default shell (explicit)
     fish
     nushell
-
-    nodejs_22
-    ## Python
-    python312
-    pipx
-    uv            # ultra-fast python package manager
 
     ## GUI Applications (cross-platform)
     claude-code
     gemini-cli
-
     localsend
     brave
+    obsidian
   ]
-  # Linux-only packages (Chromium, Wayland, Hyprland, Ghostty)
+  # Linux-only packages (Wayland, Hyprland ecosystem)
   ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
-    chromium          # Browser (Linux-only in nixpkgs)
-    ghostty           # GPU-accelerated terminal (Linux-only)
+    bash
+    chromium
+    ghostty
     hypridle
     hyprlock
     hyprsunset
-
-    ## Wayland utilities (Linux-only)
-    mako              # Notification daemon
-    nautilus          # GNOME file manager
-    nitch             # System info
-    opencode          # VSCode alternative
-    pcmanfm           # Lightweight file manager
-    rofi              # Application launcher
-    swaybg            # Wallpaper utility
-    swayosd           # OSD for volume/brightness
-    warp-terminal     # Modern terminal
-    wl-clip-persist   # Clipboard manager
-    wofi              # Wayland rofi alternative
+    mako
+    nautilus
+    nitch
+    opencode
+    pcmanfm
+    rofi
+    swaybg
+    swayosd
+    warp-terminal
+    wl-clip-persist
+    wofi
   ];
 }

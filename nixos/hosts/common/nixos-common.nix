@@ -2,15 +2,15 @@
 {
   nixpkgs.config.allowUnfree = true;
 
-  # Nix configuration
+  # ===== NIX CONFIGURATION =====
   nix = {
     settings = {
       experimental-features = [ "nix-command" "flakes" ];
       warn-dirty = false;
-      # Auto optimise store
       auto-optimise-store = true;
+      # Allow wheel users to use binary caches
+      trusted-users = [ "root" "@wheel" username ];
     };
-    # Garbage collection
     gc = {
       automatic = true;
       dates = "weekly";
@@ -18,32 +18,28 @@
     };
   };
 
-  # System state version - this should not change after installation
+  # System state version - do not change after installation
   system.stateVersion = "25.05";
 
-  # Localization
+  # ===== LOCALIZATION =====
   time.timeZone = lib.mkDefault "America/Mexico_City";
   i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
-  console = {
-    useXkbConfig = true;
-  };
+  console.useXkbConfig = true;
 
-  # Networking configuration
+  # ===== NETWORKING =====
   networking = {
     networkmanager.enable = lib.mkDefault true;
     useDHCP = lib.mkDefault true;
     firewall.enable = lib.mkDefault true;
   };
 
-  # Boot configuration
-  boot = {
-    loader = {
-      systemd-boot.enable = lib.mkDefault true;
-      efi.canTouchEfiVariables = lib.mkDefault true;
-    };
+  # ===== BOOT =====
+  boot.loader = {
+    systemd-boot.enable = lib.mkDefault true;
+    efi.canTouchEfiVariables = lib.mkDefault true;
   };
 
-  # Services
+  # ===== SERVICES =====
   services = {
     openssh = {
       enable = lib.mkDefault true;
@@ -52,67 +48,53 @@
         PasswordAuthentication = lib.mkDefault true;
       };
     };
+    dbus.enable = true;
+    udev.enable = true;
+    pipewire = {
+      enable = lib.mkDefault true;
+      alsa.enable = true;
+      alsa.support32Bit = true;
+      pulse.enable = true;
+      jack.enable = true;
+    };
   };
 
-  # Hardware
-  # hardware = {
-  #   pulseaudio.enable = lib.mkDefault false;
-  #   bluetooth.enable = lib.mkDefault true;
-  # };
-
-  # Security
+  # ===== SECURITY =====
   security = {
     rtkit.enable = true;
     sudo.wheelNeedsPassword = lib.mkDefault true;
   };
 
-  # Enable PipeWire
-  services.pipewire = {
-    enable = lib.mkDefault true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    jack.enable = true;
-  };
-
-  # Enable common services
-  services.dbus.enable = true;
-  services.udev.enable = true;
-
-  # Programs
+  # ===== PROGRAMS =====
+  # Note: nushell doesn't have a NixOS module, only home-manager
   programs = {
     dconf.enable = true;
     fish.enable = true;
     bash.enable = true;
   };
 
-  # User configuration template
+  # ===== USER =====
   users.users.${username} = {
     isNormalUser = true;
     description = lib.mkDefault "${username}";
     extraGroups = [ "wheel" "networkmanager" "audio" "video" ];
-    shell = pkgs.bash;  # Default shell for Linux
+    shell = pkgs.fish;  # Default to fish for better experience
   };
 
-  # Environment
+  # ===== ENVIRONMENT =====
   environment = {
     shells = with pkgs; [ bash fish nushell ];
-    pathsToLink = [ "/share/fish" "/share/bash-completion" ];
+    pathsToLink = [ "/share/fish" "/share/bash-completion" "/share/nushell" ];
     variables = {
       EDITOR = "nvim";
       BROWSER = "brave";
       TERMINAL = "alacritty";
     };
-    systemPackages = with pkgs; [
-      brave
-    ];
   };
 
-  # Fonts
-  fonts = {
-    packages = with pkgs; [
-      nerd-fonts.jetbrains-mono
-      nerd-fonts.fira-code
-    ];
-  };
+  # ===== FONTS =====
+  fonts.packages = with pkgs; [
+    nerd-fonts.jetbrains-mono
+    nerd-fonts.fira-code
+  ];
 }

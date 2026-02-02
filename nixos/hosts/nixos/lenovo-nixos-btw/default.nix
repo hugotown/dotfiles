@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, username, ... }:
 
 {
   imports = [
@@ -7,134 +7,111 @@
     ../../common/common-packages.nix
   ];
 
+  # ===== BOOT =====
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # Networking configuration
-  # networkmanager.enable and firewall.enable inherited from nixos-common.nix
+  # ===== NETWORKING (host-specific) =====
   networking = {
     hostName = "lenovo-nixos-btw";
     firewall.allowedTCPPortRanges = [
       { from = 53317; to = 53317; } # LocalSend - P2P file sharing
     ];
-
-    # NetworkManager WiFi optimization
-    # Use iwd backend for better performance and stability
+    # Use iwd backend for better WiFi performance
     networkmanager.wifi.backend = "iwd";
-
-    # Disable WiFi power saving to prevent connectivity issues
     networkmanager.wifi.powersave = false;
   };
 
-  time.timeZone = "America/Mexico_City";
-
-  # services.getty.autologinUser = "hugoruiz";
-
-  # Display Manager (SDDM) con autologin
+  # ===== DISPLAY MANAGER =====
   services.displayManager.sddm = {
     enable = true;
     wayland.enable = true;
   };
-
   services.displayManager.defaultSession = "hyprland-uwsm";
-
   services.displayManager.autoLogin = {
     enable = true;
-    user = "hugoruiz";
+    user = username;
   };
 
+  # ===== HYPRLAND =====
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
     withUWSM = true;
   };
 
-  users.users.hugoruiz = {
+  # ===== USER (host-specific packages only) =====
+  users.users.${username} = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
     packages = with pkgs; [
-      tree
+      # User-specific packages (not in common)
     ];
   };
 
-  nixpkgs.config.allowUnfree = true;
-
-  # Note: fcitx5-qt6 works properly with pinned nixpkgs-nixos (pre-CMake-4)
-  # No overlay needed when using correct nixpkgs version
-
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    pulse.enable = true;
-  };
-
-  # Input method support (fcitx5) - Updated to modern syntax
+  # ===== INPUT METHOD =====
   i18n.inputMethod = {
     enable = true;
     type = "fcitx5";
-    fcitx5.addons = with pkgs; [
-      fcitx5-gtk
-    ];
+    fcitx5.addons = with pkgs; [ fcitx5-gtk ];
   };
 
-  # Polkit authentication agent
-  # security.polkit.enable = true;
-  # systemd.user.services.polkit-gnome-authentication-agent-1 = {
-  #   description = "polkit-gnome-authentication-agent-1";
-  #   wantedBy = [ "graphical-session.target" ];
-  #   wants = [ "graphical-session.target" ];
-  #   after = [ "graphical-session.target" ];
-  #   serviceConfig = {
-  #     Type = "simple";
-  #     ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
-  #     Restart = "on-failure";
-  #     RestartSec = 1;
-  #     TimeoutStopSec = 10;
-  #   };
-  # };
+  # ===== POLKIT (for GUI sudo prompts) =====
+  security.polkit.enable = true;
+  systemd.user.services.polkit-gnome-authentication-agent-1 = {
+    description = "polkit-gnome-authentication-agent-1";
+    wantedBy = [ "graphical-session.target" ];
+    wants = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
+      Restart = "on-failure";
+      RestartSec = 1;
+      TimeoutStopSec = 10;
+    };
+  };
 
-  # Host-specific packages (hardware, services, system-specific tools)
-  # Common packages inherited from common-packages.nix
+  # ===== HOST-SPECIFIC PACKAGES =====
+  # Hardware, services, laptop-specific tools
   environment.systemPackages = with pkgs; [
+    # Hardware control
     avahi
-    bash-completion
     brightnessctl
-    fastfetch
-    fontconfig
-    gcc
-    ghostty
-    git
-    nil
-    nixpkgs-fmt
-    plocate
-    plymouth
     power-profiles-daemon
-    starship
-    tzupdate
-    vim
+    wireless-regdb
+
+    # Display/Desktop
     waybar
     adwaita-icon-theme
+    polkit_gnome
+
+    # Development tools (system-level, not languages)
+    nil
+    nixpkgs-fmt
+
+    # Utilities
+    bash-completion
+    fastfetch
+    fontconfig
+    plocate
+    plymouth
+    starship
+    tzupdate
     whois
-    wireless-regdb
   ];
 
+  # ===== FONTS (host-specific additions) =====
   fonts.packages = with pkgs; [
     jetbrains-mono
-    nerd-fonts.jetbrains-mono
   ];
 
-  # Icon themes for GTK applications
+  # ===== ENVIRONMENT =====
   environment.sessionVariables = {
     GTK_ICON_THEME = "Adwaita";
     XDG_ICON_THEME = "Adwaita";
   };
 
-  # Variables de entorno para fcitx5 gestionadas automáticamente por el módulo i18n.inputMethod
-  # NOTA: En Wayland, fcitx5 usa el frontend nativo cuando GTK_IM_MODULE no está definido
-  # El módulo i18n.inputMethod gestiona automáticamente las variables necesarias
-
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
-  system.stateVersion = "25.05";
-
+  # Starship prompt integration
+  programs.starship.enable = true;
 }
