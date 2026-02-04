@@ -11,30 +11,3 @@ bun = '1.3.1'
 "rust" = { version = "1.91.1" }
 # "zig" =  { version = "0.16.0" }
 "java" = { version = "openjdk-17" }
-
-[tasks.work_workspace]
-run = 'open -a "Microsoft Edge" https://workspace.google.com/dashboard'
-
-[tasks.work_calendar]
-run = 'open -a "Microsoft Edge" https://calendar.google.com/calendar/u/0/r/week'
-
-[tasks.work_chat]
-run = 'open -a "Microsoft Edge" https://mail.google.com/chat/u/0'
-
-[tasks.work_mail]
-run = 'open -a "Microsoft Edge" https://mail.google.com/mail/u/0'
-
-[tasks.work_mongo]
-run = 'open -a "Microsoft Edge" https://cloud.mongodb.com/v2#/org/67e714e952c7cc3c8732b308/projects'
-
-[tasks.work_repo]
-run = 'open -a "Microsoft Edge" https://github.com/AvantechDevelopers'
-
-[tasks.work_linkedin]
-run = 'open -a "Microsoft Edge" https://www.linkedin.com/feed'
-
-[tasks.claude_console]
-run = 'open -a "Microsoft Edge" https://platform.claude.com/dashboard'
-
-[tasks.claude_ai]
-run = 'open -a "Microsoft Edge" https://claude.ai/new'
