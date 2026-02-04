@@ -10,13 +10,14 @@
     onActivation = {
       autoUpdate = true;
       cleanup = "zap";  # Remove apps not in config
+      upgrade = true;
     };
 
     # Mac App Store apps (get IDs with: mas search <app>)
     masApps = {
       "Xcode" = 497799835;
       "Telegram" = 747648890;
-      "Apple Creator Studio" = 1868448255;
+      # "Apple Creator Studio" = 1868448255;
       "MainStage" = 6746637089;
       "Compressor" = 6746516157;
       "Motion" = 6746637149;
@@ -30,13 +31,17 @@
 
     # Homebrew casks (GUI apps not in nixpkgs)
     casks = [
-      "microsoft-edge"
       "antigravity"
+      "firefox"
       "ghostty"
+      "hammerspoon"
+      "karabiner-elements"
+      "microsoft-edge"
     ];
 
     # Homebrew formulae (CLI tools not in nixpkgs)
     brews = [
+      "mas"
     ];
   };
 
