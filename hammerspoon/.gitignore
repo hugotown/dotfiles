@@ -1,0 +1,7 @@
+# Hammerspoon cache y archivos temporales
+*.log
+.DS_Store
+Thumbs.db
+
+# Logs de Hammerspoon
+console.html

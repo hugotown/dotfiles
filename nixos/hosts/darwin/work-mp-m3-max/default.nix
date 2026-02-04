@@ -30,9 +30,9 @@
 
     # Homebrew casks (GUI apps not in nixpkgs)
     casks = [
-      "microsoft-edge",
-      "antigravity",
-        "ghostty"
+      "microsoft-edge"
+      "antigravity"
+      "ghostty"
     ];
 
     # Homebrew formulae (CLI tools not in nixpkgs)
