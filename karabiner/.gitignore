@@ -1,0 +1,5 @@
+# Karabiner automatic backups
+automatic_backups/
+
+# Logs
+*.log
