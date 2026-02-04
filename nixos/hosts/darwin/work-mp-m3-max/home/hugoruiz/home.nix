@@ -86,6 +86,54 @@
 
   home.file.".hushlogin".text = "";
 
+  # ===== HAMMERSPOON SYMLINK =====
+
+  home.activation.hammerspoon = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    # Create Hammerspoon symlink from ~/.config/hammerspoon to ~/.hammerspoon
+    CONFIG_DIR="$HOME/.config/hammerspoon"
+    HAMMERSPOON_DIR="$HOME/.hammerspoon"
+
+    # Backup existing directory if it's not a symlink
+    if [ -d "$HAMMERSPOON_DIR" ] && [ ! -L "$HAMMERSPOON_DIR" ]; then
+      $DRY_RUN_CMD mv "$HAMMERSPOON_DIR" "$HAMMERSPOON_DIR.backup.$(date +%Y%m%d_%H%M%S)"
+      echo "🔨 Backed up existing Hammerspoon config"
+    fi
+
+    # Remove old symlink if it exists and points to wrong location
+    if [ -L "$HAMMERSPOON_DIR" ] && [ "$(readlink "$HAMMERSPOON_DIR")" != "$CONFIG_DIR" ]; then
+      $DRY_RUN_CMD rm "$HAMMERSPOON_DIR"
+      echo "🔨 Removed old Hammerspoon symlink"
+    fi
+
+    # Create symlink if it doesn't exist
+    if [ ! -e "$HAMMERSPOON_DIR" ]; then
+      $DRY_RUN_CMD ln -sf "$CONFIG_DIR" "$HAMMERSPOON_DIR"
+      echo "✅ Hammerspoon symlink created: $HAMMERSPOON_DIR -> $CONFIG_DIR"
+    else
+      echo "✅ Hammerspoon symlink already exists"
+    fi
+  '';
+
+  # ===== KARABINER-ELEMENTS CONFIG =====
+
+  home.activation.karabiner = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    # Ensure Karabiner config directory exists
+    KARABINER_CONFIG_DIR="$HOME/.config/karabiner"
+
+    # Create directory structure if it doesn't exist
+    if [ ! -d "$KARABINER_CONFIG_DIR" ]; then
+      $DRY_RUN_CMD mkdir -p "$KARABINER_CONFIG_DIR/assets/complex_modifications"
+      echo "⌨️  Created Karabiner config directory"
+    fi
+
+    # Verify config file exists
+    if [ -f "$KARABINER_CONFIG_DIR/karabiner.json" ]; then
+      echo "✅ Karabiner config ready: $KARABINER_CONFIG_DIR/karabiner.json"
+    else
+      echo "⚠️  Karabiner config not found. Please create ~/.config/karabiner/karabiner.json"
+    fi
+  '';
+
   # ===== LAUNCHD AGENTS =====
 
   launchd.agents.xdg-config = {
@@ -97,6 +145,32 @@
         "/bin/launchctl setenv XDG_CONFIG_HOME $HOME/.config"
       ];
       RunAtLoad = true;
+    };
+  };
+
+  launchd.agents.hammerspoon = {
+    enable = true;
+    config = {
+      ProgramArguments = [
+        "/Applications/Hammerspoon.app/Contents/MacOS/Hammerspoon"
+      ];
+      RunAtLoad = true;
+      KeepAlive = false;
+      StandardOutPath = "/tmp/hammerspoon.out.log";
+      StandardErrorPath = "/tmp/hammerspoon.err.log";
+    };
+  };
+
+  launchd.agents.karabiner = {
+    enable = true;
+    config = {
+      ProgramArguments = [
+        "/Applications/Karabiner-Elements.app/Contents/MacOS/Karabiner-Elements"
+      ];
+      RunAtLoad = true;
+      KeepAlive = false;
+      StandardOutPath = "/tmp/karabiner.out.log";
+      StandardErrorPath = "/tmp/karabiner.err.log";
     };
   };
 
