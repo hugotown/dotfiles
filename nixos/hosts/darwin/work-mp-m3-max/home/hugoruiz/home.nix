@@ -5,52 +5,84 @@
 
   programs.home-manager.enable = true;
 
+  # ===== SOPS SECRET MANAGEMENT =====
+
+  sops = {
+    # Age key location for macOS
+    # Esta es tu llave PRIVADA que desencripta los secretos
+    age.keyFile = "${config.home.homeDirectory}/Library/Application Support/sops/age/keys.txt";
+
+    # Default secrets file (can be overridden per secret)
+    # IMPORTANTE: Rutas relativas desde este archivo a /secrets/
+    # desde hosts/darwin/work-mp-m3-max/home/hugoruiz/ → secrets/ (5 niveles arriba)
+    defaultSopsFile = ../../../../../secrets/gemini_api_key.yaml;
+
+    # Define individual secrets
+    # Cada secret será desencriptado a: ~/.config/sops-nix/secrets/<name>
+    secrets = {
+      # Google API Keys
+      gemini_api_key = {
+        sopsFile = ../../../../../secrets/gemini_api_key.yaml;
+        key = "GEMINI_API_KEY";  # Nombre de la llave dentro del archivo YAML
+      };
+      google_api_key = {
+        sopsFile = ../../../../../secrets/google_api_key.yaml;
+        key = "GOOGLE_API_KEY";  # Nombre de la llave dentro del archivo YAML
+      };
+
+      # AI Service API Keys (from ai.yaml) - Comentados hasta crear archivo
+      # openai_api_key = {};
+      # anthropic_api_key = {};
+
+      # Database credentials (from database.yaml) - Comentados hasta crear archivo
+      # postgres_password = {
+      #   sopsFile = ../../../../secrets/database.yaml;
+      # };
+      # mysql_password = {
+      #   sopsFile = ../../../../secrets/database.yaml;
+      # };
+      # redis_password = {
+      #   sopsFile = ../../../../secrets/database.yaml;
+      # };
+
+      # GitHub tokens (from github.yaml) - Comentados hasta crear archivo
+      # github_token = {
+      #   sopsFile = ../../../../secrets/github.yaml;
+      # };
+      # gh_token = {
+      #   sopsFile = ../../../../secrets/github.yaml;
+      # };
+    };
+  };
+
   # ===== DECLARATIVE SHELL INTEGRATIONS =====
 
-  # Zoxide - smart cd (replaces activation hook)
+  # Zoxide - smart cd (Fish managed manually in ~/.config)
   programs.zoxide = {
     enable = true;
-    enableFishIntegration = true;
+    enableFishIntegration = false;  # Manual fish config
     enableZshIntegration = true;
     enableNushellIntegration = true;
     enableBashIntegration = true;
   };
 
-  # Fish shell configuration
-  programs.fish = {
+  # Atuin - shell history search (Fish managed manually in ~/.config)
+  programs.atuin = {
     enable = true;
-    functions = {
-      # Yazi wrapper - cd to last directory on exit
-      y = ''
-        set tmp (mktemp -t "yazi-cwd.XXXXXX")
-        yazi $argv --cwd-file="$tmp"
-        if read -z cwd < "$tmp"; and test -n "$cwd"; and test "$cwd" != "$PWD"
-          builtin cd -- "$cwd"
-        end
-        rm -f -- "$tmp"
-      '';
-    };
-    shellAliases = {
-      cldy = "claude --dangerously-skip-permissions";
-    };
+    enableFishIntegration = false;  # Manual fish config
+    enableZshIntegration = false;   # Manual zsh config
+    enableNushellIntegration = true;
+    enableBashIntegration = true;
   };
 
-  # Zsh configuration
+  # Fish shell - User manages config manually in ~/.config/fish/
+  # Philosophy: Nix installs → User configures in ~/.config
+  programs.fish.enable = false;
+
+  # Zsh configuration - managed manually in ~/.zshrc
+  # Nix only installs zsh, user configures in ~/.config per philosophy
   programs.zsh = {
-    enable = true;
-    shellAliases = {
-      cldy = "claude --dangerously-skip-permissions";
-    };
-    initExtra = ''
-      # Yazi wrapper
-      function y() {
-        local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
-        yazi "$@" --cwd-file="$tmp"
-        IFS= read -r -d "" cwd < "$tmp"
-        test -n "$cwd" && test "$cwd" != "$PWD" && builtin cd -- "$cwd"
-        rm -f -- "$tmp"
-      }
-    '';
+    enable = false;  # Disabled: user manages shell config manually
   };
 
   # Nushell configuration
@@ -59,6 +91,13 @@
     shellAliases = {
       cldy = "claude --dangerously-skip-permissions";
     };
+
+    # Environment variables (static)
+    environmentVariables = {
+      EDITOR = "nvim";
+      TERMINAL = "alacritty";
+    };
+
     extraConfig = ''
       # Yazi wrapper
       def --env y [...args] {
@@ -71,6 +110,26 @@
         rm -fp $tmp
       }
     '';
+
+    extraEnv = ''
+      # Configure PATH for Nix/Darwin
+      $env.PATH = (
+        $env.PATH
+        | split row (char esep)
+        | prepend /run/current-system/sw/bin
+        | prepend $"($env.HOME)/.nix-profile/bin"
+        | prepend /nix/var/nix/profiles/default/bin
+        | prepend $"($env.HOME)/.local/bin"
+        | prepend $"($env.HOME)/.npm-global/bin"
+        | prepend $"($env.HOME)/.cargo/bin"
+        | uniq
+      )
+
+      # Load secrets from sops-nix para Nushell
+      # str trim elimina espacios/newlines al final
+      $env.GEMINI_API_KEY = (cat ${config.sops.secrets.gemini_api_key.path} | str trim)
+      $env.GOOGLE_API_KEY = (cat ${config.sops.secrets.google_api_key.path} | str trim)
+    '';
   };
 
   # ===== SESSION CONFIGURATION =====
@@ -82,9 +141,20 @@
 
   home.sessionPath = [
     "${config.home.homeDirectory}/.local/bin"
+    "${config.home.homeDirectory}/.npm-global/bin"
   ];
 
   home.file.".hushlogin".text = "";
+
+  # Zsh secrets - source this from your manual ~/.zshrc with: source ~/.zshrc.secrets
+  home.file.".zshrc.secrets".text = ''
+    # Auto-generated by home-manager - DO NOT EDIT MANUALLY
+    # Secret environment variables loaded from sops-nix
+
+    # Google API Keys
+    export GEMINI_API_KEY="$(cat ${config.sops.secrets.gemini_api_key.path})"
+    export GOOGLE_API_KEY="$(cat ${config.sops.secrets.google_api_key.path})"
+  '';
 
   # ===== HAMMERSPOON SYMLINK =====
 
@@ -189,4 +259,307 @@
   #     };
   #   };
   # };
+
+  # ===== BASH CONFIGURATION =====
+  # Bash is configured declaratively for full integration
+  programs.bash = {
+    enable = true;
+    shellAliases = {
+      cldy = "claude --dangerously-skip-permissions";
+    };
+    initExtra = ''
+      # Load shell integration files generated by activation scripts
+      [ -f ~/.zoxide.bash ] && source ~/.zoxide.bash
+      [ -f ~/.atuin.bash ] && source ~/.atuin.bash
+      [ -f ~/.yazi.bash ] && source ~/.yazi.bash
+    '';
+  };
+
+  # ===== OUT-OF-THE-BOX SHELL INTEGRATION =====
+  # This activation script ensures that all shells work immediately after installation
+  # Philosophy: "Nix installs → User configures" maintained by generating auxiliary files
+  # that users source in their configs, rather than overwriting user configs
+
+  home.activation.generateShellIntegrations = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    echo ""
+    echo "🐚 ================================================"
+    echo "🐚 Generando integraciones de shell out-of-the-box"
+    echo "🐚 ================================================"
+    echo ""
+
+    # ===== STEP 1: Generate integration files =====
+    echo "📦 Paso 1/4: Generando archivos de integración..."
+    echo ""
+
+    # Zoxide integration files
+    if command -v zoxide >/dev/null 2>&1; then
+      $DRY_RUN_CMD zoxide init fish > $HOME/.zoxide.fish 2>/dev/null && echo "  ✅ .zoxide.fish"
+      $DRY_RUN_CMD zoxide init nushell > $HOME/.zoxide.nu 2>/dev/null && echo "  ✅ .zoxide.nu"
+      $DRY_RUN_CMD zoxide init zsh > $HOME/.zoxide.zsh 2>/dev/null && echo "  ✅ .zoxide.zsh"
+      $DRY_RUN_CMD zoxide init bash > $HOME/.zoxide.bash 2>/dev/null && echo "  ✅ .zoxide.bash"
+    else
+      echo "  ⚠️  zoxide no encontrado"
+    fi
+
+    # Atuin integration files
+    if command -v atuin >/dev/null 2>&1; then
+      $DRY_RUN_CMD mkdir -p $HOME/.local/share/atuin
+      $DRY_RUN_CMD atuin init fish > $HOME/.atuin.fish 2>/dev/null && echo "  ✅ .atuin.fish"
+      $DRY_RUN_CMD atuin init nu --disable-up-arrow > $HOME/.local/share/atuin/init.nu 2>/dev/null && echo "  ✅ .local/share/atuin/init.nu"
+      $DRY_RUN_CMD atuin init zsh > $HOME/.atuin.zsh 2>/dev/null && echo "  ✅ .atuin.zsh"
+      $DRY_RUN_CMD atuin init bash > $HOME/.atuin.bash 2>/dev/null && echo "  ✅ .atuin.bash"
+    else
+      echo "  ⚠️  atuin no encontrado"
+    fi
+
+    # Yazi wrapper functions
+    $DRY_RUN_CMD cat > $HOME/.yazi.fish << 'EOF_YAZI_FISH'
+# Yazi wrapper - cd to last directory on exit
+function y
+    set tmp (mktemp -t "yazi-cwd.XXXXXX")
+    yazi $argv --cwd-file="$tmp"
+    if read -z cwd <"$tmp"; and test -n "$cwd"; and test "$cwd" != "$PWD"
+        builtin cd -- "$cwd"
+    end
+    rm -f -- "$tmp"
+end
+EOF_YAZI_FISH
+    echo "  ✅ .yazi.fish"
+
+    $DRY_RUN_CMD cat > $HOME/.yazi.nu << 'EOF_YAZI_NU'
+# Yazi wrapper - cd to last directory on exit
+def --env y [...args] {
+    let tmp = (mktemp -t "yazi-cwd.XXXXXX")
+    yazi ...$args --cwd-file $tmp
+    let cwd = (open $tmp)
+    if $cwd != "" and $cwd != $env.PWD {
+        cd $cwd
+    }
+    rm -fp $tmp
+}
+EOF_YAZI_NU
+    echo "  ✅ .yazi.nu"
+
+    $DRY_RUN_CMD cat > $HOME/.yazi.bash << 'EOF_YAZI_BASH'
+# Yazi wrapper - cd to last directory on exit
+function y() {
+    local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+    yazi "$@" --cwd-file="$tmp"
+    IFS= read -r -d "" cwd < "$tmp"
+    test -n "$cwd" && test "$cwd" != "$PWD" && builtin cd -- "$cwd"
+    rm -f -- "$tmp"
+}
+EOF_YAZI_BASH
+    echo "  ✅ .yazi.bash"
+
+    $DRY_RUN_CMD cat > $HOME/.yazi.zsh << 'EOF_YAZI_ZSH'
+# Yazi wrapper - cd to last directory on exit
+function y() {
+    local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+    yazi "$@" --cwd-file="$tmp"
+    IFS= read -r -d "" cwd < "$tmp"
+    test -n "$cwd" && test "$cwd" != "$PWD" && builtin cd -- "$cwd"
+    rm -f -- "$tmp"
+}
+EOF_YAZI_ZSH
+    echo "  ✅ .yazi.zsh"
+
+    # cldy alias files
+    $DRY_RUN_CMD cat > $HOME/.cldy.fish << 'EOF_CLDY_FISH'
+# Claude skip permissions alias
+alias cldy="claude --dangerously-skip-permissions"
+EOF_CLDY_FISH
+    echo "  ✅ .cldy.fish"
+
+    $DRY_RUN_CMD cat > $HOME/.cldy.nu << 'EOF_CLDY_NU'
+# Claude skip permissions alias
+alias cldy = claude --dangerously-skip-permissions
+EOF_CLDY_NU
+    echo "  ✅ .cldy.nu"
+
+    echo ""
+
+    # ===== STEP 2: Create minimal configs if they don't exist =====
+    echo "📝 Paso 2/4: Verificando configs de shells..."
+    echo ""
+
+    # Fish config
+    if [ ! -f "$HOME/.config/fish/config.fish" ]; then
+      $DRY_RUN_CMD mkdir -p "$HOME/.config/fish"
+      $DRY_RUN_CMD cat > "$HOME/.config/fish/config.fish" << 'EOF_FISH_CONFIG'
+# ~/.config/fish/config.fish
+# Manual configuration - User editable
+# Generated by Nix home-manager on first install
+
+# Shell integrations (auto-generated by Nix)
+source ~/.zoxide.fish
+source ~/.atuin.fish
+source ~/.yazi.fish
+source ~/.cldy.fish
+
+# Add your custom configuration below this line
+# ============================================
+
+EOF_FISH_CONFIG
+      echo "  ✅ Creado ~/.config/fish/config.fish (nuevo)"
+    else
+      echo "  ℹ️  ~/.config/fish/config.fish ya existe (no modificado)"
+    fi
+
+    # Nushell config.nu
+    if [ ! -f "$HOME/.config/nushell/config.nu" ]; then
+      $DRY_RUN_CMD mkdir -p "$HOME/.config/nushell"
+      $DRY_RUN_CMD cat > "$HOME/.config/nushell/config.nu" << 'EOF_NU_CONFIG'
+# ~/.config/nushell/config.nu
+# Manual configuration - User editable
+# Generated by Nix home-manager on first install
+
+# Shell integrations (auto-generated by Nix)
+source ~/.zoxide.nu
+source ~/.local/share/atuin/init.nu
+source ~/.yazi.nu
+source ~/.cldy.nu
+
+# Add your custom configuration below this line
+# ============================================
+
+EOF_NU_CONFIG
+      echo "  ✅ Creado ~/.config/nushell/config.nu (nuevo)"
+    else
+      echo "  ℹ️  ~/.config/nushell/config.nu ya existe (no modificado)"
+    fi
+
+    # Nushell env.nu (always generated for PATH)
+    $DRY_RUN_CMD mkdir -p "$HOME/.config/nushell"
+    $DRY_RUN_CMD cat > "$HOME/.config/nushell/env.nu" << 'EOF_NU_ENV'
+# ~/.config/nushell/env.nu
+# Auto-generated by Nix home-manager - DO NOT EDIT MANUALLY
+
+# Configure PATH for Nix/Darwin
+$env.PATH = (
+  $env.PATH
+  | split row (char esep)
+  | prepend /run/current-system/sw/bin
+  | prepend $"($env.HOME)/.nix-profile/bin"
+  | prepend /nix/var/nix/profiles/default/bin
+  | prepend $"($env.HOME)/.local/bin"
+  | prepend $"($env.HOME)/.npm-global/bin"
+  | prepend $"($env.HOME)/.cargo/bin"
+  | uniq
+)
+
+# Environment Variables
+$env.EDITOR = "nvim"
+$env.TERMINAL = "alacritty"
+$env.XDG_CONFIG_HOME = $"($env.HOME)/.config"
+EOF_NU_ENV
+    echo "  ✅ Generado ~/.config/nushell/env.nu (actualizado)"
+
+    # Zsh config
+    if [ ! -f "$HOME/.zshrc" ]; then
+      $DRY_RUN_CMD cat > "$HOME/.zshrc" << 'EOF_ZSH_CONFIG'
+# ~/.zshrc
+# Manual configuration - User editable
+# Generated by Nix home-manager on first install
+
+# Add npm global bin to PATH
+export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH"
+
+# Shell integrations (auto-generated by Nix)
+[ -f ~/.zoxide.zsh ] && source ~/.zoxide.zsh
+[ -f ~/.atuin.zsh ] && source ~/.atuin.zsh
+[ -f ~/.yazi.zsh ] && source ~/.yazi.zsh
+
+# Alias
+alias cldy="claude --dangerously-skip-permissions"
+
+# Load secrets if available
+[ -f ~/.zshrc.secrets ] && source ~/.zshrc.secrets
+
+# Add your custom configuration below this line
+# ============================================
+
+EOF_ZSH_CONFIG
+      echo "  ✅ Creado ~/.zshrc (nuevo)"
+    else
+      echo "  ℹ️  ~/.zshrc ya existe (no modificado)"
+    fi
+
+    echo ""
+
+    # ===== STEP 3: Auto-source in existing configs (idempotent) =====
+    echo "🔗 Paso 3/4: Verificando sourceo automático..."
+    echo ""
+
+    # Fish - add sources if not present
+    if [ -f "$HOME/.config/fish/config.fish" ]; then
+      for file in zoxide.fish atuin.fish yazi.fish cldy.fish; do
+        if ! grep -q "source ~/.$file" "$HOME/.config/fish/config.fish" 2>/dev/null; then
+          $DRY_RUN_CMD echo "source ~/.$file" >> "$HOME/.config/fish/config.fish"
+          echo "  ✅ Fish: Agregado source ~/.$file"
+        fi
+      done
+    fi
+
+    # Nushell - add sources if not present
+    if [ -f "$HOME/.config/nushell/config.nu" ]; then
+      if ! grep -q "source ~/.zoxide.nu" "$HOME/.config/nushell/config.nu" 2>/dev/null; then
+        $DRY_RUN_CMD echo "source ~/.zoxide.nu" >> "$HOME/.config/nushell/config.nu"
+        echo "  ✅ Nushell: Agregado source ~/.zoxide.nu"
+      fi
+      if ! grep -q "source ~/.local/share/atuin/init.nu" "$HOME/.config/nushell/config.nu" 2>/dev/null; then
+        $DRY_RUN_CMD echo "source ~/.local/share/atuin/init.nu" >> "$HOME/.config/nushell/config.nu"
+        echo "  ✅ Nushell: Agregado source ~/.local/share/atuin/init.nu"
+      fi
+      if ! grep -q "source ~/.yazi.nu" "$HOME/.config/nushell/config.nu" 2>/dev/null; then
+        $DRY_RUN_CMD echo "source ~/.yazi.nu" >> "$HOME/.config/nushell/config.nu"
+        echo "  ✅ Nushell: Agregado source ~/.yazi.nu"
+      fi
+      if ! grep -q "source ~/.cldy.nu" "$HOME/.config/nushell/config.nu" 2>/dev/null; then
+        $DRY_RUN_CMD echo "source ~/.cldy.nu" >> "$HOME/.config/nushell/config.nu"
+        echo "  ✅ Nushell: Agregado source ~/.cldy.nu"
+      fi
+    fi
+
+    # Zsh - add sources if not present
+    if [ -f "$HOME/.zshrc" ]; then
+      for integration in zoxide atuin yazi; do
+        if ! grep -q "source ~/.$integration.zsh" "$HOME/.zshrc" 2>/dev/null; then
+          # Find the right place to insert (after PATH but before custom config)
+          if grep -q "# Add your custom configuration" "$HOME/.zshrc"; then
+            $DRY_RUN_CMD sed -i.bak "/# Add your custom configuration/i [ -f ~/.$integration.zsh ] && source ~/.$integration.zsh" "$HOME/.zshrc"
+            $DRY_RUN_CMD rm -f "$HOME/.zshrc.bak"
+          else
+            $DRY_RUN_CMD echo "[ -f ~/.$integration.zsh ] && source ~/.$integration.zsh" >> "$HOME/.zshrc"
+          fi
+          echo "  ✅ Zsh: Agregado source ~/.$integration.zsh"
+        fi
+      done
+    fi
+
+    echo ""
+
+    # ===== STEP 4: Summary =====
+    echo "📊 Paso 4/4: Resumen de configuración"
+    echo ""
+    echo "  ✅ Fish    → ~/.config/fish/config.fish (user-editable)"
+    echo "  ✅ Nushell → ~/.config/nushell/config.nu + env.nu"
+    echo "  ✅ Zsh     → ~/.zshrc (user-editable)"
+    echo "  ✅ Bash    → Configurado vía programs.bash"
+    echo ""
+    echo "🎉 Out-of-the-box shell integration completa!"
+    echo ""
+    echo "💡 Todas las shells ahora tienen:"
+    echo "   - Atuin (Ctrl+R para búsqueda de historial)"
+    echo "   - Zoxide (comando 'z' para navegación inteligente)"
+    echo "   - Yazi (comando 'y' wrapper con cd al salir)"
+    echo "   - Alias 'cldy' (Claude skip permissions)"
+    echo ""
+    echo "📝 Filosofía mantenida: 'Nix installs → User configures'"
+    echo "   Los archivos en ~/.config/ son editables por el usuario."
+    echo "   Nix solo genera archivos auxiliares (~/.zoxide.fish, etc.)"
+    echo ""
+    echo "🐚 ================================================"
+    echo ""
+  '';
 }

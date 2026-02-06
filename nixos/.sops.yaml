@@ -1,0 +1,35 @@
+# SOPS Configuration for NixOS Secrets Management
+# This file defines which age keys can decrypt which secret files
+
+keys:
+  # Host keys - one per machine
+  - &host_work_mp_m3_max age1yuy59d4yqfynuaxdu65pxmjvvvzlp27wzc79wg0dlf287taj5akqvsfhn2
+
+  # TODO: Add keys for other hosts after generating them
+  # Run these commands on each host to generate keys:
+  #
+  # On mp-i9-16i (macOS):
+  #   mkdir -p ~/Library/Application\ Support/sops/age
+  #   age-keygen -o ~/Library/Application\ Support/sops/age/keys.txt
+  #   age-keygen -y ~/Library/Application\ Support/sops/age/keys.txt
+  #
+  # On lenovo-nixos-btw (NixOS):
+  #   mkdir -p ~/.config/sops/age
+  #   age-keygen -o ~/.config/sops/age/keys.txt
+  #   age-keygen -y ~/.config/sops/age/keys.txt
+  #
+  # Then uncomment and add the public keys below:
+  # - &host_mp_i9_16i age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  # - &host_lenovo_nixos_btw age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Creation rules - define which files to encrypt and with which keys
+creation_rules:
+  # Encrypt all YAML, JSON, ENV, and INI files in the secrets/ directory
+  # Each file will be encrypted with ALL host keys listed below
+  - path_regex: secrets/.*\.(yaml|json|env|ini)$
+    key_groups:
+      - age:
+        - *host_work_mp_m3_max
+        # Uncomment after adding keys above:
+        # - *host_mp_i9_16i
+        # - *host_lenovo_nixos_btw

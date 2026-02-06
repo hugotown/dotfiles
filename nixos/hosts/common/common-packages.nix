@@ -9,6 +9,7 @@
     kitty
     wezterm
     tmux
+    zellij
 
     ## Editor
     neovim
@@ -46,6 +47,8 @@
     direnv
     nix-direnv
     mise
+    pnpm          # fast, disk-efficient package manager for Node.js
+    nodejs        # Node.js runtime (includes npm)
     just
     lazygit
     lazydocker    # docker TUI
@@ -56,10 +59,12 @@
     ## Security & Encryption
     gnupg
     age
+    sops
 
     ## Shells
     fish
     nushell
+    zsh
 
     ## GUI Applications (cross-platform)
     claude-code

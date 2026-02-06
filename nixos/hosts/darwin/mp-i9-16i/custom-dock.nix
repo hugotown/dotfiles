@@ -1,5 +1,0 @@
-{ config, ... }:
-{
-  system.defaults.dock = {
-  };
-}

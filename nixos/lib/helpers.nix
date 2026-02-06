@@ -10,6 +10,7 @@
         # Fail explicitly if host path doesn't exist (no silent fallback)
         ../hosts/darwin/${hostname}/default.nix
         inputs.home-manager.darwinModules.home-manager
+        inputs.sops-nix.darwinModules.sops
         {
           networking.hostName = hostname;
           home-manager = {
@@ -19,7 +20,10 @@
             # Pass full context to home-manager modules
             extraSpecialArgs = { inherit inputs outputs username hostname system; };
             users.${username} = {
-              imports = [ ../hosts/darwin/${hostname}/home/${username}/home.nix ];
+              imports = [
+                ../hosts/darwin/${hostname}/home/${username}/home.nix
+                inputs.sops-nix.homeManagerModules.sops
+              ];
             };
           };
         }
@@ -33,6 +37,7 @@
       modules = [
         ../hosts/nixos/${hostname}/default.nix
         inputs.home-manager.nixosModules.home-manager
+        inputs.sops-nix.nixosModules.sops
         {
           home-manager = {
             useGlobalPkgs = true;
@@ -41,7 +46,10 @@
             # Pass full context to home-manager modules
             extraSpecialArgs = { inherit inputs outputs username hostname system; };
             users.${username} = {
-              imports = [ ../hosts/nixos/${hostname}/home/${username}/home.nix ];
+              imports = [
+                ../hosts/nixos/${hostname}/home/${username}/home.nix
+                inputs.sops-nix.homeManagerModules.sops
+              ];
             };
           };
         }

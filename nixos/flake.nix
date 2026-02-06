@@ -21,6 +21,10 @@
     # Home Manager for NixOS - follows nixpkgs-nixos
     home-manager-nixos.url = "github:nix-community/home-manager";
     home-manager-nixos.inputs.nixpkgs.follows = "nixpkgs-nixos";
+
+    # sops-nix - Secret management
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = { self, nixpkgs, nixpkgs-nixos, nix-darwin, home-manager, home-manager-nixos, ... }@inputs:
@@ -30,13 +34,6 @@
     in {
 
       darwinConfigurations = {
-        # personal machine - hugoruiz
-        mp-i9-16i = libx.mkDarwin {
-          hostname = "mp-i9-16i";
-          username = "hugoruiz";
-          system = "x86_64-darwin";
-        };
-
         work-mp-m3-max = libx.mkDarwin {
           hostname = "work-mp-m3-max";
           username = "hugoruiz";
@@ -57,6 +54,7 @@
           modules = [
             ./hosts/nixos/lenovo-nixos-btw/default.nix
             home-manager-nixos.nixosModules.home-manager
+            inputs.sops-nix.nixosModules.sops
             {
               home-manager = {
                 useGlobalPkgs = true;
@@ -68,7 +66,12 @@
                   username = "hugoruiz";
                   system = "x86_64-linux";
                 };
-                users.hugoruiz = import ./hosts/nixos/lenovo-nixos-btw/home/hugoruiz/home.nix;
+                users.hugoruiz = {
+                  imports = [
+                    ./hosts/nixos/lenovo-nixos-btw/home/hugoruiz/home.nix
+                    inputs.sops-nix.homeManagerModules.sops
+                  ];
+                };
               };
             }
           ];
