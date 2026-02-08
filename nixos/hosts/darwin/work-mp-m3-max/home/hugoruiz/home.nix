@@ -347,7 +347,7 @@
     # Atuin integration files
     if [ -x "${pkgs.atuin}/bin/atuin" ]; then
       $DRY_RUN_CMD mkdir -p $HOME/.local/share/atuin
-      $DRY_RUN_CMD ${pkgs.atuin}/bin/atuin init fish > $HOME/.atuin.fish 2>/dev/null && echo "  ✅ .atuin.fish"
+      $DRY_RUN_CMD ${pkgs.atuin}/bin/atuin init fish 2>/dev/null | sed 's/bind \(.*\)-k up/bind \1up/' > $HOME/.atuin.fish && echo "  ✅ .atuin.fish (patched for Fish 4.x)"
       $DRY_RUN_CMD ${pkgs.atuin}/bin/atuin init nu --disable-up-arrow > $HOME/.local/share/atuin/init.nu 2>/dev/null && echo "  ✅ .local/share/atuin/init.nu"
       $DRY_RUN_CMD ${pkgs.atuin}/bin/atuin init zsh > $HOME/.atuin.zsh 2>/dev/null && echo "  ✅ .atuin.zsh"
       $DRY_RUN_CMD ${pkgs.atuin}/bin/atuin init bash > $HOME/.atuin.bash 2>/dev/null && echo "  ✅ .atuin.bash"
