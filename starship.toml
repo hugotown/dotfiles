@@ -1,160 +1,296 @@
 # ~/.config/starship.toml
-# User-editable Starship configuration
-# Philosophy: Nix installs → User configures in ~/.config/
-#
-# Documentation: https://starship.rs/config/
-# Presets: https://starship.rs/presets/
+# Tokyo Night Powerline Theme
+# Shells: Fish, Nushell, Zsh
 
-# Get editor completions based on the config schema
 "$schema" = 'https://starship.rs/config-schema.json'
 
-# Timeout for commands (in milliseconds)
-command_timeout = 1000
+palette = "tokyo_night"
 
-# Blank line between shell prompts
+command_timeout = 1000
 add_newline = true
 
-# Format: Define prompt structure
-# This is a P10k-inspired layout with left prompt and right prompt
+# Prompt layout:
+# Line 1: [OS hostname](green) [shell](dark) [git] [languages] [tools] ··· [duration] [time] [username](purple)
+# Line 2: directory ❯
 format = """
-[╭─](bold green)\
-$username\
+[](green)\
+$os\
 $hostname\
-$directory\
+[](fg:green bg:dark3)\
+$shell\
+[](fg:dark3) \
 $git_branch\
 $git_status\
 $git_state\
+$git_metrics\
 $package\
+$c\
 $nodejs\
 $python\
 $rust\
 $golang\
 $java\
 $lua\
+$nix_shell\
 $docker_context\
+$kubernetes\
+$terraform\
+$aws\
+$jobs\
+$fill\
+$memory_usage\
+$battery\
+$cmd_duration\
+$time\
+[ ](fg:purple)\
+$username\
+[](fg:purple)\
 $line_break\
-[╰─](bold green)$character"""
+$directory\
+$character"""
 
-# Right prompt (shown on the right side of the terminal)
-right_format = """$cmd_duration\
-$time"""
+# ===== PALETTE =====
 
-# ===== PROMPT COMPONENTS =====
+[palettes.tokyo_night]
+blue = "#7aa2f7"
+cyan = "#7dcfff"
+green = "#9ece6a"
+magenta = "#bb9af7"
+red = "#f7768e"
+yellow = "#e0af68"
+purple = "#9d7cd8"
+orange = "#ff9e64"
+dark_blue = "#3d59a1"
+comment = "#565f89"
+foreground = "#c0caf5"
+dark = "#1a1b26"
+dark2 = "#24283b"
+dark3 = "#414868"
 
-[character]
-success_symbol = "[❯](bold green)"
-error_symbol = "[❯](bold red)"
-vimcmd_symbol = "[❮](bold green)"
+# ══════════════════════════════════════════
+#  POWERLINE SEGMENTS (always visible)
+# ══════════════════════════════════════════
+
+[os]
+disabled = false
+format = "[$symbol ](bg:green fg:dark)"
+
+[os.symbols]
+Macos = ""
+Linux = ""
+Windows = ""
 
 [username]
-style_user = "bold yellow"
-style_root = "bold red"
-format = "[$user]($style) "
-disabled = false
-show_always = false
+style_user = "bg:purple fg:dark bold"
+style_root = "bg:purple fg:red bold"
+format = "[$user ](bg:purple fg:dark bold)"
+show_always = true
 
 [hostname]
-ssh_only = true
-format = "[@$hostname](bold blue) "
-disabled = false
+ssh_only = false
+format = "[$hostname](bg:green fg:dark bold)"
 
 [directory]
-truncation_length = 3
-truncate_to_repo = true
+truncation_length = 2
+truncate_to_repo = false
 format = "[$path]($style)[$read_only]($read_only_style) "
-style = "bold cyan"
-read_only = " 🔒"
-read_only_style = "red"
+style = "fg:blue bold"
+read_only = " 󰌾"
+read_only_style = "fg:red"
 
-# Git Integration
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = "󰝚 "
+"Pictures" = " "
+"Developer" = "󰲋 "
+
+# ══════════════════════════════════════════
+#  GIT
+# ══════════════════════════════════════════
+
 [git_branch]
 symbol = " "
 format = "[$symbol$branch(:$remote_branch)]($style) "
-style = "bold purple"
+style = "fg:magenta bold"
 
 [git_status]
-format = '([\[$all_status$ahead_behind\]]($style) )'
-style = "bold red"
-conflicted = "🏳"
-ahead = "⇡${count}"
-behind = "⇣${count}"
-diverged = "⇕⇡${ahead_count}⇣${behind_count}"
-up_to_date = "✓"
-untracked = "?${count}"
-stashed = "$${count}"
-modified = "!${count}"
-staged = "+${count}"
-renamed = "»${count}"
-deleted = "✘${count}"
+format = '([$all_status$ahead_behind]($style) )'
+style = "fg:red bold"
+conflicted = " ${count} "
+ahead = "⇡${count} "
+behind = "⇣${count} "
+diverged = "⇕⇡${ahead_count}⇣${behind_count} "
+up_to_date = "[✓](fg:green) "
+untracked = "?${count} "
+stashed = "󰏗 ${count} "
+modified = "!${count} "
+staged = "+${count} "
+renamed = "»${count} "
+deleted = "✘${count} "
 
 [git_state]
 format = '\([$state( $progress_current/$progress_total)]($style)\) '
-style = "bright-black"
+style = "fg:comment"
 
-# Programming Languages
+[git_metrics]
+disabled = false
+added_style = "fg:green"
+deleted_style = "fg:red"
+format = '([+$added]($added_style) )([-$deleted]($deleted_style) )'
+
+# ══════════════════════════════════════════
+#  LANGUAGES
+# ══════════════════════════════════════════
+
 [nodejs]
 symbol = " "
-format = "[$symbol($version )]($style)"
-style = "bold green"
+format = "[$symbol$version]($style) "
+style = "fg:green"
 
 [python]
 symbol = " "
-format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
-style = "bold yellow"
+format = '[$symbol$pyenv_prefix$version( \($virtualenv\))]($style) '
+style = "fg:yellow"
 
 [rust]
-symbol = " "
-format = "[$symbol($version )]($style)"
-style = "bold red"
+symbol = "󱘗 "
+format = "[$symbol$version]($style) "
+style = "fg:orange"
 
 [golang]
 symbol = " "
-format = "[$symbol($version )]($style)"
-style = "bold cyan"
+format = "[$symbol$version]($style) "
+style = "fg:cyan"
 
 [java]
 symbol = " "
-format = "[$symbol($version )]($style)"
-style = "bold red"
+format = "[$symbol$version]($style) "
+style = "fg:red"
 
 [lua]
 symbol = " "
-format = "[$symbol($version )]($style)"
-style = "bold blue"
+format = "[$symbol$version]($style) "
+style = "fg:blue"
+
+[c]
+symbol = " "
+format = "[$symbol$version(-$name)]($style) "
+style = "fg:blue"
 
 [package]
-symbol = " "
+symbol = "󰏗 "
 format = "[$symbol$version]($style) "
-style = "208"
+style = "fg:orange"
 
-# Docker
-[docker_context]
-symbol = " "
-format = "[$symbol$context]($style) "
-style = "bold blue"
-
-# Time
-[time]
-disabled = false
-format = '[$time]($style) '
-style = "bold white"
-time_format = "%T"
-utc_time_offset = "local"
-
-# Command Duration
-[cmd_duration]
-min_time = 500
-format = "took [$duration]($style) "
-style = "bold yellow"
-
-# ===== OTHER TOOLS =====
+# ══════════════════════════════════════════
+#  TOOLS & CLOUD
+# ══════════════════════════════════════════
 
 [nix_shell]
 symbol = " "
 format = '[$symbol$state( \($name\))]($style) '
-style = "bold blue"
+style = "fg:cyan bold"
+
+[docker_context]
+symbol = " "
+format = "[$symbol$context]($style) "
+style = "fg:blue"
+
+[kubernetes]
+disabled = false
+symbol = "☸ "
+format = '[$symbol$context( \($namespace\))]($style) '
+style = "fg:blue"
+
+[terraform]
+symbol = "󱁢 "
+format = "[$symbol$workspace]($style) "
+style = "fg:purple"
+
+[aws]
+symbol = " "
+format = '[$symbol($profile )(\($region\))]($style) '
+style = "fg:orange"
 
 [conda]
 symbol = " "
 format = '[$symbol$environment]($style) '
-style = "bold green"
+style = "fg:green"
+
+# ══════════════════════════════════════════
+#  FILL (separates left ↔ right)
+# ══════════════════════════════════════════
+
+[fill]
+symbol = " "
+
+# ══════════════════════════════════════════
+#  RIGHT SIDE INFO
+# ══════════════════════════════════════════
+
+[memory_usage]
+disabled = false
+threshold = 70
+format = "[󰍛 ${ram_pct}]($style) "
+style = "fg:cyan"
+
+[battery]
+format = "[$symbol$percentage]($style) "
+
+[[battery.display]]
+threshold = 20
+style = "fg:red bold"
+charging_symbol = "󰢟 "
+discharging_symbol = "󰁺 "
+
+[[battery.display]]
+threshold = 50
+style = "fg:yellow"
+charging_symbol = "󰂆 "
+discharging_symbol = "󰂃 "
+
+[[battery.display]]
+threshold = 80
+style = "fg:green"
+charging_symbol = "󰂉 "
+discharging_symbol = "󰂁 "
+
+[cmd_duration]
+min_time = 500
+format = "[ $duration]($style) "
+style = "fg:yellow"
+
+[time]
+disabled = false
+format = "[ $time]($style)"
+style = "fg:comment"
+time_format = "%H:%M:%S"
+utc_time_offset = "local"
+
+# ══════════════════════════════════════════
+#  LINE 2
+# ══════════════════════════════════════════
+
+[shell]
+disabled = false
+fish_indicator = "󰈺 fish"
+zsh_indicator = " zsh"
+nu_indicator = "> nu"
+bash_indicator = " bash"
+format = "[ $indicator ](bg:dark3 fg:foreground bold)"
+
+[jobs]
+disabled = false
+symbol = "󰜎 "
+number_threshold = 1
+format = "[$symbol$number]($style) "
+style = "fg:yellow bold"
+
+[character]
+success_symbol = "[→](fg:green bold)"
+error_symbol = "[→](fg:red bold)"
+vimcmd_symbol = "[←](fg:green bold)"
+vimcmd_replace_one_symbol = "[←](fg:purple bold)"
+vimcmd_replace_symbol = "[←](fg:purple bold)"
+vimcmd_visual_symbol = "[←](fg:yellow bold)"
