@@ -205,38 +205,7 @@ When a tool becomes a Nix-managed exception (meaning Nix handles both installati
 | Zsh secrets | `~/.config/zsh/secrets.zsh` | `~/.zshrc.secrets` | Avoidable, use home dotfile |
 | Integration scripts | `~/.config/zoxide/init.fish` | `~/.zoxide.fish` | Avoidable, use home dotfile |
 
-#### Exception 1: SOPS (Secret Management)
-
-**Why it breaks the rule:**
-
-- Secrets must be **encrypted at rest** in the git repository
-- Nix must **decrypt secrets at activation time** before shells load
-- Integration requires `sops-nix` module to manage decryption paths
-- Environment variables must be injected **before** user shells start
-
-**Implementation:**
-
-```nix
-# In home.nix or configuration.nix
-sops.secrets.gemini_api_key = {
-  sopsFile = ../../../secrets/gemini_api_key.yaml;
-  path = "${config.home.homeDirectory}/.config/sops-nix/secrets/gemini_api_key";
-};
-
-# Nix generates env.nu with secrets
-xdg.configFile."nushell/env.nu".text = ''
-  $env.GEMINI_API_KEY = (open ${config.sops.secrets.gemini_api_key.path} | str trim)
-'';
-```
-
-**Tradeoff:** Secrets configuration lives in Nix, but this ensures:
-
-- ✅ Encrypted secrets in git (never plaintext)
-- ✅ Automatic decryption on system activation
-- ✅ Secrets available before any user script runs
-- ✅ Age key permissions enforced (600)
-
-#### Exception 2: Shell Environment Configuration (Fish, Nushell, Zsh)
+#### Exception 1: Shell Environment Configuration (Fish, Nushell, Zsh)
 
 **Why it breaks the rule:**
 
@@ -294,7 +263,7 @@ Users can still add personal configurations:
 - **Fish:** `~/.config/fish/config.fish` + source `~/.fish_env` (user-managed)
 - **Zsh:** `~/.zshrc` + source `~/.zshrc.secrets` (user-managed)
 
-#### Exception 3: System-Level Services (Future Examples)
+#### Exception 2: System-Level Services (Future Examples)
 
 Other potential exceptions may include:
 
