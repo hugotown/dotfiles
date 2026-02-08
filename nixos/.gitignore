@@ -1,0 +1,94 @@
+# ============================================
+# SOPS & Secrets - Security Configuration
+# ============================================
+
+# SOPS Age private keys - NUNCA commitear
+**/keys.txt
+**/.age/
+**/sops/age/
+Library/Application Support/sops/
+
+# Archivos de secrets no encriptados
+**/*.secret
+**/*.private
+**/*.key
+**/secrets/*.env
+**/secrets/*.txt
+.env
+.env.*
+!.env.example
+!.env.template
+.envrc
+
+# Archivos de shell con secretos desencriptados
+**/.zshrc.secrets
+**/.bashrc.secrets
+**/.fishrc.secrets
+**/secrets.fish
+**/secrets.zsh
+**/secrets.bash
+
+# Symlinks temporales de sops-nix (cambian con cada rebuild)
+sops-nix/secrets
+
+# Templates con valores reales (solo commitear .template vacíos)
+secrets/*.yaml.backup
+secrets/*.yaml.old
+secrets/*_decrypted.yaml
+secrets/*.dec.yaml
+
+# Archivos de backup que pueden contener secretos
+*.bak
+*.backup
+*.orig
+*~
+
+# ============================================
+# Nix Build Results
+# ============================================
+
+result
+result-*
+.direnv/
+
+# ============================================
+# Operating System Files
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+.Trash-*
+.nfs*
+
+# ============================================
+# Editor & IDE
+# ============================================
+
+# Vim
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains
+.idea/
+*.iml
+
+# ============================================
+# Temporary & Log Files
+# ============================================
+
+*.log
+*.tmp
+*.temp
+.cache/
