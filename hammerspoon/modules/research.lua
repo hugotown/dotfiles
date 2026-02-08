@@ -66,8 +66,8 @@ local researchChooser = hs.chooser.new(function(choice)
 end)
 
 -- Configurar apariencia y tema Tokyo Night
-researchChooser:width(25)  -- Ancho en porcentaje de la pantalla
-researchChooser:rows(10)   -- Máximo de filas visibles
+researchChooser:width(35)  -- Ancho en porcentaje de la pantalla
+researchChooser:rows(11)   -- Máximo de filas visibles
 researchChooser:searchSubText(true)  -- Buscar también en subtítulos
 researchChooser:choices(researchTools)
 
