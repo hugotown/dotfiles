@@ -58,44 +58,16 @@ in
   home.stateVersion = "25.05";
 
   # ===== SOPS SECRET MANAGEMENT =====
-  # NOTE: Commented out until secret files are created
-  # Uncomment after creating secrets/ai.yaml, secrets/database.yaml, secrets/github.yaml
-
-  # sops = {
-  #   # Age key location for NixOS
-  #   age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
-
-  #   # Default secrets file (can be overridden per secret)
-  #   defaultSopsFile = ../../../../secrets/ai.yaml;
-
-  #   # Define individual secrets
-  #   # Each secret will be decrypted to: ~/.config/sops-nix/secrets/<name>
-  #   secrets = {
-  #     # AI Service API Keys (from ai.yaml)
-  #     openai_api_key = {};
-  #     anthropic_api_key = {};
-  #     gemini_api_key = {};
-
-  #     # Database credentials (from database.yaml)
-  #     postgres_password = {
-  #       sopsFile = ../../../../secrets/database.yaml;
-  #     };
-  #     mysql_password = {
-  #       sopsFile = ../../../../secrets/database.yaml;
-  #     };
-  #     redis_password = {
-  #       sopsFile = ../../../../secrets/database.yaml;
-  #     };
-
-  #     # GitHub tokens (from github.yaml)
-  #     github_token = {
-  #       sopsFile = ../../../../secrets/github.yaml;
-  #     };
-  #     gh_token = {
-  #       sopsFile = ../../../../secrets/github.yaml;
-  #     };
-  #   };
-  # };
+  # NOTE: We use 'sops -d' directly in shell configs instead of sops-nix
+  # to avoid storing decrypted secrets on disk.
+  #
+  # Secrets are stored encrypted in: ~/.config/nixos/secrets/
+  # Age key location: ~/.config/sops/age/keys.txt
+  #
+  # Usage in shells:
+  #   Fish:    set -gx API_KEY (sops -d ~/.config/nixos/secrets/file.yaml | yq '.KEY')
+  #   Nushell: $env.API_KEY = (sops -d --extract '["KEY"]' ~/.config/nixos/secrets/file.yaml)
+  #   Zsh:     export API_KEY=$(sops -d ~/.config/nixos/secrets/file.yaml | yq '.KEY')
 
   # Bash configuration and aliases
   programs.bash = {
@@ -110,9 +82,7 @@ in
       [ -f ~/.yazi.bash ] && source ~/.yazi.bash
       [ -f ~/.atuin.bash ] && source ~/.atuin.bash
 
-      # Load secrets from sops-nix
-      # TODO: Uncomment after configuring sops secrets
-      # See SOPS-QUICK-START.md for instructions
+      # SOPS secrets loaded via shell env files (see activation hooks above)
     '';
   };
 
@@ -281,11 +251,13 @@ $env.XDG_CONFIG_HOME = $"($env.HOME)/.config"
 # TODO: Uncomment after configuring sops secrets
 # $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.config/sops/age/keys.txt"
 
-# Load secrets from sops-nix for Nushell
-# TODO: Uncomment after configuring sops secrets
-# $env.GEMINI_API_KEY = (open ~/.config/sops-nix/secrets/gemini_api_key | str trim)
-# $env.OPENAI_API_KEY = (open ~/.config/sops-nix/secrets/openai_api_key | str trim)
-# $env.ANTHROPIC_API_KEY = (open ~/.config/sops-nix/secrets/anthropic_api_key | str trim)
+# Load secrets using sops -d (decrypts on-the-fly, no files on disk)
+# TODO: Uncomment after creating secret files
+# load-env {
+#   GEMINI_API_KEY: (sops -d --extract '["GEMINI_API_KEY"]' $"($env.HOME)/.config/nixos/secrets/gemini_api_key.yaml" | str trim)
+#   OPENAI_API_KEY: (sops -d --extract '["OPENAI_API_KEY"]' $"($env.HOME)/.config/nixos/secrets/openai_api_key.yaml" | str trim)
+#   ANTHROPIC_API_KEY: (sops -d --extract '["ANTHROPIC_API_KEY"]' $"($env.HOME)/.config/nixos/secrets/anthropic_api_key.yaml" | str trim)
+# }
 EOFNUENV
     echo "    ✅ env.nu configurado con PATH de NixOS"
   '';
@@ -317,11 +289,11 @@ set -gx XDG_CONFIG_HOME $HOME/.config
 # TODO: Uncomment after configuring sops secrets
 # set -gx SOPS_AGE_KEY_FILE "$HOME/.config/sops/age/keys.txt"
 
-# Load secrets from sops-nix for Fish
-# TODO: Uncomment after configuring sops secrets
-# set -gx GEMINI_API_KEY (cat ~/.config/sops-nix/secrets/gemini_api_key | string trim)
-# set -gx OPENAI_API_KEY (cat ~/.config/sops-nix/secrets/openai_api_key | string trim)
-# set -gx ANTHROPIC_API_KEY (cat ~/.config/sops-nix/secrets/anthropic_api_key | string trim)
+# Load secrets using sops -d (decrypts on-the-fly, no files on disk)
+# TODO: Uncomment after creating secret files
+# set -gx GEMINI_API_KEY (sops -d "$HOME/.config/nixos/secrets/gemini_api_key.yaml" | yq '.GEMINI_API_KEY' | string trim)
+# set -gx OPENAI_API_KEY (sops -d "$HOME/.config/nixos/secrets/openai_api_key.yaml" | yq '.OPENAI_API_KEY' | string trim)
+# set -gx ANTHROPIC_API_KEY (sops -d "$HOME/.config/nixos/secrets/anthropic_api_key.yaml" | yq '.ANTHROPIC_API_KEY' | string trim)
 EOFFISH
     echo "    ✅ Fish environment configurado con PATH de NixOS"
   '';
@@ -346,11 +318,11 @@ export XDG_CONFIG_HOME=$HOME/.config
 # TODO: Uncomment after configuring sops secrets
 # export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
 
-# Load secrets from sops-nix for Zsh
-# TODO: Uncomment after configuring sops secrets
-# export GEMINI_API_KEY="$(cat ~/.config/sops-nix/secrets/gemini_api_key | tr -d '\n')"
-# export OPENAI_API_KEY="$(cat ~/.config/sops-nix/secrets/openai_api_key | tr -d '\n')"
-# export ANTHROPIC_API_KEY="$(cat ~/.config/sops-nix/secrets/anthropic_api_key | tr -d '\n')"
+# Load secrets using sops -d (decrypts on-the-fly, no files on disk)
+# TODO: Uncomment after creating secret files
+# export GEMINI_API_KEY="$(sops -d "$HOME/.config/nixos/secrets/gemini_api_key.yaml" | yq '.GEMINI_API_KEY' | tr -d '\n')"
+# export OPENAI_API_KEY="$(sops -d "$HOME/.config/nixos/secrets/openai_api_key.yaml" | yq '.OPENAI_API_KEY' | tr -d '\n')"
+# export ANTHROPIC_API_KEY="$(sops -d "$HOME/.config/nixos/secrets/anthropic_api_key.yaml" | yq '.ANTHROPIC_API_KEY' | tr -d '\n')"
 EOFZSH
     echo "    ✅ Zsh environment configurado (.zshrc.secrets)"
     echo "    💡 Agrega 'source ~/.zshrc.secrets' a tu ~/.zshrc"
