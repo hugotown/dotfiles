@@ -84,7 +84,7 @@
     mako
     nautilus
     nitch
-    opencode
+    # opencode  # Installed via activation script: curl -fsSL https://opencode.ai/install | bash
     pcmanfm
     rofi
     swaybg

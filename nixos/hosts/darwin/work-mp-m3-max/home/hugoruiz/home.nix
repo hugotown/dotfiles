@@ -207,6 +207,21 @@
     fi
   '';
 
+  # ===== OPENCODE INSTALLATION =====
+
+  home.activation.installOpencode = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    echo "🔓 Checking Opencode installation..."
+
+    if ! command -v opencode &> /dev/null; then
+      echo "📥 Installing Opencode..."
+      $DRY_RUN_CMD curl -fsSL https://opencode.ai/install | bash
+      echo "✅ Opencode installed successfully"
+    else
+      OPENCODE_VERSION=$(opencode --version 2>/dev/null || echo "unknown")
+      echo "✅ Opencode already installed ($OPENCODE_VERSION)"
+    fi
+  '';
+
   # ===== KARABINER-ELEMENTS CONFIG =====
 
   home.activation.karabiner = lib.hm.dag.entryAfter ["writeBoundary"] ''
