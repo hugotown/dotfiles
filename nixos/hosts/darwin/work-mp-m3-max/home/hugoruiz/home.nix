@@ -6,54 +6,16 @@
   programs.home-manager.enable = true;
 
   # ===== SOPS SECRET MANAGEMENT =====
-
-  sops = {
-    # Age key location for macOS
-    # Esta es tu llave PRIVADA que desencripta los secretos
-    age.keyFile = "${config.home.homeDirectory}/Library/Application Support/sops/age/keys.txt";
-
-    # Default secrets file (can be overridden per secret)
-    # IMPORTANTE: Rutas relativas desde este archivo a /secrets/
-    # desde hosts/darwin/work-mp-m3-max/home/hugoruiz/ → secrets/ (5 niveles arriba)
-    defaultSopsFile = ../../../../../secrets/gemini_api_key.yaml;
-
-    # Define individual secrets
-    # Cada secret será desencriptado a: ~/.config/sops-nix/secrets/<name>
-    secrets = {
-      # Google API Keys
-      gemini_api_key = {
-        sopsFile = ../../../../../secrets/gemini_api_key.yaml;
-        key = "GEMINI_API_KEY";  # Nombre de la llave dentro del archivo YAML
-      };
-      google_api_key = {
-        sopsFile = ../../../../../secrets/google_api_key.yaml;
-        key = "GOOGLE_API_KEY";  # Nombre de la llave dentro del archivo YAML
-      };
-
-      # AI Service API Keys (from ai.yaml) - Comentados hasta crear archivo
-      # openai_api_key = {};
-      # anthropic_api_key = {};
-
-      # Database credentials (from database.yaml) - Comentados hasta crear archivo
-      # postgres_password = {
-      #   sopsFile = ../../../../secrets/database.yaml;
-      # };
-      # mysql_password = {
-      #   sopsFile = ../../../../secrets/database.yaml;
-      # };
-      # redis_password = {
-      #   sopsFile = ../../../../secrets/database.yaml;
-      # };
-
-      # GitHub tokens (from github.yaml) - Comentados hasta crear archivo
-      # github_token = {
-      #   sopsFile = ../../../../secrets/github.yaml;
-      # };
-      # gh_token = {
-      #   sopsFile = ../../../../secrets/github.yaml;
-      # };
-    };
-  };
+  # NOTE: We use 'sops -d' directly in shell configs instead of sops-nix
+  # to avoid storing decrypted secrets on disk.
+  #
+  # Secrets are stored encrypted in: ~/.config/nixos/secrets/
+  # Age key location: ~/Library/Application Support/sops/age/keys.txt
+  #
+  # Usage in shells:
+  #   Fish:    set -gx API_KEY (sops -d ~/.config/nixos/secrets/file.yaml | yq '.KEY')
+  #   Nushell: $env.API_KEY = (sops -d ~/.config/nixos/secrets/file.yaml | from yaml | get KEY)
+  #   Zsh:     export API_KEY=$(sops -d ~/.config/nixos/secrets/file.yaml | yq '.KEY')
 
   # ===== DECLARATIVE SHELL INTEGRATIONS =====
 
@@ -133,10 +95,12 @@
     # SOPS configuration for CLI usage
     $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/Library/Application Support/sops/age/keys.txt"
 
-    # Load secrets from sops-nix para Nushell
-    # str trim elimina espacios/newlines al final
-    $env.GEMINI_API_KEY = (open ${config.sops.secrets.gemini_api_key.path} | str trim)
-    $env.GOOGLE_API_KEY = (open ${config.sops.secrets.google_api_key.path} | str trim)
+    # Load secrets using sops -d (decrypts on-the-fly, no files on disk)
+    # Use load-env to set multiple environment variables from decrypted YAML
+    load-env {
+      GEMINI_API_KEY: (sops -d --extract '["GEMINI_API_KEY"]' $"($env.HOME)/.config/nixos/secrets/gemini_api_key.yaml" | str trim)
+      GOOGLE_API_KEY: (sops -d --extract '["GOOGLE_API_KEY"]' $"($env.HOME)/.config/nixos/secrets/google_api_key.yaml" | str trim)
+    }
   '';
 
   # Fish environment configuration with SOPS secrets
@@ -161,10 +125,9 @@
     # SOPS configuration for CLI usage
     set -gx SOPS_AGE_KEY_FILE "$HOME/Library/Application Support/sops/age/keys.txt"
 
-    # Load secrets from sops-nix for Fish
-    # string trim removes trailing whitespace/newlines
-    set -gx GEMINI_API_KEY (cat ${config.sops.secrets.gemini_api_key.path} | string trim)
-    set -gx GOOGLE_API_KEY (cat ${config.sops.secrets.google_api_key.path} | string trim)
+    # Load secrets using sops -d (decrypts on-the-fly, no files on disk)
+    set -gx GEMINI_API_KEY (sops -d "$HOME/.config/nixos/secrets/gemini_api_key.yaml" | yq '.GEMINI_API_KEY' | string trim)
+    set -gx GOOGLE_API_KEY (sops -d "$HOME/.config/nixos/secrets/google_api_key.yaml" | yq '.GOOGLE_API_KEY' | string trim)
   '';
 
   # ===== SESSION CONFIGURATION =====
@@ -196,9 +159,9 @@
     # SOPS configuration for CLI usage
     export SOPS_AGE_KEY_FILE="$HOME/Library/Application Support/sops/age/keys.txt"
 
-    # Load secrets from sops-nix for Zsh
-    export GEMINI_API_KEY="$(cat ${config.sops.secrets.gemini_api_key.path} | tr -d '\n')"
-    export GOOGLE_API_KEY="$(cat ${config.sops.secrets.google_api_key.path} | tr -d '\n')"
+    # Load secrets using sops -d (decrypts on-the-fly, no files on disk)
+    export GEMINI_API_KEY="$(sops -d "$HOME/.config/nixos/secrets/gemini_api_key.yaml" | yq '.GEMINI_API_KEY' | tr -d '\n')"
+    export GOOGLE_API_KEY="$(sops -d "$HOME/.config/nixos/secrets/google_api_key.yaml" | yq '.GOOGLE_API_KEY' | tr -d '\n')"
   '';
 
   # ===== HAMMERSPOON SYMLINK =====

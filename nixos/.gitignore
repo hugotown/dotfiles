@@ -92,3 +92,4 @@ result-*
 *.tmp
 *.temp
 .cache/
+~/.config/sops-nix/
