@@ -128,8 +128,8 @@ local workChooser = hs.chooser.new(function(choice)
 end)
 
 -- Configurar apariencia y tema Tokyo Night
-workChooser:width(25)  -- Ancho en porcentaje de la pantalla
-workChooser:rows(10)   -- Máximo de filas visibles
+workChooser:width(35)  -- Ancho en porcentaje de la pantalla
+workChooser:rows(11)   -- Máximo de filas visibles
 workChooser:searchSubText(true)  -- Buscar también en subtítulos
 workChooser:choices(workTools)
 
