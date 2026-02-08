@@ -127,7 +127,9 @@ in
 
     if ! command -v claude &> /dev/null; then
       echo "📥 Installing Claude Code..."
-      $DRY_RUN_CMD curl -fsSL https://claude.ai/install.sh | bash
+      # Export PATH with nix tools for the install script
+      export PATH="${pkgs.curl}/bin:${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.gnugrep}/bin:${pkgs.gnused}/bin:${pkgs.gnutar}/bin:${pkgs.gzip}/bin:${pkgs.unzip}/bin:${pkgs.perl}/bin:$PATH"
+      $DRY_RUN_CMD ${pkgs.curl}/bin/curl -fsSL https://claude.ai/install.sh | ${pkgs.bash}/bin/bash
       echo "✅ Claude Code installed successfully"
     else
       CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "unknown")
@@ -142,7 +144,9 @@ in
 
     if ! command -v opencode &> /dev/null; then
       echo "📥 Installing Opencode..."
-      $DRY_RUN_CMD curl -fsSL https://opencode.ai/install | bash
+      # Export PATH with nix tools for the install script
+      export PATH="${pkgs.curl}/bin:${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.gnugrep}/bin:${pkgs.gnused}/bin:${pkgs.gnutar}/bin:${pkgs.gzip}/bin:${pkgs.unzip}/bin:${pkgs.perl}/bin:$PATH"
+      $DRY_RUN_CMD ${pkgs.curl}/bin/curl -fsSL https://opencode.ai/install | ${pkgs.bash}/bin/bash
       echo "✅ Opencode installed successfully"
     else
       OPENCODE_VERSION=$(opencode --version 2>/dev/null || echo "unknown")
