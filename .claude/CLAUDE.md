@@ -476,22 +476,40 @@ EOF_YAZI_FISH
 
 ### Implementation
 
-**Age Key Location:**
-```
-~/Library/Application Support/sops/age/keys.txt
+**Age Key Locations:**
+
+| OS | Path | Permissions |
+|----|------|-------------|
+| **macOS** | `~/Library/Application Support/sops/age/keys.txt` | `600` (read/write user only) |
+| **Linux** | `~/.config/sops/age/keys.txt` | `600` (read/write user only) |
+
+**Important:** The age private key file MUST have `600` permissions. SOPS will refuse to use keys with incorrect permissions.
+
+```bash
+# Set correct permissions
+chmod 600 ~/Library/Application\ Support/sops/age/keys.txt  # macOS
+chmod 600 ~/.config/sops/age/keys.txt                        # Linux
 ```
 
 **Shell Integration:**
 
 ```fish
 # Fish (~/.fish_env)
+# macOS:
 set -gx SOPS_AGE_KEY_FILE "$HOME/Library/Application Support/sops/age/keys.txt"
+# Linux:
+# set -gx SOPS_AGE_KEY_FILE "$HOME/.config/sops/age/keys.txt"
+
 set -gx API_KEY (sops -d "$HOME/.config/nixos/secrets/file.yaml" | yq '.KEY' | string trim)
 ```
 
 ```nushell
 # Nushell (~/.config/nushell/env.nu)
+# macOS:
 $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/Library/Application Support/sops/age/keys.txt"
+# Linux:
+# $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.config/sops/age/keys.txt"
+
 load-env {
   API_KEY: (sops -d --extract '["KEY"]' $"($env.HOME)/.config/nixos/secrets/file.yaml" | str trim)
 }
@@ -499,7 +517,11 @@ load-env {
 
 ```zsh
 # Zsh (~/.zshrc.secrets)
+# macOS:
 export SOPS_AGE_KEY_FILE="$HOME/Library/Application Support/sops/age/keys.txt"
+# Linux:
+# export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+
 export API_KEY="$(sops -d "$HOME/.config/nixos/secrets/file.yaml" | yq '.KEY' | tr -d '\n')"
 ```
 
