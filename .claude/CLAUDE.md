@@ -8,6 +8,8 @@ This file consolidates all development rules and guidelines for project, incorpo
 
 **Documentation Location:** All documentation must be added as **short, clear, and concise appendices** exclusively in this file (`.claude/CLAUDE.md`).
 
+**Documentation Style:** ALL documentation in this file MUST be **extremely short, clear, and concise**. Avoid verbosity, redundancy, or unnecessary explanations. Get to the point immediately.
+
 **Temporary Files:** Any temporary files generated during development or testing **MUST be deleted** immediately after use.
 
 ## 1. Communication and Language
@@ -458,83 +460,45 @@ EOF_YAZI_FISH
 
 ## 5. Secret Management with SOPS
 
-### Philosophy: Never Store Decrypted Secrets on Disk
+**Philosophy:** Decrypt secrets on-the-fly in memory using `sops -d`. Never write plaintext secrets to disk.
 
-**Critical Rule:** Use `sops -d` to decrypt secrets **on-the-fly** in memory. Never write decrypted secrets to files.
-
-### Architecture
-
+**Architecture:**
 ```
-~/.config/nixos/secrets/
-├── gemini_api_key.yaml  (ENCRYPTED - safe for git ✅)
-└── google_api_key.yaml  (ENCRYPTED - safe for git ✅)
-              ↓
-        sops -d (runtime decryption in memory)
-              ↓
-    Environment variables (never written to disk ✅)
+~/.config/nixos/secrets/*.yaml  (ENCRYPTED in git)
+        ↓ sops -d (runtime)
+    ENV vars in memory (never on disk)
 ```
 
-### Implementation
-
-**Age Key Locations:**
+**Age Private Key Location:**
 
 | OS | Path | Permissions |
 |----|------|-------------|
-| **macOS** | `~/Library/Application Support/sops/age/keys.txt` | `600` (read/write user only) |
-| **Linux** | `~/.config/sops/age/keys.txt` | `600` (read/write user only) |
+| macOS | `~/Library/Application Support/sops/age/keys.txt` | `600` |
+| Linux | `~/.local/share/sops/age/keys.txt` | `600` |
 
-**Important:** The age private key file MUST have `600` permissions. SOPS will refuse to use keys with incorrect permissions.
-
-```bash
-# Set correct permissions
-chmod 600 ~/Library/Application\ Support/sops/age/keys.txt  # macOS
-chmod 600 ~/.config/sops/age/keys.txt                        # Linux
-```
-
-**Shell Integration:**
+**Shell Config Examples:**
 
 ```fish
-# Fish (~/.fish_env)
-# macOS:
-set -gx SOPS_AGE_KEY_FILE "$HOME/Library/Application Support/sops/age/keys.txt"
-# Linux:
-# set -gx SOPS_AGE_KEY_FILE "$HOME/.config/sops/age/keys.txt"
+# Fish: ~/.fish_env
+set -gx SOPS_AGE_KEY_FILE "$HOME/Library/Application Support/sops/age/keys.txt"  # macOS
+# set -gx SOPS_AGE_KEY_FILE "$HOME/.local/share/sops/age/keys.txt"  # Linux
 
-set -gx API_KEY (sops -d "$HOME/.config/nixos/secrets/file.yaml" | yq '.KEY' | string trim)
+set -gx GEMINI_API_KEY (sops -d ~/.config/nixos/secrets/gemini_api_key.yaml | yq '.GEMINI_API_KEY' | string trim)
 ```
 
 ```nushell
-# Nushell (~/.config/nushell/env.nu)
-# macOS:
-$env.SOPS_AGE_KEY_FILE = $"($env.HOME)/Library/Application Support/sops/age/keys.txt"
-# Linux:
-# $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.config/sops/age/keys.txt"
+# Nushell: ~/.config/nushell/env.nu
+$env.SOPS_AGE_KEY_FILE = $"($env.HOME)/Library/Application Support/sops/age/keys.txt"  # macOS
+# $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.local/share/sops/age/keys.txt"  # Linux
 
 load-env {
-  API_KEY: (sops -d --extract '["KEY"]' $"($env.HOME)/.config/nixos/secrets/file.yaml" | str trim)
+  GEMINI_API_KEY: (sops -d --extract '["GEMINI_API_KEY"]' ~/.config/nixos/secrets/gemini_api_key.yaml | str trim)
 }
 ```
 
-```zsh
-# Zsh (~/.zshrc.secrets)
-# macOS:
-export SOPS_AGE_KEY_FILE="$HOME/Library/Application Support/sops/age/keys.txt"
-# Linux:
-# export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
-
-export API_KEY="$(sops -d "$HOME/.config/nixos/secrets/file.yaml" | yq '.KEY' | tr -d '\n')"
-```
-
-### Security Benefits
-
-- ✅ Encrypted secrets committed to git
-- ✅ Decryption happens in memory only
-- ✅ No plaintext files on disk
-- ✅ Age key protected with file permissions (600)
-- ❌ Never use `sops-nix` with `path =` (creates plaintext files!)
-
-### Current Secrets
-
-- `GEMINI_API_KEY` - Google Gemini API
-- `GOOGLE_API_KEY` - Google API
+**Security Rules:**
+- ✅ Encrypted secrets in git (`~/.config/nixos/secrets/*.yaml`)
+- ✅ In-memory decryption only (`sops -d`)
+- ✅ Age key outside git (macOS: `~/Library/`, Linux: `~/.local/share/`)
+- ❌ NEVER use `sops-nix` with `path =` (creates plaintext files)
 
