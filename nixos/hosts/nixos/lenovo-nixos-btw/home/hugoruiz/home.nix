@@ -120,6 +120,21 @@ in
     atuin
   ];
 
+  # ===== CLAUDE CODE INSTALLATION =====
+
+  home.activation.installClaude = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    echo "🤖 Checking Claude Code installation..."
+
+    if ! command -v claude &> /dev/null; then
+      echo "📥 Installing Claude Code..."
+      $DRY_RUN_CMD curl -fsSL https://claude.ai/install.sh | bash
+      echo "✅ Claude Code installed successfully"
+    else
+      CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "unknown")
+      echo "✅ Claude Code already installed ($CLAUDE_VERSION)"
+    fi
+  '';
+
   # ===== POST-ACTIVATION HOOK: ZOXIDE =====
   home.activation.regenerateZoxide = lib.hm.dag.entryAfter ["linkGeneration" "reloadSystemd"] ''
     echo "🔧 Generando archivos de integración de zoxide..."

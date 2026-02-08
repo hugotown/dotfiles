@@ -93,7 +93,7 @@
     $env.TERMINAL = "alacritty"
 
     # SOPS configuration for CLI usage
-    $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/Library/Application Support/sops/age/keys.txt"
+    $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.local/share/sops/age/keys.txt"
 
     # Load secrets using sops -d (decrypts on-the-fly, no files on disk)
     # Use load-env to set multiple environment variables from decrypted YAML
@@ -123,7 +123,7 @@
     set -gx TERMINAL alacritty
 
     # SOPS configuration for CLI usage
-    set -gx SOPS_AGE_KEY_FILE "$HOME/Library/Application Support/sops/age/keys.txt"
+    set -gx SOPS_AGE_KEY_FILE "$HOME/.local/share/sops/age/keys.txt"
 
     # Load secrets using sops -d (decrypts on-the-fly, no files on disk)
     set -gx GEMINI_API_KEY (sops -d "$HOME/.config/nixos/secrets/gemini_api_key.yaml" | yq '.GEMINI_API_KEY' | string trim)
@@ -157,7 +157,7 @@
     export TERMINAL=alacritty
 
     # SOPS configuration for CLI usage
-    export SOPS_AGE_KEY_FILE="$HOME/Library/Application Support/sops/age/keys.txt"
+    export SOPS_AGE_KEY_FILE="$HOME/.local/share/sops/age/keys.txt"
 
     # Load secrets using sops -d (decrypts on-the-fly, no files on disk)
     export GEMINI_API_KEY="$(sops -d "$HOME/.config/nixos/secrets/gemini_api_key.yaml" | yq '.GEMINI_API_KEY' | tr -d '\n')"
@@ -189,6 +189,21 @@
       echo "✅ Hammerspoon symlink created: $HAMMERSPOON_DIR -> $CONFIG_DIR"
     else
       echo "✅ Hammerspoon symlink already exists"
+    fi
+  '';
+
+  # ===== CLAUDE CODE INSTALLATION =====
+
+  home.activation.installClaude = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    echo "🤖 Checking Claude Code installation..."
+
+    if ! command -v claude &> /dev/null; then
+      echo "📥 Installing Claude Code..."
+      $DRY_RUN_CMD curl -fsSL https://claude.ai/install.sh | bash
+      echo "✅ Claude Code installed successfully"
+    else
+      CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "unknown")
+      echo "✅ Claude Code already installed ($CLAUDE_VERSION)"
     fi
   '';
 

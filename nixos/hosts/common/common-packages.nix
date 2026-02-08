@@ -67,7 +67,7 @@
     zsh
 
     ## GUI Applications (cross-platform)
-    claude-code
+    # claude-code  # Installed via activation script: curl -fsSL https://claude.ai/install.sh | bash
     gemini-cli
     localsend
     brave

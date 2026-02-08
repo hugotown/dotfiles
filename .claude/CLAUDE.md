@@ -469,28 +469,21 @@ EOF_YAZI_FISH
     ENV vars in memory (never on disk)
 ```
 
-**Age Private Key Location:**
+**Age Private Key Location:** `~/.local/share/sops/age/keys.txt` (permissions: `600`)
 
-| OS | Path | Permissions |
-|----|------|-------------|
-| macOS | `~/Library/Application Support/sops/age/keys.txt` | `600` |
-| Linux | `~/.local/share/sops/age/keys.txt` | `600` |
+**Cross-platform:** Same path for macOS and Linux (standardized via Nix configuration)
 
 **Shell Config Examples:**
 
 ```fish
 # Fish: ~/.fish_env
-set -gx SOPS_AGE_KEY_FILE "$HOME/Library/Application Support/sops/age/keys.txt"  # macOS
-# set -gx SOPS_AGE_KEY_FILE "$HOME/.local/share/sops/age/keys.txt"  # Linux
-
+set -gx SOPS_AGE_KEY_FILE "$HOME/.local/share/sops/age/keys.txt"
 set -gx GEMINI_API_KEY (sops -d ~/.config/nixos/secrets/gemini_api_key.yaml | yq '.GEMINI_API_KEY' | string trim)
 ```
 
 ```nushell
 # Nushell: ~/.config/nushell/env.nu
-$env.SOPS_AGE_KEY_FILE = $"($env.HOME)/Library/Application Support/sops/age/keys.txt"  # macOS
-# $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.local/share/sops/age/keys.txt"  # Linux
-
+$env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.local/share/sops/age/keys.txt"
 load-env {
   GEMINI_API_KEY: (sops -d --extract '["GEMINI_API_KEY"]' ~/.config/nixos/secrets/gemini_api_key.yaml | str trim)
 }
@@ -499,6 +492,6 @@ load-env {
 **Security Rules:**
 - ✅ Encrypted secrets in git (`~/.config/nixos/secrets/*.yaml`)
 - ✅ In-memory decryption only (`sops -d`)
-- ✅ Age key outside git (macOS: `~/Library/`, Linux: `~/.local/share/`)
+- ✅ Age key outside git (`~/.local/share/` - XDG standard, cross-platform)
 - ❌ NEVER use `sops-nix` with `path =` (creates plaintext files)
 
