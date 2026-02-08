@@ -249,7 +249,7 @@ $env.XDG_CONFIG_HOME = $"($env.HOME)/.config"
 
 # SOPS configuration for CLI usage
 # TODO: Uncomment after configuring sops secrets
-# $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.config/sops/age/keys.txt"
+# $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.local/share/sops/age/keys.txt"
 
 # Load secrets using sops -d (decrypts on-the-fly, no files on disk)
 # TODO: Uncomment after creating secret files
@@ -287,7 +287,7 @@ set -gx XDG_CONFIG_HOME $HOME/.config
 
 # SOPS configuration for CLI usage
 # TODO: Uncomment after configuring sops secrets
-# set -gx SOPS_AGE_KEY_FILE "$HOME/.config/sops/age/keys.txt"
+# set -gx SOPS_AGE_KEY_FILE "$HOME/.local/share/sops/age/keys.txt"
 
 # Load secrets using sops -d (decrypts on-the-fly, no files on disk)
 # TODO: Uncomment after creating secret files
@@ -316,7 +316,7 @@ export XDG_CONFIG_HOME=$HOME/.config
 
 # SOPS configuration for CLI usage
 # TODO: Uncomment after configuring sops secrets
-# export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+# export SOPS_AGE_KEY_FILE="$HOME/.local/share/sops/age/keys.txt"
 
 # Load secrets using sops -d (decrypts on-the-fly, no files on disk)
 # TODO: Uncomment after creating secret files
