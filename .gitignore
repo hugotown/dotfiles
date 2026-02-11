@@ -68,3 +68,7 @@ result-*
 # Ignore automatically generated direnv output
 .direnv
 configstore/
+
+# TPM plugins (third-party, installed at runtime)
+tmux/plugins/
+tmux/resurrect/
