@@ -495,3 +495,52 @@ load-env {
 - ✅ Age key outside git (`~/.local/share/` - XDG standard, cross-platform)
 - ❌ NEVER use `sops-nix` with `path =` (creates plaintext files)
 
+## 6. Per-Project Dev Environments (devenv + direnv)
+
+**Philosophy:** Use `devenv` + `direnv` for project-scoped development environments. Languages, tools, and services (DBs, Redis, etc.) are available **only inside the project directory**, not installed at OS level.
+
+**How it works:**
+- `direnv` auto-activates the environment on `cd` into the project
+- Languages/tools are available instantly (no manual commands)
+- Services (DBs) can auto-start via `enterShell` or `.envrc`
+- Data persists in `.devenv/state/` across reboots; processes are ephemeral
+
+**Project structure:**
+```
+~/projects/my-app/
+├── devenv.nix          # Languages, packages, services
+├── devenv.yaml         # Nix inputs
+├── .envrc              # use devenv
+├── .devenv/            # State (DB data, process info) - gitignored
+└── .direnv/            # direnv cache - gitignored
+```
+
+**Minimal `devenv.nix` (static site):**
+```nix
+{ pkgs, ... }: {
+  languages.javascript = {
+    enable = true;
+    package = pkgs.nodejs_22;
+    pnpm.enable = true;
+  };
+  packages = [ pkgs.git pkgs.gh ];
+}
+```
+
+**With services (when backend is needed):**
+```nix
+{ pkgs, ... }: {
+  languages.javascript = { enable = true; package = pkgs.nodejs_22; pnpm.enable = true; };
+  services.postgres = { enable = true; listen_addresses = "127.0.0.1"; initialDatabases = [{ name = "mydb"; }]; };
+  enterShell = ''devenv processes up --detach 2>/dev/null || true'';
+}
+```
+
+**`.envrc`:** `use devenv`
+
+**`.gitignore`:** Add `.devenv/` and `.direnv/`
+
+**Data persistence:** DB data in `.devenv/state/` survives reboots. Run `devenv up` (or auto via `enterShell`) to restart services.
+
+**Cleanup:** `rm -rf .devenv/state/` to reset DB data from scratch.
+
