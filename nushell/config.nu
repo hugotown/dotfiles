@@ -16,6 +16,14 @@ source ~/.local/share/atuin/init.nu
 source ~/.yazi.nu
 source ~/.cldy.nu
 
+# Direnv integration (auto-activate devenv on cd)
+$env.config = ($env.config | upsert hooks.pre_prompt (
+  $env.config.hooks.pre_prompt | append {||
+    if (which direnv | is-empty) { return }
+    direnv export json | from json | default {} | load-env
+  }
+))
+
 # User Configuration (add your customizations below)
 # ===================================================
 

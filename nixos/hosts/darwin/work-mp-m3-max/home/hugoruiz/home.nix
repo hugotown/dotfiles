@@ -5,6 +5,11 @@
 
   programs.home-manager.enable = true;
 
+  # ===== PACKAGES =====
+  home.packages = with pkgs; [
+    devenv
+  ];
+
   # ===== SOPS SECRET MANAGEMENT =====
   # NOTE: We use 'sops -d' directly in shell configs instead of sops-nix
   # to avoid storing decrypted secrets on disk.
@@ -162,6 +167,15 @@
     # Load secrets using sops -d (decrypts on-the-fly, no files on disk)
     export GEMINI_API_KEY="$(sops -d "$HOME/.config/nixos/secrets/gemini_api_key.yaml" | yq '.GEMINI_API_KEY' | tr -d '\n')"
     export GOOGLE_API_KEY="$(sops -d "$HOME/.config/nixos/secrets/google_api_key.yaml" | yq '.GOOGLE_API_KEY' | tr -d '\n')"
+  '';
+
+  # ===== DEVENV + DIRENV INTEGRATION =====
+  # Nix-managed exception: devenv generates direnvrc, must stay in sync with installed version
+  home.activation.devenvDirenvrc = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    DIRENV_CONFIG_DIR="$HOME/.config/direnv"
+    $DRY_RUN_CMD mkdir -p "$DIRENV_CONFIG_DIR"
+    $DRY_RUN_CMD ${pkgs.devenv}/bin/devenv direnvrc > "$DIRENV_CONFIG_DIR/direnvrc"
+    echo "✅ direnvrc generated from devenv ${pkgs.devenv.version}"
   '';
 
   # ===== HAMMERSPOON SYMLINK =====
@@ -355,6 +369,15 @@
       echo "  ⚠️  atuin no encontrado"
     fi
 
+    # Direnv integration files (hook for auto-activating devenv on cd)
+    if command -v direnv >/dev/null 2>&1; then
+      $DRY_RUN_CMD direnv hook fish > $HOME/.direnv.fish 2>/dev/null && echo "  ✅ .direnv.fish"
+      $DRY_RUN_CMD direnv hook zsh > $HOME/.direnv.zsh 2>/dev/null && echo "  ✅ .direnv.zsh"
+      $DRY_RUN_CMD direnv hook bash > $HOME/.direnv.bash 2>/dev/null && echo "  ✅ .direnv.bash"
+    else
+      echo "  ⚠️  direnv no encontrado"
+    fi
+
     # Starship integration files
     if [ -x "${pkgs.starship}/bin/starship" ]; then
       $DRY_RUN_CMD ${pkgs.starship}/bin/starship init fish > $HOME/.starship.fish 2>/dev/null && echo "  ✅ .starship.fish"
@@ -526,7 +549,7 @@ EOF_ZSH_CONFIG
 
     # Fish - add sources if not present
     if [ -f "$HOME/.config/fish/config.fish" ]; then
-      for file in fish_env zoxide.fish atuin.fish starship.fish yazi.fish cldy.fish; do
+      for file in fish_env zoxide.fish atuin.fish starship.fish yazi.fish cldy.fish direnv.fish; do
         if ! grep -q "source ~/.$file" "$HOME/.config/fish/config.fish" 2>/dev/null; then
           $DRY_RUN_CMD echo "source ~/.$file" >> "$HOME/.config/fish/config.fish"
           echo "  ✅ Fish: Agregado source ~/.$file"
@@ -560,7 +583,7 @@ EOF_ZSH_CONFIG
 
     # Zsh - add sources if not present
     if [ -f "$HOME/.zshrc" ]; then
-      for integration in zoxide atuin starship yazi; do
+      for integration in zoxide atuin starship yazi direnv; do
         if ! grep -q "source ~/.$integration.zsh" "$HOME/.zshrc" 2>/dev/null; then
           # Find the right place to insert (after PATH but before custom config)
           if grep -q "# Add your custom configuration" "$HOME/.zshrc"; then
@@ -591,6 +614,7 @@ EOF_ZSH_CONFIG
     echo "   - Zoxide (comando 'z' para navegación inteligente)"
     echo "   - Yazi (comando 'y' wrapper con cd al salir)"
     echo "   - Alias 'cldy' (Claude skip permissions)"
+    echo "   - Direnv (auto-activación de devenv al entrar en proyecto)"
     echo ""
     echo "📝 Filosofía mantenida: 'Nix installs → User configures'"
     echo "   Los archivos en ~/.config/ son editables por el usuario."

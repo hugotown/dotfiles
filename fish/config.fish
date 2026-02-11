@@ -19,6 +19,7 @@ source ~/.zoxide.fish
 source ~/.atuin.fish
 source ~/.yazi.fish
 source ~/.cldy.fish
+source ~/.direnv.fish
 
 # ===========================================
 # User Configuration (add your customizations below)
