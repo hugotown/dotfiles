@@ -1,10 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "DOCKER": {
-      "type": "local",
-      "command": ["docker", "mcp", "gateway", "run"]
-    },
     "gh_grep": {
       "type": "remote",
       "url": "https://mcp.grep.app"

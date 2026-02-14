@@ -1,0 +1,22 @@
+# Portable config - works on Nix, NixOS, and Arch Linux
+[[ $- == *i* ]] || return
+
+HISTFILESIZE=100000
+HISTSIZE=10000
+shopt -s histappend checkwinsize extglob globstar
+
+# 1. Environment (env.zsh is POSIX-compatible, works in bash)
+[ -f ~/.config/shell/env.zsh ] && source ~/.config/shell/env.zsh
+
+# 2. Tracked integrations
+[ -f ~/.config/shell/integrations/zoxide.bash ] && source ~/.config/shell/integrations/zoxide.bash
+[ -f ~/.config/shell/integrations/atuin.bash ] && source ~/.config/shell/integrations/atuin.bash
+[ -f ~/.config/shell/integrations/yazi.bash ] && source ~/.config/shell/integrations/yazi.bash
+[ -f ~/.config/shell/integrations/mise.bash ] && source ~/.config/shell/integrations/mise.bash
+
+# 3. Cached integrations
+[ -f ~/.cache/shell/starship.bash ] && source ~/.cache/shell/starship.bash
+[ -f ~/.cache/shell/direnv.bash ] && source ~/.cache/shell/direnv.bash
+
+# 4. User customizations
+alias cldy="claude --dangerously-skip-permissions"

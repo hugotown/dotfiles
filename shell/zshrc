@@ -1,0 +1,18 @@
+# Portable config - works on Nix, NixOS, and Arch Linux
+
+# 1. Environment
+[ -f ~/.config/shell/env.zsh ] && source ~/.config/shell/env.zsh
+
+# 2. Tracked integrations
+[ -f ~/.config/shell/integrations/zoxide.zsh ] && source ~/.config/shell/integrations/zoxide.zsh
+[ -f ~/.config/shell/integrations/atuin.zsh ] && source ~/.config/shell/integrations/atuin.zsh
+[ -f ~/.config/shell/integrations/yazi.zsh ] && source ~/.config/shell/integrations/yazi.zsh
+[ -f ~/.config/shell/integrations/mise.zsh ] && source ~/.config/shell/integrations/mise.zsh
+
+# 3. Cached integrations
+[ -f ~/.cache/shell/starship.zsh ] && source ~/.cache/shell/starship.zsh
+[ -f ~/.cache/shell/direnv.zsh ] && source ~/.cache/shell/direnv.zsh
+
+# 4. User customizations
+alias cldy="claude --dangerously-skip-permissions"
+export PATH="$HOME/.opencode/bin:$PATH"

@@ -1,1 +1,2 @@
-/nix/store/1ml3h1c4sxfnd24sbihnpzhklys3mm3h-home-manager-files/.config/nushell/env.nu
+# Portable - source the shared env
+source ~/.config/shell/env.nu

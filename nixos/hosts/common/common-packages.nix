@@ -38,6 +38,7 @@
     ## Navigation & Productivity
     zoxide
     atuin
+    starship
     btop
     yazi
     ncdu          # disk usage interactive
