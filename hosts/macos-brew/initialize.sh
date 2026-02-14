@@ -41,7 +41,13 @@ if ! command -v opencode >/dev/null; then
     curl -fsSL https://opencode.ai/install | bash
 fi
 
-# 6. macOS-specific setup
+# 6. Install macOS cask apps
+echo "Installing macOS apps..."
+brew install --cask --no-quarantine \
+    hammerspoon \
+    karabiner-elements
+
+# 7. macOS-specific setup
 echo "Setting up macOS-specific configs..."
 
 # .hushlogin (suppress login banner)

@@ -97,6 +97,19 @@ Excellence in development is paramount. Therefore, I strictly adhere to:
 
 **macOS (Homebrew only):** `git clone <repo> ~/.config && bash ~/.config/hosts/macos-brew/initialize.sh`
 
+### macOS GUI Apps
+
+macOS-only apps (Hammerspoon, Karabiner-Elements) require parity between platforms:
+
+| Concern | nix-darwin | macos-brew |
+|---------|-----------|------------|
+| Install | `homebrew.casks` in `default.nix` | `brew install --cask` in `initialize.sh` |
+| Config | `~/.config/{hammerspoon,karabiner}/` (portable, in git) | Same |
+| Symlink | activation script (`~/.hammerspoon` -> `~/.config/hammerspoon`) | `initialize.sh` |
+| Auto-start | `launchd.agents` in `home.nix` | macOS Login Items (manual first launch) |
+
+**Rule:** When adding a new macOS cask to `default.nix`, also add it to `hosts/macos-brew/initialize.sh`.
+
 ### Home Manager Activation Scripts
 
 Activation scripts should be **minimal**. The only shell-related activation script is `shellBootstrap` which runs `bootstrap.sh`.
