@@ -18,10 +18,10 @@ set -gx TERMINAL alacritty
 # SOPS secrets (portable: works anywhere sops+age are installed)
 set -gx SOPS_AGE_KEY_FILE "$HOME/.local/share/sops/age/keys.txt"
 
-if command -q sops; and test -f "$HOME/.config/nixos/secrets/gemini_api_key.yaml"
-    set -gx GEMINI_API_KEY (sops -d "$HOME/.config/nixos/secrets/gemini_api_key.yaml" | yq '.GEMINI_API_KEY' | string trim)
+if command -q sops; and test -f "$HOME/.config/secrets/gemini_api_key.yaml"
+    set -gx GEMINI_API_KEY (sops -d "$HOME/.config/secrets/gemini_api_key.yaml" | yq '.GEMINI_API_KEY' | string trim)
     set -gx GOOGLE_GENERATIVE_AI_API_KEY $GEMINI_API_KEY
 end
-if command -q sops; and test -f "$HOME/.config/nixos/secrets/google_api_key.yaml"
-    set -gx GOOGLE_API_KEY (sops -d "$HOME/.config/nixos/secrets/google_api_key.yaml" | yq '.GOOGLE_API_KEY' | string trim)
+if command -q sops; and test -f "$HOME/.config/secrets/google_api_key.yaml"
+    set -gx GOOGLE_API_KEY (sops -d "$HOME/.config/secrets/google_api_key.yaml" | yq '.GOOGLE_API_KEY' | string trim)
 end

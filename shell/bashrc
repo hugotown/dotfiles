@@ -12,7 +12,7 @@ shopt -s histappend checkwinsize extglob globstar
 [ -f ~/.config/shell/integrations/zoxide.bash ] && source ~/.config/shell/integrations/zoxide.bash
 [ -f ~/.config/shell/integrations/atuin.bash ] && source ~/.config/shell/integrations/atuin.bash
 [ -f ~/.config/shell/integrations/yazi.bash ] && source ~/.config/shell/integrations/yazi.bash
-[ -f ~/.config/shell/integrations/mise.bash ] && source ~/.config/shell/integrations/mise.bash
+command -v mise >/dev/null && eval "$(mise activate bash)"
 
 # 3. Cached integrations
 [ -f ~/.cache/shell/starship.bash ] && source ~/.cache/shell/starship.bash

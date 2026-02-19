@@ -5,6 +5,9 @@ SHELL_DIR="$HOME/.config/shell"
 CACHE_DIR="$HOME/.cache/shell"
 mkdir -p "$CACHE_DIR"
 
+# Ensure tools are findable regardless of how bootstrap.sh was invoked
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 # Symlink dotfiles from ~/.config/shell/ to ~/
 for rc in bashrc bash_profile zshrc; do
     target="$HOME/.$rc"
@@ -40,7 +43,14 @@ if command -v devenv >/dev/null; then
     echo "devenv direnvrc: generated"
 fi
 
+# Mise - nushell activation (nushell can't eval)
+if command -v mise >/dev/null; then
+    mise activate nu > "$CACHE_DIR/mise.nu"
+    echo "mise: cached (nu)"
+fi
+
 # Create empty placeholders so source doesn't fail
 touch "$CACHE_DIR/starship.nu" 2>/dev/null || true
+touch "$CACHE_DIR/mise.nu" 2>/dev/null || true
 
 echo "Done. Restart your shell."

@@ -5,7 +5,7 @@ source ~/.config/shell/integrations/zoxide.nu
 source ~/.config/shell/integrations/atuin.nu
 source ~/.config/shell/integrations/yazi.nu
 source ~/.config/shell/integrations/cldy.nu
-source ~/.config/shell/integrations/mise.nu
+source ~/.cache/shell/mise.nu
 
 # Cached integrations (must exist - run bootstrap.sh first)
 source ~/.cache/shell/starship.nu

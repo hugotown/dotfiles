@@ -30,14 +30,14 @@ $env.TERMINAL = "alacritty"
 # SOPS secrets (portable)
 $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.local/share/sops/age/keys.txt"
 
-if (which sops | is-not-empty) and ($"($env.HOME)/.config/nixos/secrets/gemini_api_key.yaml" | path exists) {
+if (which sops | is-not-empty) and ($"($env.HOME)/.config/secrets/gemini_api_key.yaml" | path exists) {
     load-env {
-        GEMINI_API_KEY: (sops -d --extract '["GEMINI_API_KEY"]' $"($env.HOME)/.config/nixos/secrets/gemini_api_key.yaml" | str trim)
-        GOOGLE_GENERATIVE_AI_API_KEY: (sops -d --extract '["GEMINI_API_KEY"]' $"($env.HOME)/.config/nixos/secrets/gemini_api_key.yaml" | str trim)
+        GEMINI_API_KEY: (sops -d --extract '["GEMINI_API_KEY"]' $"($env.HOME)/.config/secrets/gemini_api_key.yaml" | str trim)
+        GOOGLE_GENERATIVE_AI_API_KEY: (sops -d --extract '["GEMINI_API_KEY"]' $"($env.HOME)/.config/secrets/gemini_api_key.yaml" | str trim)
     }
 }
-if (which sops | is-not-empty) and ($"($env.HOME)/.config/nixos/secrets/google_api_key.yaml" | path exists) {
+if (which sops | is-not-empty) and ($"($env.HOME)/.config/secrets/google_api_key.yaml" | path exists) {
     load-env {
-        GOOGLE_API_KEY: (sops -d --extract '["GOOGLE_API_KEY"]' $"($env.HOME)/.config/nixos/secrets/google_api_key.yaml" | str trim)
+        GOOGLE_API_KEY: (sops -d --extract '["GOOGLE_API_KEY"]' $"($env.HOME)/.config/secrets/google_api_key.yaml" | str trim)
     }
 }

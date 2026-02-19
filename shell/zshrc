@@ -7,7 +7,7 @@
 [ -f ~/.config/shell/integrations/zoxide.zsh ] && source ~/.config/shell/integrations/zoxide.zsh
 [ -f ~/.config/shell/integrations/atuin.zsh ] && source ~/.config/shell/integrations/atuin.zsh
 [ -f ~/.config/shell/integrations/yazi.zsh ] && source ~/.config/shell/integrations/yazi.zsh
-[ -f ~/.config/shell/integrations/mise.zsh ] && source ~/.config/shell/integrations/mise.zsh
+command -v mise >/dev/null && eval "$(mise activate zsh)"
 
 # 3. Cached integrations
 [ -f ~/.cache/shell/starship.zsh ] && source ~/.cache/shell/starship.zsh
