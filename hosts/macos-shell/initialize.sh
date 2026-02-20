@@ -4,6 +4,12 @@ set -euo pipefail
 echo "=== macOS (Homebrew) Setup ==="
 echo ""
 
+# --- Constraints ---
+[ "$(uname -s)" = "Darwin" ]           || { echo "Error: must run on macOS" >&2; exit 1; }
+[ "$EUID" -ne 0 ]                      || { echo "Error: do not run as root" >&2; exit 1; }
+command -v git >/dev/null 2>&1         || { echo "Error: git not found (install Xcode Command Line Tools)" >&2; exit 1; }
+[ -f "$HOME/.local/share/sops/age/keys.txt" ] || { echo "Error: age key not found at ~/.local/share/sops/age/keys.txt" >&2; exit 1; }
+
 echo "cloning dotfiles"
 rm -rf ~/.config
 git clone https://github.com/hugotown/dotfiles.git ~/.config

@@ -4,6 +4,13 @@ set -euo pipefail
 echo "=== Arch Linux Setup ==="
 echo ""
 
+# --- Constraints ---
+[ "$(uname -s)" = "Linux" ]            || { echo "Error: must run on Linux" >&2; exit 1; }
+[ "$EUID" -ne 0 ]                      || { echo "Error: do not run as root" >&2; exit 1; }
+command -v sudo >/dev/null 2>&1        || { echo "Error: sudo not found" >&2; exit 1; }
+[ -f "$HOME/.config/shell/bootstrap.sh" ] || { echo "Error: dotfiles not cloned — run: git clone https://github.com/hugotown/dotfiles.git ~/.config" >&2; exit 1; }
+[ -f "$HOME/.local/share/sops/age/keys.txt" ] || { echo "Error: age key not found at ~/.local/share/sops/age/keys.txt" >&2; exit 1; }
+
 echo "setting up claude config"
 cp -r ~/.config/claude ~/.claude
 
