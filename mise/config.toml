@@ -1,5 +1,5 @@
 [tools]
-node = 'lts'
+node = { version = "lts", postinstall = "npm install -g agent-browser && agent-browser install" }
 
 python = ['3.14.0']
 pipx = 'latest'
