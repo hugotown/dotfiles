@@ -16,3 +16,8 @@ command -v mise >/dev/null && eval "$(mise activate zsh)"
 # 4. User customizations
 alias cldy="claude --dangerously-skip-permissions"
 export PATH="$HOME/.opencode/bin:$PATH"
+
+add-secret() {
+    [ "$#" -lt 2 ] && { echo "Usage: add-secret VAR_NAME value" >&2; return 1; }
+    ~/.config/shell/scripts/add-secret "$1" "$2" && export "$1=$2"
+}

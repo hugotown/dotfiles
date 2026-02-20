@@ -15,13 +15,16 @@ end
 set -gx EDITOR nvim
 set -gx TERMINAL alacritty
 
-# SOPS secrets (portable: works anywhere sops+age are installed)
+# SOPS secrets — load all files in ~/.config/secrets/ dynamically
 set -gx SOPS_AGE_KEY_FILE "$HOME/.local/share/sops/age/keys.txt"
 
-if command -q sops; and test -f "$HOME/.local/share/sops/age/keys.txt"; and test -f "$HOME/.config/secrets/gemini_api_key.yaml"
-    set -gx GEMINI_API_KEY (sops -d "$HOME/.config/secrets/gemini_api_key.yaml" | yq '.GEMINI_API_KEY' | string trim)
-    set -gx GOOGLE_GENERATIVE_AI_API_KEY $GEMINI_API_KEY
-end
-if command -q sops; and test -f "$HOME/.local/share/sops/age/keys.txt"; and test -f "$HOME/.config/secrets/google_api_key.yaml"
-    set -gx GOOGLE_API_KEY (sops -d "$HOME/.config/secrets/google_api_key.yaml" | yq '.GOOGLE_API_KEY' | string trim)
+if command -q sops; and command -q yq; and test -f "$HOME/.local/share/sops/age/keys.txt"
+    for secret_file in $HOME/.config/secrets/*.yaml
+        test -f $secret_file; or continue
+        for pair in (sops -d $secret_file 2>/dev/null | yq 'to_entries[] | .key + "=" + .value' 2>/dev/null)
+            set -l kv (string split -m 1 '=' $pair)
+            test (count $kv) -eq 2; and set -gx $kv[1] $kv[2]
+        end
+    end
+    set -q GEMINI_API_KEY; and set -gx GOOGLE_GENERATIVE_AI_API_KEY $GEMINI_API_KEY
 end

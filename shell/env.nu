@@ -27,17 +27,12 @@ if ("/nix" | path exists) {
 $env.EDITOR = "nvim"
 $env.TERMINAL = "alacritty"
 
-# SOPS secrets (portable)
+# SOPS secrets — load all files in ~/.config/secrets/ dynamically
 $env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.local/share/sops/age/keys.txt"
 
-if (which sops | is-not-empty) and ($"($env.HOME)/.local/share/sops/age/keys.txt" | path exists) and ($"($env.HOME)/.config/secrets/gemini_api_key.yaml" | path exists) {
-    load-env {
-        GEMINI_API_KEY: (sops -d --extract '["GEMINI_API_KEY"]' $"($env.HOME)/.config/secrets/gemini_api_key.yaml" | str trim)
-        GOOGLE_GENERATIVE_AI_API_KEY: (sops -d --extract '["GEMINI_API_KEY"]' $"($env.HOME)/.config/secrets/gemini_api_key.yaml" | str trim)
+if (which sops | is-not-empty) and ($"($env.HOME)/.local/share/sops/age/keys.txt" | path exists) {
+    for file in (glob $"($env.HOME)/.config/secrets/*.yaml") {
+        try { sops -d $file | from yaml | load-env }
     }
-}
-if (which sops | is-not-empty) and ($"($env.HOME)/.local/share/sops/age/keys.txt" | path exists) and ($"($env.HOME)/.config/secrets/google_api_key.yaml" | path exists) {
-    load-env {
-        GOOGLE_API_KEY: (sops -d --extract '["GOOGLE_API_KEY"]' $"($env.HOME)/.config/secrets/google_api_key.yaml" | str trim)
-    }
+    if "GEMINI_API_KEY" in $env { $env.GOOGLE_GENERATIVE_AI_API_KEY = $env.GEMINI_API_KEY }
 }

@@ -19,6 +19,11 @@ $env.config = ($env.config | upsert hooks.pre_prompt (
 ))
 
 # User customizations
+def --env add-secret [name: string, value: string] {
+    run-external $"($env.HOME)/.config/shell/scripts/add-secret" $name $value
+    load-env {($name): $value}
+}
+
 alias l = ls --all
 alias c = clear
 alias ll = ls -l
