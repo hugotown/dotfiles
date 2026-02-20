@@ -9,10 +9,7 @@ echo ""
 [ "$EUID" -ne 0 ]                      || { echo "Error: do not run as root" >&2; exit 1; }
 command -v git >/dev/null 2>&1         || { echo "Error: git not found (install Xcode Command Line Tools)" >&2; exit 1; }
 [ -f "$HOME/.local/share/sops/age/keys.txt" ] || { echo "Error: age key not found at ~/.local/share/sops/age/keys.txt" >&2; exit 1; }
-
-echo "cloning dotfiles"
-rm -rf ~/.config
-git clone https://github.com/hugotown/dotfiles.git ~/.config
+[ -f "$HOME/.config/shell/bootstrap.sh" ]    || { echo "Error: dotfiles not cloned — run: git clone https://github.com/hugotown/dotfiles.git ~/.config" >&2; exit 1; }
 
 echo "setting up claude config"
 cp -r ~/.config/claude ~/.claude
