@@ -10,14 +10,23 @@ Generate and edit images via Gemini Python SDK (`google-genai`). Supports text-t
 
 **Prerequisite:** GEMINI_API_KEY must be validated by the parent `gemini` skill before proceeding. Include the client boilerplate from the parent skill at the top of every script.
 
-## Step 1: Select Model
+## Step 1: Select Model (Cost-Benefit)
 
-| Model | ID | Best For |
-|-------|----|----------|
-| **Nano Banana** | `gemini-2.5-flash-image` | Speed, high-volume, low-latency. Max 3 input images. 1K output. |
-| **Nano Banana Pro** | `gemini-3-pro-image-preview` | Pro quality, complex instructions, text rendering, 4K, Google Search grounding. Up to 14 input images. Thinking enabled by default. |
+Use the live pricing fetched in the parent skill's Step 0b. Available models:
 
-**Default:** Use `gemini-3-pro-image-preview` (Nano Banana Pro) for ALL requests. Only switch to `gemini-2.5-flash-image` if the user explicitly requests speed or simplicity.
+| Model | ID | Capabilities | Limitations |
+|-------|----|-------------|-------------|
+| **Nano Banana** | `gemini-2.5-flash-image` | Fast, cheap. Good quality for most tasks. | Max 3 input images. 1K output max. No 4K. No Google Search grounding. |
+| **Nano Banana Pro** | `gemini-3-pro-image-preview` | Best quality, text rendering, 4K, Google Search grounding. Up to 14 input images. Thinking enabled. | Significantly more expensive per image. |
+
+**Selection criteria:**
+- **Simple text-to-image, basic edits, style transfer** → Flash (much cheaper per image)
+- **Text rendering in images, 4K resolution, >3 input images, Search grounding needed** → Pro (these features require it)
+- **Complex multi-step instructions, high detail fidelity** → Pro justified
+- **User says "quick", "simple", "draft"** → Flash
+- **User says "high quality", "best", "production"** → Pro
+
+**State your choice and reasoning** (one line) before proceeding.
 
 ## Step 2: Determine Operation Type
 

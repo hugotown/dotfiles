@@ -12,18 +12,26 @@ Connects Gemini to real-time web content for accurate, cited responses via Pytho
 
 **Output:** NEVER save results to files. Always return the answer text and sources directly to the calling agent.
 
-## Step 1: Select Model
+## Step 1: Select Model (Cost-Benefit)
 
-| Model | ID | Notes |
-|-------|----|-------|
-| **Gemini 3 Flash** | `gemini-3-flash-preview` | Fast, cost-effective. Default. |
-| **Gemini 3 Pro** | `gemini-3-pro-preview` | Higher quality reasoning. |
-| **Gemini 2.5 Flash** | `gemini-2.5-flash` | Stable, production-ready. |
-| **Gemini 2.5 Pro** | `gemini-2.5-pro` | Best quality, higher cost. |
+Use the live pricing fetched in the parent skill's Step 0b. Available models for Google Search grounding:
 
-**Default:** Use `gemini-3-flash-preview` unless the user requests higher quality or a specific model.
+| Model | ID | Strengths |
+|-------|----|-----------|
+| **Gemini 3 Flash** | `gemini-3-flash-preview` | Fast, intelligent, cheap tokens. Search billed per query. |
+| **Gemini 3 Pro** | `gemini-3-pro-preview` | Best reasoning quality. Search billed per query. |
+| **Gemini 2.5 Flash** | `gemini-2.5-flash` | Stable, production-ready, cheap tokens. Search billed per prompt. |
+| **Gemini 2.5 Pro** | `gemini-2.5-pro` | Strong reasoning. Search billed per prompt. |
 
-**Billing:** Gemini 3 models are billed per search query executed. Gemini 2.5 and older are billed per prompt.
+**Selection criteria:**
+- **Simple factual queries** (weather, quick facts, news) → cheapest adequate model
+- **Multi-step reasoning with search** (analysis, comparison, synthesis) → mid-tier model
+- **Complex reasoning + search** (deep analysis, multi-source synthesis) → Pro-tier justified
+- **User requests specific model or quality** → honor it
+
+**Billing difference:** Gemini 3 models bill per individual search query executed (a single prompt may trigger multiple queries). Gemini 2.5 models bill per grounded prompt regardless of query count. Factor this into cost evaluation.
+
+**State your choice and reasoning** (one line) before proceeding.
 
 ## Step 2: Execute Grounded Search
 

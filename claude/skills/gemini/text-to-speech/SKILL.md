@@ -10,16 +10,25 @@ Generate expressive audio from text via Gemini Python SDK (`google-genai`). Supp
 
 **Prerequisite:** GEMINI_API_KEY must be validated by the parent `gemini` skill before proceeding. Include the client boilerplate from the parent skill at the top of every script.
 
-## Step 1: Select Model
+## Step 1: Select Model (Cost-Benefit)
 
-| Model | ID | Best For |
-|-------|----|----------|
-| **Flash TTS** | `gemini-2.5-flash-preview-tts` | Speed, high-volume, low-latency TTS. |
-| **Pro TTS** | `gemini-2.5-pro-preview-tts` | Higher quality, more nuanced performances. |
+Use the live pricing fetched in the parent skill's Step 0b. Available models:
 
-**Default:** Use `gemini-2.5-flash-preview-tts` for all requests. Switch to `gemini-2.5-pro-preview-tts` if the user explicitly requests higher quality or more nuanced delivery.
+| Model | ID | Strengths |
+|-------|----|-----------|
+| **Flash TTS** | `gemini-2.5-flash-preview-tts` | Fast, half the price of Pro. Good quality for most TTS tasks. |
+| **Pro TTS** | `gemini-2.5-pro-preview-tts` | More natural output, easier to steer, better for nuanced performances. 2x price. |
 
 Both models support single-speaker and multi-speaker (up to 2 speakers).
+
+**Selection criteria:**
+- **Standard narration, reading aloud, simple TTS** → Flash (adequate quality, half the cost)
+- **Nuanced performances, precise style control, podcast-quality delivery** → Pro justified
+- **Multi-speaker conversation** → Flash unless user requests premium quality
+- **User says "quick", "simple", "test"** → Flash
+- **User says "high quality", "professional", "polished"** → Pro
+
+**State your choice and reasoning** (one line) before proceeding.
 
 ## Step 2: Determine Operation Type
 

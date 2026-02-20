@@ -39,7 +39,19 @@ client = genai.Client(api_key=api_key)
 
 This boilerplate must be included at the top of every Python script. Sub-skills reference it as "the client boilerplate".
 
-## Step 1: Route to Sub-Skill
+### 0b. Fetch Live Pricing
+
+**MANDATORY** — Immediately after validating the API key, fetch current pricing:
+
+```bash
+curl -s https://ai.google.dev/gemini-api/docs/pricing.md.txt
+```
+
+Read the output and extract pricing for the models relevant to the user's task. You will use this data in Step 1 to select the most cost-effective model.
+
+**Do NOT skip this step. Do NOT rely on memorized or hardcoded prices — they change frequently.**
+
+## Step 1: Route to Sub-Skill and Select Model by Cost-Benefit
 
 Determine the user's intent and load the appropriate sub-skill:
 
@@ -52,29 +64,42 @@ Determine the user's intent and load the appropriate sub-skill:
 
 **After routing:** Read the corresponding `SKILL.md` file from this skill's directory and follow its instructions completely. The API key is already validated.
 
+### Model Selection: Cost-Benefit Analysis
+
+**MANDATORY** — Using the live pricing from Step 0b, select the most appropriate model. NOT the cheapest, NOT the most expensive — the best **cost-benefit** for the specific task.
+
+**Evaluation criteria (in order of priority):**
+
+1. **Task compatibility** — Does the model support the required capability? (e.g., 4K images, Google Search grounding, multi-speaker TTS). Discard incompatible models.
+2. **Task complexity** — Simple/routine tasks → cheaper model. Complex reasoning, text rendering in images, nuanced performances → pricier model justified.
+3. **User instructions** — If the user requests a specific model or quality level, honor it. If they say "quick", "simple", "fast" → lean cheaper. If they say "high quality", "best" → lean pricier.
+4. **Price delta** — If the cheaper model is adequate for the task, always prefer it. Only pay more when the price gap is justified by a clear capability difference the task needs.
+
+**After selecting, briefly state the chosen model and why** (one line, e.g., "Using gemini-2.5-flash-image ($0.039/img) — task is simple text-to-image, Pro quality not needed").
+
 ## Available Capabilities
 
 ### Nano Banana - Image Generation (Python SDK)
 - Text-to-image, image editing, style transfer, inpainting
 - Multi-turn conversational editing (chat API handles thought signatures automatically)
 - Up to 4K resolution, Google Search grounding
-- Models: `gemini-3-pro-image-preview` (default), `gemini-2.5-flash-image`
+- Models: `gemini-2.5-flash-image`, `gemini-3-pro-image-preview` — selected by cost-benefit
 - Output: `./gemini-skill/images/`
 
 ### Text-to-Speech (TTS) — Python SDK
 - Single-speaker and multi-speaker (up to 2) audio generation
 - 30 prebuilt voices with controllable style, accent, pace, tone
 - Auto-plays audio by default; saves to `./gemini-skill/audio/` only when user requests
-- Models: `gemini-2.5-flash-preview-tts` (default), `gemini-2.5-pro-preview-tts`
+- Models: `gemini-2.5-flash-preview-tts`, `gemini-2.5-pro-preview-tts` — selected by cost-benefit
 
 ### Deep Research — Python SDK
 - Autonomous multi-step research: plans, searches the web, reads sources, synthesizes reports
 - Supports multimodal inputs (images, PDFs, video), private data via file_search
 - Returns report directly to the agent by default; saves to `./gemini-skill/research/` only when user requests
-- Agent: `deep-research-pro-preview-12-2025` (Interactions API)
+- Agent: `deep-research-pro-preview-12-2025` (Interactions API) — verify cost before starting
 
 ### Google Search (Grounding) — Python SDK
 - Real-time web grounding for factual, cited responses
 - Inline citations with source attribution (`grounding_metadata`)
 - Always returns results directly to the agent (never saves to file)
-- Models: `gemini-3-flash-preview` (default), `gemini-3-pro-preview`, `gemini-2.5-flash`, `gemini-2.5-pro`
+- Models: `gemini-3-flash-preview`, `gemini-3-pro-preview`, `gemini-2.5-flash`, `gemini-2.5-pro` — selected by cost-benefit

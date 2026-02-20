@@ -12,13 +12,15 @@ Autonomously plans, searches, reads, and synthesizes multi-step research tasks v
 
 **Important:** Deep Research uses the **Interactions API** (`client.interactions`), NOT `generate_content`. It MUST run with `background=True`.
 
-## Step 1: Select Agent
+## Step 1: Select Agent (Cost-Benefit)
+
+Use the live pricing fetched in the parent skill's Step 0b to verify current Deep Research costs.
 
 | Agent | ID | Description |
 |-------|----|-------------|
 | **Deep Research Pro** | `deep-research-pro-preview-12-2025` | Powered by Gemini 3 Pro. Web search + URL reading + optional file_search. |
 
-Single agent available. No model selection needed.
+Single agent available. Model inference billed at Gemini 3 Pro rates (check live pricing). **Inform the user of the approximate cost** before starting research, as tasks can consume significant tokens during agentic loops.
 
 ## Step 2: Determine Input Type
 
