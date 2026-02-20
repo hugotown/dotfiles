@@ -65,6 +65,14 @@ fi
 
 echo "Setting up macOS-specific configs..."
 
+# Nushell on macOS uses ~/Library/Application Support/nushell/ instead of ~/.config/nushell/
+# Create source redirects so it reads the portable config from ~/.config/
+NU_MACOS="$HOME/Library/Application Support/nushell"
+mkdir -p "$NU_MACOS"
+echo 'source ~/.config/nushell/env.nu' > "$NU_MACOS/env.nu"
+echo 'source ~/.config/nushell/config.nu' > "$NU_MACOS/config.nu"
+echo "nushell: macOS config redirected to ~/.config/nushell/"
+
 touch "$HOME/.hushlogin"
 
 echo ""
