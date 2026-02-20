@@ -4,7 +4,10 @@ set -euo pipefail
 echo "=== Arch Linux Setup ==="
 echo ""
 
-# 1. Install packages (mirrors common-packages.nix)
+echo "setting up claude config"
+cp -r ~/.config/claude ~/.claude
+
+# 1. Install packages
 echo "Installing packages..."
 sudo pacman -S --needed --noconfirm \
     fish nushell zsh bash \
@@ -19,17 +22,10 @@ sudo pacman -S --needed --noconfirm \
     dust duf delta \
     lazydocker pnpm nodejs
 
-# yq-go (Go version, matches Nix's yq-go)
 sudo pacman -S --needed --noconfirm go-yq 2>/dev/null || true
 
-# AUR packages (requires yay or paru)
-if command -v yay >/dev/null; then
-    yay -S --needed --noconfirm mise
-elif command -v paru >/dev/null; then
-    paru -S --needed --noconfirm mise
-else
-    echo "WARNING: yay/paru not found. Install mise manually: https://mise.run"
-fi
+echo "Installing mise..."
+curl https://mise.run | sh
 
 echo ""
 
