@@ -8,6 +8,9 @@ echo "cloning dotfiles"
 rm -rf ~/.config
 git clone https://github.com/hugotown/dotfiles.git ~/.config
 
+echo "setting up claude config"
+cp -r ~/.config/claude ~/.claude
+
 echo "install rust"
 curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh -s -- -y
 source "$HOME/.cargo/env"

@@ -1,0 +1,10 @@
+*
+!commands/
+!commands/**
+!skills/
+!skills/**
+!hooks/
+!hooks/**
+!settings.json
+!.gitignore
+!statusline.sh
