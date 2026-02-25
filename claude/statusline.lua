@@ -1,6 +1,6 @@
 #!/usr/bin/env luajit
 -- Claude Code Status Line Script (Lua)
--- Displays: Parent/Current Dir | Model | Git Branch | Context Usage | Cost
+-- Displays: Parent/Current Dir | Model | Git Branch | Context Usage
 
 -- Minimal JSON decoder
 local function json_decode(str)
@@ -121,16 +121,18 @@ end
 local input = io.read("*a")
 local ok, data = pcall(json_decode, input)
 if not ok or type(data) ~= "table" then
-  io.write(" 🧠 [Claude] | 💲 $0.0000\n")
+  io.write(" \u{1f9e0} [Claude]\n")
   return
 end
 
 -- Extract values
 local model = (data.model and data.model.display_name) or "Claude"
 local current_dir = (data.workspace and data.workspace.current_dir) or ""
-local cost = (data.cost and data.cost.total_cost_usd) or 0
+
+-- Context window: use pre-calculated used_percentage (nil when no messages yet)
 local ctx = data.context_window or {}
-local used_pct = math.floor((ctx.used_percentage or 0) + 0.5)
+local used_pct_raw = ctx.used_percentage  -- may be nil/null before first message
+local used_pct = used_pct_raw and math.floor(used_pct_raw + 0.5) or nil
 
 -- Directory info: parent/current
 local dir_info = ""
@@ -149,11 +151,11 @@ end
 local git_info = ""
 if current_dir ~= "" then
   local qdir = shell_quote(current_dir)
-  local git_dir = exec("cd " .. qdir .. " 2>/dev/null && git rev-parse --git-dir 2>/dev/null")
+  local git_dir = exec("cd " .. qdir .. " 2>/dev/null && git -c gc.auto=0 rev-parse --git-dir 2>/dev/null")
   if git_dir ~= "" then
-    local branch = exec("cd " .. qdir .. " && git branch --show-current 2>/dev/null")
+    local branch = exec("cd " .. qdir .. " && git -c gc.auto=0 branch --show-current 2>/dev/null")
     if branch ~= "" then
-      local status = exec("cd " .. qdir .. " && git status --porcelain 2>/dev/null")
+      local status = exec("cd " .. qdir .. " && git -c gc.auto=0 status --porcelain 2>/dev/null")
       if status ~= "" then
         git_info = " | \u{1f342}  " .. branch .. "*"
       else
@@ -163,22 +165,24 @@ if current_dir ~= "" then
   end
 end
 
--- Context progress bar with ANSI colors
+-- Context progress bar with ANSI colors (only when data is available)
 local GREEN, YELLOW, RED, RESET = "\027[32m", "\027[33m", "\027[31m", "\027[0m"
-local bar_color = used_pct >= 90 and RED or used_pct >= 70 and YELLOW or GREEN
-local bar_width = 10
-local filled = math.floor(used_pct * bar_width / 100)
-local bar = bar_color .. string.rep("\u{2593}", filled) .. string.rep("\u{2591}", bar_width - filled) .. RESET
-local ctx_info = string.format(" %s %d%%", bar, used_pct)
-
--- Format cost
-local cost_fmt = string.format("%.4f", cost)
+local ctx_info = ""
+if used_pct ~= nil then
+  local bar_color = used_pct >= 90 and RED or used_pct >= 70 and YELLOW or GREEN
+  local bar_width = 10
+  local filled = math.floor(used_pct * bar_width / 100)
+  local bar = bar_color .. string.rep("\u{2593}", filled) .. string.rep("\u{2591}", bar_width - filled) .. RESET
+  ctx_info = string.format(" |  %s %d%%", bar, used_pct)
+else
+  ctx_info = " | \u{2591}\u{2591}\u{2591}\u{2591}\u{2591}\u{2591}\u{2591}\u{2591}\u{2591}\u{2591} --%"
+end
 
 -- Output status line
 if dir_info ~= "" then
-  io.write(string.format(" \u{1f4c1} %s | \u{1f9e0} [%s]%s |%s | \u{1f4b2} $%s\n",
-    dir_info, model, git_info, ctx_info, cost_fmt))
+  io.write(string.format(" \u{1f4c1} %s | \u{1f9e0} [%s]%s%s\n",
+    dir_info, model, git_info, ctx_info))
 else
-  io.write(string.format(" \u{1f9e0} [%s]%s |%s | \u{1f4b2} $%s\n",
-    model, git_info, ctx_info, cost_fmt))
+  io.write(string.format(" \u{1f9e0} [%s]%s%s\n",
+    model, git_info, ctx_info))
 end
