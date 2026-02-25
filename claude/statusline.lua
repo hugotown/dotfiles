@@ -1,6 +1,6 @@
 #!/usr/bin/env luajit
 -- Claude Code Status Line Script (Lua)
--- Displays: Parent/Current Dir | Model | Git Branch | Context Usage
+-- Displays: Session | Dir | Model | Git | Context | Tokens | Cache | Version
 
 -- Minimal JSON decoder
 local function json_decode(str)
@@ -128,11 +128,26 @@ end
 -- Extract values
 local model = (data.model and data.model.display_name) or "Claude"
 local current_dir = (data.workspace and data.workspace.current_dir) or ""
+local session_name = data.session_name  -- nil if not renamed
+local version = data.version  -- Claude Code version
 
--- Context window: use pre-calculated used_percentage (nil when no messages yet)
+-- Context window
 local ctx = data.context_window or {}
 local used_pct_raw = ctx.used_percentage  -- may be nil/null before first message
 local used_pct = used_pct_raw and math.floor(used_pct_raw + 0.5) or nil
+
+-- Token counts
+local total_in = ctx.total_input_tokens or 0
+local total_out = ctx.total_output_tokens or 0
+local total_tokens = total_in + total_out
+
+-- Cache hit rate
+local usage = ctx.current_usage or {}
+local cache_read = usage.cache_read_input_tokens or 0
+local cache_create = usage.cache_creation_input_tokens or 0
+local input_tokens = usage.input_tokens or 0
+local cache_total = cache_read + cache_create + input_tokens
+local cache_rate = cache_total > 0 and math.floor(cache_read * 100 / cache_total + 0.5) or nil
 
 -- Directory info: parent/current
 local dir_info = ""
@@ -178,11 +193,25 @@ else
   ctx_info = " | \u{2591}\u{2591}\u{2591}\u{2591}\u{2591}\u{2591}\u{2591}\u{2591}\u{2591}\u{2591} --%"
 end
 
+-- Format token count (human-readable)
+local function fmt_tokens(n)
+  if n >= 1000000 then return string.format("%.1fM", n / 1000000)
+  elseif n >= 1000 then return string.format("%.1fk", n / 1000)
+  else return tostring(n)
+  end
+end
+
+-- Build optional segments
+local session_seg = session_name and (" \u{1f4cb} " .. session_name .. " |") or ""
+local token_seg = total_tokens > 0 and string.format(" | \u{1f4ca} %s", fmt_tokens(total_tokens)) or ""
+local cache_seg = cache_rate and string.format(" | \u{1f4be} %d%%", cache_rate) or ""
+local version_seg = version and (" | v" .. version) or ""
+
 -- Output status line
 if dir_info ~= "" then
-  io.write(string.format(" \u{1f4c1} %s | \u{1f9e0} [%s]%s%s\n",
-    dir_info, model, git_info, ctx_info))
+  io.write(string.format("%s \u{1f4c1} %s | \u{1f9e0} [%s]%s%s%s%s%s\n",
+    session_seg, dir_info, model, git_info, ctx_info, token_seg, cache_seg, version_seg))
 else
-  io.write(string.format(" \u{1f9e0} [%s]%s%s\n",
-    model, git_info, ctx_info))
+  io.write(string.format("%s \u{1f9e0} [%s]%s%s%s%s%s\n",
+    session_seg, model, git_info, ctx_info, token_seg, cache_seg, version_seg))
 end
