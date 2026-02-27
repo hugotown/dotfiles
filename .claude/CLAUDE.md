@@ -172,3 +172,45 @@ Use `devenv` + `direnv` for project-scoped Nix environments with services (DBs, 
 **`.envrc`:** `use devenv`
 
 **`.gitignore`:** Add `.devenv/` and `.direnv/`
+
+## Appendix A: Anti-Hallucination Tools Comparison
+
+Comparison of Goose Recipes, Claude Code Hooks, and OpenCode Plugins for LLM hallucination prevention.
+
+### Ranking
+
+1. **Claude Code Hooks (85/100)** - Best overall. Real-time interception at every agentic loop step. Unique: LLM-as-judge (`type: "prompt"`), agent verifier (`type: "agent"`), Stop hook blocks premature completion, `TaskCompleted` quality gates. 16+ lifecycle events.
+2. **OpenCode Plugins (60/100)** - Best DX. JS/TS + Zod type safety, npm ecosystem, LSP diagnostics (real code intelligence). Missing: Stop hooks, LLM-as-judge.
+3. **Goose Recipes (45/100)** - Best for final output. `json_schema` forces structured output, `retry` + shell `checks` for automatic retry, `temperature: 0.0`. Weakness: validates only at the END, not during execution.
+
+### Key Capabilities Matrix
+
+| Capability | Claude Hooks | OpenCode Plugins | Goose Recipes |
+|---|:---:|:---:|:---:|
+| Pre-tool interception | `PreToolUse` | `tool.execute.before` | - |
+| Post-tool validation | `PostToolUse` | `tool.execute.after` | - |
+| Block tool calls | `deny` + exit 2 | `throw Error` | - |
+| Modify inputs in-flight | `updatedInput` | `output.args = ...` | - |
+| Prevent premature stop | **`Stop` block** | - | - |
+| LLM-as-judge | **`type: "prompt"`** | - | - |
+| Agent verifier | **`type: "agent"`** | - | - |
+| LSP code intelligence | - | **`lsp.client.diagnostics`** | - |
+| Forced structured output | - | - | **`json_schema`** |
+| Auto retry + validation | - | - | **`retry` + `checks`** |
+| Temperature control | - | - | **`temperature`** |
+| Task completion gate | **`TaskCompleted`** | - | - |
+| Type-safe validation | - | **TS + Zod** | - |
+| LLM portability | Claude only | Multi-provider | Any LLM |
+
+### Defense-in-Depth Strategy
+
+- **Layer 1 - Prevention (Goose):** `temperature: 0.0`, restricted `available_tools`, strict instructions
+- **Layer 2 - Detection (Hooks + OpenCode):** `PreToolUse`/`tool.execute.before` validate inputs, `type: "prompt"` LLM-as-judge, `type: "agent"` reads code to verify, LSP diagnostics
+- **Layer 3 - Containment (Hooks):** `Stop` hook blocks until criteria met, `TaskCompleted` quality gate, `PostToolUse` corrective feedback
+- **Layer 4 - Recovery (Goose):** `json_schema` validates final structure, `retry` + `checks` retries on failure, `on_failure` cleanup
+
+### Decision Guide
+
+- **Need real-time control?** -> Claude Code Hooks
+- **Need multi-LLM portability + type safety?** -> OpenCode Plugins
+- **Need guaranteed final output structure?** -> Goose Recipes
