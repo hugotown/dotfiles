@@ -214,3 +214,131 @@ Comparison of Goose Recipes, Claude Code Hooks, and OpenCode Plugins for LLM hal
 - **Need real-time control?** -> Claude Code Hooks
 - **Need multi-LLM portability + type safety?** -> OpenCode Plugins
 - **Need guaranteed final output structure?** -> Goose Recipes
+
+## Appendix B: Cost-Optimized Project Execution Pattern
+
+Strategy: use expensive LLM (Claude) once for planning, then execute with cheap/free LLMs guided by deterministic artifacts. Claude's intelligence crystallizes into artifacts (plugins + specs + rules), not consumed at execution time.
+
+### Recommended Tool: OpenCode Only (interactive/supervised)
+
+OpenCode wins as single tool because: hallucinations happen in **business logic** (HIGH risk), not scaffolding (LOW risk). OpenCode's unique strengths (real-time interception, LSP diagnostics, typed plugins) target the high-risk phase. Goose's unique strengths (retry, json_schema, temperature) target the low-risk phase.
+
+**Exception:** Use Goose only for **headless/unattended** execution (overnight builds, scheduled runs) where retry + checks + json_schema provide autonomous resilience.
+
+### Workflow
+
+1. **Claude (one-time $$$):** Generate architecture, epics, hyper-specific stories, OpenCode plugins, rules, and `opencode.json` config
+2. **OpenCode + cheap LLM:** One session per story, plugins provide runtime guardrails, LSP provides deterministic code validation
+
+### Project Structure
+
+```
+proyecto/
+├── .plan/
+│   ├── architecture.md
+│   └── stories/E1-S1-*.md          # Hyper-specific specs (acceptance criteria, exact files, constraints)
+├── .opencode/
+│   ├── plugins/
+│   │   ├── anti-hallucination.ts    # tool.execute.before: block out-of-scope writes, dangerous cmds
+│   │   ├── retry-gate.ts           # tool.execute.after: track test failures, stop after N retries
+│   │   ├── scaffold-validator.ts   # Custom tool: verify all expected files exist
+│   │   └── test-gate.ts            # tool.execute.after: detect placeholders, trivial tests
+│   ├── rules/
+│   │   ├── scaffold.md              # Instructions for scaffold phase
+│   │   └── story-flow.md           # Instructions for story implementation (TDD flow)
+│   └── package.json                 # Plugin dependencies
+├── opencode.json                    # Permissions (bash: ask, edit: allow), LSP config
+└── goose/                           # ONLY if headless execution needed
+    ├── recipe.yaml                  # Orchestrator for unattended runs
+    └── subrecipes/E1-S1-*.yaml
+```
+
+### Plugin Patterns (replicate Goose strengths in OpenCode)
+
+- **anti-hallucination.ts:** `tool.execute.before` blocks writes outside story scope, dangerous bash patterns. `tool.execute.after` detects placeholders (`// ...`, `TODO: implement`, `Not implemented`)
+- **retry-gate.ts:** `tool.execute.after` tracks test failures per command, throws error after 3 consecutive failures forcing the LLM to review
+- **scaffold-validator.ts:** Custom tool with Zod schema that checks all expected files exist before proceeding to business logic
+- **test-gate.ts:** `tool.execute.after` verifies test files are non-trivial (>5 lines) and contain real assertions
+
+### Execution: One Session Per Story
+
+Each story runs in a separate OpenCode session to ensure: fresh context (no contamination from previous stories), LSP re-analyzes current code, plugin state resets (retry counters, file scope), and failed stories don't affect committed work from previous ones.
+
+### Why Not Both Tools
+
+Running OpenCode + Goose simultaneously wastes ~70% extra tokens (idle context while the other tool runs). Running them sequentially adds operational complexity for marginal gain. OpenCode plugins can replicate Goose's retry logic and scaffold validation. The only thing OpenCode cannot replicate is Goose's headless autonomous execution with built-in retry.
+
+### Keys for Success
+
+- **Hyper-specific stories:** Exact acceptance criteria, exact file paths, exact constraints. Cheap LLMs need literal instructions
+- **LSP configured:** Real compiler errors catch more than any LLM-based validator
+- **One session per story:** Fresh context, clean plugin state, committed previous work
+- **Plugins over prompts:** Deterministic code catches hallucinations; prompt-based rules get ignored by cheap LLMs
+
+## Appendix C: Claude Code as Orchestrator Pattern
+
+Use Claude Code as architect/orchestrator that dispatches OpenCode workers in separate Terminal tabs. Claude Code never writes business logic — it plans, dispatches, monitors, and validates.
+
+### Core Mechanism
+
+```bash
+# Launch OpenCode in a new Terminal.app tab with a specific task
+osascript -e '
+tell application "Terminal"
+    activate
+    tell application "System Events" to keystroke "t" using command down
+    delay 0.5
+    do script "opencode --prompt \"Implement E1-S1 per .plan/stories/E1-S1.md\"" in front window
+end tell'
+```
+
+### Workflow Patterns
+
+**Sequential pipeline:** Claude Code checks `git log` for previous story commit → launches next story tab → waits → validates tests → launches next.
+
+**Parallel epics:** Each epic runs in its own tab on a separate git branch (`epic/auth`, `epic/api`). No conflicts. Merge at the end.
+
+**Post-session validation:** After each OpenCode tab finishes, Claude Code runs `git diff`, `npm test`, and `grep -r "TODO\|FIXME" src/` to verify quality before launching the next story.
+
+**Corrective sessions:** If validation fails, Claude Code launches a new tab with a targeted fix prompt: `"Tests in tests/auth/reset.test.ts fail with [error]. Fix it."`
+
+**Concurrency control:** Max 2-3 parallel tabs. Check with `pgrep -f "opencode" | wc -l` before launching.
+
+### Pre-session Context
+
+Claude Code writes a temp file with exact context, OpenCode reads it:
+
+```bash
+cat > /tmp/oc-session.md << 'EOF'
+Story: E1-S3 Password Reset
+Spec: .plan/stories/E1-S3.md
+Allowed files: src/routes/auth/reset.ts, tests/auth/reset.test.ts
+Dependency: E1-S1 login exists, reuse src/utils/jwt.ts
+Flow: TDD (tests first)
+EOF
+```
+
+### Architecture
+
+```
+Claude Code (orchestrator, expensive, one-time planning)
+├── Generates: .plan/, plugins, rules, opencode.json
+├── Dispatches: Terminal tabs with OpenCode sessions
+├── Monitors: git log, test results across branches
+├── Validates: post-session diffs, placeholder detection
+└── Corrects: launches fix tabs if validation fails
+
+OpenCode Workers (cheap LLM, plugin-guarded, one session per story)
+├── Tab 1 (epic/auth): E1-S1 → commit → E1-S2 → commit
+├── Tab 2 (epic/api):  E2-S1 → commit → E2-S2 → commit
+└── Tab 3 (merge): Integration tests after merge
+```
+
+### Specialized Tab Types
+
+| Phase | Prompt pattern | Purpose |
+|---|---|---|
+| Scaffold | `"Create base structure per architecture.md"` | File stubs, CRUDs, mock data |
+| Story impl | `"Implement E1-S1 per .plan/stories/E1-S1.md"` | Business logic with TDD |
+| Refactor | `"Refactor src/routes/auth/ removing duplication"` | Post-epic cleanup |
+| Integration | `"Write integration tests for Epic 1"` | Cross-story validation |
