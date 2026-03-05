@@ -27,9 +27,27 @@ sudo pacman -S --needed --noconfirm \
     procs xh httpie tealdeer \
     hyperfine tokei watchexec \
     dust duf delta \
-    lazydocker pnpm nodejs
+    lazydocker pnpm nodejs \
+    glow chafa ouch jless mpv ffmpegthumbnailer poppler
 
 sudo pacman -S --needed --noconfirm go-yq 2>/dev/null || true
+
+# AUR packages (require yay/paru)
+if command -v yay >/dev/null 2>&1; then
+    echo "Installing AUR packages via yay..."
+    yay -S --needed --noconfirm mdcat tdf pandoc-bin
+elif command -v paru >/dev/null 2>&1; then
+    echo "Installing AUR packages via paru..."
+    paru -S --needed --noconfirm mdcat tdf pandoc-bin
+else
+    echo "Warning: yay/paru not found — skipping AUR packages (mdcat, tdf, pandoc-bin)"
+    echo "Install manually: yay -S mdcat tdf pandoc-bin"
+fi
+
+if ! command -v goose >/dev/null; then
+    echo "Installing Goose CLI..."
+    curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash
+fi
 
 echo "Installing mise..."
 curl https://mise.run | sh

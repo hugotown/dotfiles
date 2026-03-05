@@ -22,6 +22,11 @@ rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-andro
 echo "install IOS rust compiler"
 rustup target add aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim
 
+if ! command -v goose >/dev/null; then
+    echo "Installing Goose CLI..."
+    curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash
+fi
+
 echo "Installing mise-in-place mise.jdx"
 curl https://mise.run | sh
 
@@ -46,7 +51,14 @@ brew install \
   bat eza jq yq git-delta dust duf \
   procs xh httpie tealdeer \
   hyperfine tokei watchexec \
-  curl wget tree btop ncdu just lazygit lazydocker
+  curl wget tree btop ncdu just lazygit lazydocker \
+  glow mdcat chafa ouch jless mpv ffmpegthumbnailer pandoc
+
+# tdf (terminal PDF viewer) - not in Homebrew, install via cargo
+if ! command -v tdf >/dev/null; then
+    echo "Installing tdf (terminal PDF viewer)..."
+    cargo install --git https://github.com/itsjunetime/tdf
+fi
 
 echo ""
 
