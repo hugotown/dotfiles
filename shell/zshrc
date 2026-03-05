@@ -21,3 +21,6 @@ add-secret() {
     [ "$#" -lt 2 ] && { echo "Usage: add-secret VAR_NAME value" >&2; return 1; }
     ~/.config/shell/scripts/add-secret "$1" "$2" && export "$1=$2"
 }
+
+# Added by Antigravity
+export PATH="/Users/hugoruiz/.antigravity/antigravity/bin:$PATH"
