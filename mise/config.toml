@@ -1,7 +1,7 @@
 [tools]
 node = { version = "lts", postinstall = "npm install -g agent-browser && agent-browser install && npx playwright install" }
 
-python = ['3.14.0']
+python = { version = "3.14.0", postinstall = "pip install -q google-genai Pillow" }
 pipx = 'latest'
 uv = 'latest'
 
