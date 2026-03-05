@@ -126,23 +126,19 @@ Other valid activation scripts: symlinks (hammerspoon), tool installation (claud
 
 **Architecture:**
 ```
-~/.config/nixos/secrets/*.yaml  (ENCRYPTED in git)
-        ↓ sops -d (runtime, conditional)
+~/.config/secrets/*.yaml  (ENCRYPTED in git, one key per file)
+        ↓ sops -d (runtime, dynamic loop)
     ENV vars in memory (never on disk)
 ```
 
 **Age Private Key Location:** `~/.local/share/sops/age/keys.txt` (permissions: `600`)
 
-**Portable detection** in env files:
-```fish
-# Only load if sops is installed AND secret file exists
-if command -q sops; and test -f "$HOME/.config/nixos/secrets/gemini_api_key.yaml"
-    set -gx GEMINI_API_KEY (sops -d ... | yq '.GEMINI_API_KEY' | string trim)
-end
-```
+**How it works:** Each env file (`env.zsh`, `env.fish`, `env.nu`) loops over all `~/.config/secrets/*.yaml` files, decrypts them with `sops -d`, and exports every key-value pair as environment variables automatically. No per-key hardcoding needed.
+
+**Update a secret:** `sops --set '["KEY_NAME"] "new_value"' ~/.config/secrets/file.yaml`
 
 **Security Rules:**
-- Encrypted secrets in git (`~/.config/nixos/secrets/*.yaml`)
+- Encrypted secrets in git (`~/.config/secrets/*.yaml`)
 - In-memory decryption only (`sops -d`)
 - Age key outside git (`~/.local/share/`)
 - NEVER use `sops-nix` with `path =` (creates plaintext files)
