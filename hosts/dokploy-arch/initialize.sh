@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "=== Arch Linux Setup ==="
+echo "=== Dokploy Arch Linux Setup (SSH container) ==="
 echo ""
 
 # --- Constraints ---
@@ -9,18 +9,17 @@ echo ""
 [ "$EUID" -ne 0 ]                      || { echo "Error: do not run as root" >&2; exit 1; }
 command -v sudo >/dev/null 2>&1        || { echo "Error: sudo not found" >&2; exit 1; }
 [ -f "$HOME/.config/shell/bootstrap.sh" ] || { echo "Error: dotfiles not cloned — run: git clone https://github.com/hugotown/dotfiles.git ~/.config" >&2; exit 1; }
-[ -f "$HOME/.local/share/sops/age/keys.txt" ] || { echo "Error: age key not found at ~/.local/share/sops/age/keys.txt" >&2; exit 1; }
 
 echo "setting up claude config"
-cp -r ~/.config/claude ~/.claude
+cp -r ~/.config/claude ~/.claude || true
 
-# 1. Install packages
+# 1. Install packages (no GUI: no alacritty, kitty, wezterm, mpv)
 echo "Installing packages..."
 sudo pacman -S --needed --noconfirm \
     fish nushell zsh bash \
     zoxide atuin starship yazi \
     sops age gnupg \
-    neovim alacritty kitty wezterm tmux \
+    neovim tmux \
     bat ripgrep eza fd fzf jq \
     curl wget tree btop ncdu just lazygit \
     git gh \
@@ -28,7 +27,7 @@ sudo pacman -S --needed --noconfirm \
     hyperfine tokei watchexec \
     dust duf git-delta \
     lazydocker pnpm nodejs \
-    glow chafa ouch jless mpv ffmpegthumbnailer poppler \
+    glow chafa ouch jless ffmpegthumbnailer poppler \
     ffmpeg imagemagick p7zip duckdb resvg iperf3 rust go
 
 sudo pacman -S --needed --noconfirm go-yq 2>/dev/null || true

@@ -16,7 +16,7 @@ command -v mise >/dev/null && eval "$(mise activate bash)"
 
 # 3. Cached integrations
 [ -f ~/.cache/shell/starship.bash ] && source ~/.cache/shell/starship.bash
-[ -f ~/.cache/shell/direnv.bash ] && source ~/.cache/shell/direnv.bash
+
 
 # 4. User customizations
 alias cldy="claude --dangerously-skip-permissions"
@@ -25,3 +25,5 @@ add-secret() {
     [ "$#" -lt 2 ] && { echo "Usage: add-secret VAR_NAME value" >&2; return 1; }
     ~/.config/shell/scripts/add-secret "$1" "$2" && export "$1=$2"
 }
+
+if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init bash)"; fi

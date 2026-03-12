@@ -1,0 +1,69 @@
+---
+services:
+  arch-dev:
+    image: archlinux:latest
+    container_name: arch-dev
+    hostname: arch-dev
+    ports:
+      - 2222:22
+    volumes:
+      - arch-home:/home/hugo
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+
+        if [ ! -f /home/hugo/.setup-done ]; then
+          echo "=== First boot setup ==="
+
+          # Minimal base
+          pacman -Syu --noconfirm
+          pacman -S --needed --noconfirm base-devel openssh git sudo
+
+          # Create user
+          if ! id hugo &>/dev/null; then
+            useradd -m -s /bin/zsh -G wheel hugo
+            echo "hugo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          fi
+
+          # SSH: key-only auth
+          ssh-keygen -A
+          sed -i 's/#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+          sed -i 's/#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+          sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+          mkdir -p /home/hugo/.ssh
+          echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDQpG4vWRjD1KJqEjs8zhSCGH+E0MjCpXKkSdbmg91sm hugo@arch-dev" > /home/hugo/.ssh/authorized_keys
+          chmod 700 /home/hugo/.ssh
+          chmod 600 /home/hugo/.ssh/authorized_keys
+          chown -R hugo:hugo /home/hugo/.ssh
+
+          # Clone dotfiles and run initialize.sh
+          rm -rf /home/hugo/.config
+          su - hugo -c "git clone https://github.com/hugotown/dotfiles.git /home/hugo/.config"
+
+          # Install yay before initialize.sh (needed for AUR packages)
+          su - hugo -c "cd /tmp && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && makepkg -si --noconfirm && rm -rf /tmp/yay-bin" || true
+
+          # Run the dotfiles initialize script
+          su - hugo -c "bash /home/hugo/.config/hosts/dokploy-arch/initialize.sh" || true
+
+          chown -R hugo:hugo /home/hugo
+          touch /home/hugo/.setup-done
+          echo "=== Setup complete ==="
+        else
+          echo "=== Setup already done, starting sshd ==="
+          if ! id hugo &>/dev/null; then
+            pacman -Syu --noconfirm
+            pacman -S --needed --noconfirm openssh sudo zsh
+            useradd -m -s /bin/zsh -G wheel hugo
+            echo "hugo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          fi
+          ssh-keygen -A 2>/dev/null || true
+        fi
+
+        echo "Starting sshd..."
+        /usr/sbin/sshd -D
+
+volumes:
+  arch-home:

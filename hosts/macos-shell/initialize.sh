@@ -52,7 +52,12 @@ brew install \
   procs xh httpie tealdeer \
   hyperfine tokei watchexec \
   curl wget tree btop ncdu just lazygit lazydocker \
-  glow mdcat chafa ouch jless mpv ffmpegthumbnailer pandoc
+  glow mdcat chafa ouch jless mpv ffmpegthumbnailer pandoc \
+  duckdb iperf3 \
+  dlvhdr/formulae/diffnav gemini-cli worktrunk
+
+# gh extensions
+gh extension install dlvhdr/gh-dash 2>/dev/null || true
 
 # tdf (terminal PDF viewer) - not in Homebrew, install via cargo
 if ! command -v tdf >/dev/null; then

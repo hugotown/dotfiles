@@ -10,13 +10,6 @@ source ~/.cache/shell/mise.nu
 # Cached integrations (must exist - run bootstrap.sh first)
 source ~/.cache/shell/starship.nu
 
-# Direnv (inline hook for Nushell - no cached file needed)
-$env.config = ($env.config | upsert hooks.pre_prompt (
-    $env.config.hooks.pre_prompt | append {||
-        if (which direnv | is-empty) { return }
-        direnv export json | from json | default {} | load-env
-    }
-))
 
 # User customizations
 def --env add-secret [name: string, value: string] {

@@ -28,20 +28,6 @@ if command -v starship >/dev/null; then
     echo "starship: cached"
 fi
 
-# Direnv (contains absolute paths to binary)
-if command -v direnv >/dev/null; then
-    direnv hook fish > "$CACHE_DIR/direnv.fish"
-    direnv hook zsh  > "$CACHE_DIR/direnv.zsh"
-    direnv hook bash > "$CACHE_DIR/direnv.bash"
-    echo "direnv: cached"
-fi
-
-# Devenv direnvrc (if devenv is installed)
-if command -v devenv >/dev/null; then
-    mkdir -p "$HOME/.config/direnv"
-    devenv direnvrc > "$HOME/.config/direnv/direnvrc"
-    echo "devenv direnvrc: generated"
-fi
 
 # Mise - nushell activation (nushell can't eval)
 if command -v mise >/dev/null; then
