@@ -28,9 +28,15 @@ sudo pacman -S --needed --noconfirm \
     dust duf git-delta \
     lazydocker pnpm nodejs \
     glow chafa ouch jless ffmpegthumbnailer poppler \
-    ffmpeg imagemagick p7zip duckdb resvg iperf3 rust go
+    ffmpeg imagemagick p7zip duckdb resvg iperf3 go
 
 sudo pacman -S --needed --noconfirm go-yq 2>/dev/null || true
+
+# Install rustup (needed for AUR builds and cargo tools)
+if ! command -v rustup >/dev/null; then
+    curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh -s -- -y
+    source "$HOME/.cargo/env"
+fi
 
 # AUR packages (require yay/paru)
 if command -v yay >/dev/null 2>&1; then
