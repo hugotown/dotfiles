@@ -19,7 +19,7 @@ services:
 
           # Minimal base
           pacman -Syu --noconfirm
-          pacman -S --needed --noconfirm base-devel openssh git sudo
+          pacman -S --needed --noconfirm base-devel openssh git sudo zsh
 
           # Create user
           if ! id hugo &>/dev/null; then
@@ -38,7 +38,8 @@ services:
           chmod 600 /home/hugo/.ssh/authorized_keys
           chown -R hugo:hugo /home/hugo/.ssh
 
-          # Clone dotfiles and run initialize.sh
+          # Fix volume permissions and clone dotfiles
+          chown -R hugo:hugo /home/hugo
           rm -rf /home/hugo/.config
           su - hugo -c "git clone https://github.com/hugotown/dotfiles.git /home/hugo/.config"
 

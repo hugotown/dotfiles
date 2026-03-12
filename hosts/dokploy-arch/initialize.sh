@@ -22,7 +22,7 @@ sudo pacman -S --needed --noconfirm \
     neovim tmux \
     bat ripgrep eza fd fzf jq \
     curl wget tree btop ncdu just lazygit \
-    git gh \
+    git github-cli \
     procs xh httpie tealdeer \
     hyperfine tokei watchexec \
     dust duf git-delta \
