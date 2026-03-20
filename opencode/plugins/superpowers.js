@@ -1,0 +1,1 @@
+/Users/hugoruiz/.config/opencode/superpowers/.opencode/plugins/superpowers.js
