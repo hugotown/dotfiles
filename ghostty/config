@@ -4,7 +4,7 @@ background-blur-radius = 20
 background-opacity = 0.7
 mouse-hide-while-typing = true
 window-decoration = false
-macos-option-as-alt = true
+macos-option-as-alt = left
 theme = TokyoNight Night
 maximize = true
 
