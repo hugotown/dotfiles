@@ -1,7 +1,7 @@
 [tools]
 node = { version = "lts", postinstall = "npm install -g agent-browser && agent-browser install && npx playwright install" }
 
-python = { version = "3.14.0", postinstall = "pip install -q google-genai Pillow" }
+python = { version = "3.14.0", postinstall = "uv pip install -q google-genai Pillow duckdb streamlit plotly" }
 pipx = 'latest'
 uv = 'latest'
 
@@ -12,3 +12,7 @@ pnpm = 'latest'
 "rust" = { version = "1.91.1" }
 # "zig" =  { version = "0.16.0" }
 # "java" = { version = "openjdk-17" }
+
+[tasks.ai-telemetry]
+description = "Launch AI Telemetry Streamlit dashboard"
+run = "python -m streamlit run ~/obsidian/ai-telemetry/app.py"
