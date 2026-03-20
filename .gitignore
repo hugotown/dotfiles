@@ -73,5 +73,3 @@ configstore/
 tmux/plugins/
 tmux/resurrect/
 
-# OpenCode - generated config with secrets (use inject-secrets.sh to regenerate)
-opencode/opencode.json
