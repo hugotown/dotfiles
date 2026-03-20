@@ -1,0 +1,263 @@
+import type { Plugin } from "@opencode-ai/plugin"
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "fs"
+import { basename } from "path"
+import { homedir } from "os"
+import { execSync } from "child_process"
+
+const BASE = `${homedir()}/obsidian/ai-telemetry/opencode`
+const EVENTS_FILE = `${BASE}/events.jsonl`
+const DB_FILE = `${BASE}/telemetry.duckdb`
+const SCHEMA_FILE = `${homedir()}/obsidian/ai-telemetry/shared/schema.sql`
+
+mkdirSync(BASE, { recursive: true })
+
+function generateId(eventType: string): string {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${eventType}`
+}
+
+function localTimestamp(): string {
+  const now = new Date()
+  const off = -now.getTimezoneOffset()
+  const sign = off >= 0 ? "+" : "-"
+  const pad = (n: number) => String(Math.abs(n)).padStart(2, "0")
+  const hh = pad(Math.floor(Math.abs(off) / 60))
+  const mm = pad(Math.abs(off) % 60)
+  const ms = String(now.getMilliseconds()).padStart(3, "0")
+  return now.getFullYear() + "-" +
+    pad(now.getMonth() + 1) + "-" +
+    pad(now.getDate()) + "T" +
+    pad(now.getHours()) + ":" +
+    pad(now.getMinutes()) + ":" +
+    pad(now.getSeconds()) + "." + ms +
+    sign + hh + mm
+}
+
+function buildEvent(
+  eventType: string,
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    id: generateId(eventType),
+    timestamp: localTimestamp(),
+    source: "opencode",
+    event_type: eventType,
+    session_id: "",
+    project_path: process.cwd(),
+    project_name: basename(process.cwd()),
+    model: "",
+    tool_name: "",
+    tool_input: null,
+    tool_result: null,
+    tool_duration_ms: null,
+    tool_success: null,
+    prompt_text: "",
+    stop_reason: "",
+    error_message: "",
+    raw_event: null,
+    ...overrides,
+  }
+}
+
+function ingestToDuckDB(eventJson: string): void {
+  const tmpFile = `/tmp/oc_event_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.jsonl`
+  try {
+    writeFileSync(tmpFile, eventJson + "\n")
+    const schema = readFileSync(SCHEMA_FILE, "utf-8")
+    const cols = [
+      "id: 'VARCHAR'", "timestamp: 'TIMESTAMP'", "source: 'VARCHAR'",
+      "event_type: 'VARCHAR'", "session_id: 'VARCHAR'", "project_path: 'VARCHAR'",
+      "project_name: 'VARCHAR'", "model: 'VARCHAR'", "tool_name: 'VARCHAR'",
+      "tool_input: 'JSON'", "tool_result: 'JSON'", "tool_duration_ms: 'INTEGER'",
+      "tool_success: 'BOOLEAN'", "prompt_text: 'VARCHAR'", "stop_reason: 'VARCHAR'",
+      "error_message: 'VARCHAR'", "raw_event: 'JSON'",
+    ].join(", ")
+    execSync(
+      `duckdb '${DB_FILE}' -c "${schema} INSERT INTO events SELECT * FROM read_json('${tmpFile}', columns={${cols}}, format='newline_delimited') WHERE id NOT IN (SELECT id FROM events);"`,
+      { stdio: "ignore", timeout: 5000 },
+    )
+  } catch { /* non-blocking */ }
+  try { unlinkSync(tmpFile) } catch {}
+}
+
+function appendEvent(event: Record<string, unknown>): void {
+  const json = JSON.stringify(event)
+  appendFileSync(EVENTS_FILE, json + "\n")
+  ingestToDuckDB(json)
+}
+
+// Track which assistant messages we've already captured (dedup streaming updates)
+const capturedMessages = new Set<string>()
+
+const TelemetryPlugin: Plugin = async ({ client }) => {
+  await client.app.log({
+    body: { service: "telemetry", level: "info", message: "telemetry plugin loaded v2" },
+  })
+
+  return {
+    // Tool execution hooks — use callID for precise tracking
+    "tool.execute.before": async (input, output) => {
+      const event = buildEvent("tool.start", {
+        tool_name: input.tool,
+        tool_input: output.args ?? null,
+        session_id: input.sessionID ?? "",
+        raw_event: { input, output },
+      })
+      appendEvent(event)
+    },
+
+    "tool.execute.after": async (input, output) => {
+      const hasError = output.title?.toLowerCase().includes("error") ||
+        output.output?.toLowerCase().includes("error")
+      const eventType = hasError ? "tool.error" : "tool.end"
+
+      const event = buildEvent(eventType, {
+        tool_name: input.tool,
+        tool_result: { title: output.title, output: output.output },
+        tool_duration_ms: null, // duration comes from message.part.updated ToolPart
+        tool_success: !hasError,
+        session_id: input.sessionID ?? "",
+        error_message: hasError ? output.output : "",
+        raw_event: { input, output },
+      })
+      appendEvent(event)
+    },
+
+    // Generic event hook — captures sessions, permissions, errors
+    "event": async ({ event }: any) => {
+      const eventType = event?.type ?? ""
+
+      // --- message.updated: deduplicate using time.completed ---
+      if (eventType === "message.updated") {
+        const info = event?.properties?.info ?? {}
+        const role = info.role ?? ""
+        const msgId = info.id ?? ""
+
+        if (role === "assistant") {
+          // Only capture when message is finished (time.completed exists)
+          if (!info.time?.completed) return
+          // Skip if already captured this message
+          if (capturedMessages.has(msgId)) return
+          capturedMessages.add(msgId)
+
+          appendEvent(buildEvent("response.complete", {
+            session_id: info.sessionID ?? "",
+            model: info.modelID ?? "",
+            tool_input: info.tokens ?? null,
+            tool_result: { cost: info.cost ?? 0 },
+            stop_reason: info.finish ?? "",
+            raw_event: event,
+          }))
+          return
+        }
+
+        if (role === "user") {
+          // User prompts — capture once (they don't stream)
+          if (capturedMessages.has(msgId)) return
+          capturedMessages.add(msgId)
+
+          const summary = info.summary
+          const promptText = typeof summary === "string"
+            ? summary
+            : summary?.title ?? JSON.stringify(summary ?? "")
+
+          appendEvent(buildEvent("prompt.submit", {
+            session_id: info.sessionID ?? "",
+            prompt_text: promptText,
+            raw_event: event,
+          }))
+        }
+        return
+      }
+
+      // --- message.part.updated: capture step-finish for precise cost/tokens ---
+      if (eventType === "message.part.updated") {
+        const part = event?.properties?.part ?? {}
+
+        // StepFinishPart — precise per-step cost and tokens (emitted once)
+        if (part.type === "step-finish") {
+          appendEvent(buildEvent("step.finish", {
+            session_id: part.sessionID ?? "",
+            tool_result: { cost: part.cost ?? 0 },
+            tool_input: part.tokens ?? null,
+            stop_reason: part.reason ?? "",
+            raw_event: event,
+          }))
+          return
+        }
+
+        // ToolPart with completed state — native timing from OpenCode
+        if (part.type === "tool" && part.state?.status === "completed") {
+          const time = part.state.time ?? {}
+          const duration = (time.start && time.end)
+            ? Math.round(time.end - time.start)
+            : null
+          appendEvent(buildEvent("tool.timing", {
+            session_id: part.sessionID ?? "",
+            tool_name: part.tool ?? "",
+            tool_duration_ms: duration,
+            tool_success: true,
+            tool_input: part.state.input ?? null,
+            tool_result: { title: part.state.title, output: part.state.output },
+            raw_event: event,
+          }))
+          return
+        }
+
+        // ToolPart with error state
+        if (part.type === "tool" && part.state?.status === "error") {
+          const time = part.state.time ?? {}
+          const duration = (time.start && time.end)
+            ? Math.round(time.end - time.start)
+            : null
+          appendEvent(buildEvent("tool.timing.error", {
+            session_id: part.sessionID ?? "",
+            tool_name: part.tool ?? "",
+            tool_duration_ms: duration,
+            tool_success: false,
+            error_message: part.state.error ?? "",
+            raw_event: event,
+          }))
+          return
+        }
+        return
+      }
+
+      // --- Other mapped events ---
+      const SIMPLE_MAP: Record<string, string> = {
+        "session.created":    "session.start",
+        "session.deleted":    "session.end",
+        "session.idle":       "stop",
+        "session.compacted":  "session.compact",
+        "session.error":      "session.error",
+        "permission.asked":   "permission.ask",
+        "permission.replied": "permission.reply",
+      }
+
+      const normalized = SIMPLE_MAP[eventType]
+      if (!normalized) return
+
+      const info = event?.properties?.info ?? event?.properties ?? {}
+      const overrides: Record<string, unknown> = {
+        session_id: info.sessionID ?? info.id ?? "",
+        raw_event: event,
+      }
+
+      if (normalized === "session.start" || normalized === "session.end") {
+        overrides.model = info.model?.modelID ?? info.modelID ?? ""
+      }
+
+      if (normalized === "permission.ask" || normalized === "permission.reply") {
+        overrides.tool_name = info.tool ?? ""
+        overrides.stop_reason = info.action ?? ""
+      }
+
+      if (normalized === "session.error") {
+        overrides.error_message = info.error ?? info.message ?? ""
+      }
+
+      appendEvent(buildEvent(normalized, overrides))
+    },
+  }
+}
+
+export default TelemetryPlugin
