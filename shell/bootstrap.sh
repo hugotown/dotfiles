@@ -9,7 +9,7 @@ mkdir -p "$CACHE_DIR"
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 # Symlink dotfiles from ~/.config/shell/ to ~/
-for rc in bashrc bash_profile zshrc; do
+for rc in bashrc bash_profile zshrc zshenv; do
     target="$HOME/.$rc"
     source="$SHELL_DIR/$rc"
     if [ -f "$source" ] && [ ! -L "$target" ]; then

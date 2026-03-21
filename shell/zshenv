@@ -1,0 +1,3 @@
+# Loaded by zsh on EVERY invocation (login, interactive, scripts, SSH commands)
+# Keep this minimal — only environment variables and PATH
+[ -f ~/.config/shell/env.zsh ] && source ~/.config/shell/env.zsh
