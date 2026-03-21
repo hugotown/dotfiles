@@ -79,6 +79,10 @@ export PATH="$HOME/.local/bin:$PATH"
 echo "Installing mise tools (runtimes + postinstall hooks)..."
 mise install -y
 
+# Playwright system deps (after node is available via mise)
+echo "Installing Playwright system deps..."
+sudo "$(mise which npx)" playwright install-deps 2>/dev/null || true
+
 # Python packages (after mise so uv is available)
 echo "Installing Python packages..."
 eval "$(mise activate bash)" 2>/dev/null || true
