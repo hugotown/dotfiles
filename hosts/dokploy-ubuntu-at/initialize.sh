@@ -235,5 +235,140 @@ if ! command -v opencode >/dev/null; then
 fi
 
 echo ""
-echo "=== Done ==="
+echo "=== Setup complete. Updating all tools to latest versions in background... ==="
 echo "Open a new terminal. Fish/Nushell/Zsh/Bash are ready."
+echo "(Background update log: /tmp/tool-update.log)"
+
+# ──────────────────────────────────────────────
+# 7. Background update — upgrade everything to latest versions
+#    Runs after setup so the shell is usable immediately
+# ──────────────────────────────────────────────
+(
+    exec > /tmp/tool-update.log 2>&1
+    echo "=== Background update started at $(date) ==="
+
+    # Helper: download latest release binary from GitHub
+    gh_latest() {
+        local repo="$1" pattern="$2"
+        curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" \
+            | grep -Po "\"browser_download_url\": *\"[^\"]*${pattern}[^\"]*\"" \
+            | head -1 | grep -Po 'https://[^"]+'
+    }
+
+    gh_update() {
+        local cmd="$1" repo="$2" pattern="$3"
+        echo "Updating $cmd..."
+        local url
+        url=$(gh_latest "$repo" "$pattern")
+        [ -z "$url" ] && { echo "  SKIP: no release found for $cmd"; return 0; }
+        local file="/tmp/${cmd}-update"
+        curl -fsSL -o "$file" "$url"
+        case "$url" in
+            *.deb)
+                sudo dpkg -i "$file" ;;
+            *.tar.gz|*.tgz)
+                tar xzf "$file" -C /tmp
+                find /tmp -maxdepth 2 -name "$cmd" -type f -executable -exec sudo install {} /usr/local/bin/ \; ;;
+            *.tar.xz)
+                tar xJf "$file" -C /tmp
+                find /tmp -maxdepth 2 -name "$cmd" -type f -executable -exec sudo install {} /usr/local/bin/ \; ;;
+            *.zip)
+                unzip -o "$file" -d /tmp/"${cmd}-upd"
+                find /tmp/"${cmd}-upd" -name "$cmd" -type f -executable -exec sudo install {} /usr/local/bin/ \; ;;
+            *)
+                sudo install "$file" /usr/local/bin/"$cmd" ;;
+        esac
+        rm -rf "$file" /tmp/"${cmd}-upd" 2>/dev/null
+        echo "  OK: $cmd updated"
+    }
+
+    # apt packages
+    sudo apt-get update -qq && sudo apt-get upgrade -y -qq
+
+    # mise tools (runtimes)
+    mise upgrade -y 2>/dev/null || true
+
+    # CLI tools from GitHub
+    gh_update glow        charmbracelet/glow       "amd64\\.deb"
+    gh_update starship    starship/starship        "x86_64-unknown-linux-musl\\.tar\\.gz"
+    gh_update zoxide      ajeetdsouza/zoxide       "x86_64-unknown-linux-musl\\.tar\\.gz"
+    gh_update lazygit     jesseduffield/lazygit    "Linux_x86_64\\.tar\\.gz"
+    gh_update lazydocker  jesseduffield/lazydocker "Linux_x86_64\\.tar\\.gz"
+    gh_update sops        getsops/sops             "linux\\.amd64$"
+    gh_update duckdb      duckdb/duckdb            "cli-linux-amd64\\.zip"
+    gh_update eza         eza-community/eza        "x86_64-unknown-linux-musl\\.tar\\.gz"
+    gh_update zellij      zellij-org/zellij        "x86_64-unknown-linux-musl\\.tar\\.gz"
+    gh_update dust        bootandy/dust            "x86_64-unknown-linux-musl\\.tar\\.gz"
+    gh_update procs       dalance/procs            "x86_64-linux\\.zip"
+    gh_update xh          ducaale/xh               "x86_64-unknown-linux-musl\\.tar\\.gz"
+    gh_update watchexec   watchexec/watchexec      "x86_64-unknown-linux-musl\\.tar\\.xz"
+    gh_update just        casey/just               "x86_64-unknown-linux-musl\\.tar\\.gz"
+    gh_update diffnav     dlvhdr/diffnav           "Linux_x86_64\\.tar\\.gz"
+    gh_update ouch        ouch-org/ouch            "x86_64-unknown-linux-musl\\.tar\\.gz"
+
+    # yazi (special: zip with subdirectory)
+    echo "Updating yazi..."
+    YAZI_URL=$(gh_latest sxyazi/yazi "x86_64-unknown-linux-musl\\.zip")
+    if [ -n "$YAZI_URL" ]; then
+        curl -fsSL -o /tmp/yazi-upd.zip "$YAZI_URL"
+        unzip -o /tmp/yazi-upd.zip -d /tmp/yazi-upd
+        find /tmp/yazi-upd -name yazi -type f -executable -exec sudo install {} /usr/local/bin/ \;
+        find /tmp/yazi-upd -name ya -type f -executable -exec sudo install {} /usr/local/bin/ \;
+        rm -rf /tmp/yazi-upd.zip /tmp/yazi-upd
+        echo "  OK: yazi updated"
+    fi
+
+    # atuin (special: tar with subdirectory)
+    echo "Updating atuin..."
+    ATUIN_URL=$(gh_latest atuinsh/atuin "x86_64-unknown-linux-musl\\.tar\\.gz")
+    if [ -n "$ATUIN_URL" ]; then
+        curl -fsSL -o /tmp/atuin-upd.tar.gz "$ATUIN_URL"
+        tar xzf /tmp/atuin-upd.tar.gz -C /tmp
+        find /tmp -maxdepth 2 -name atuin -type f -executable -exec sudo install {} /usr/local/bin/ \;
+        rm -rf /tmp/atuin-upd.tar.gz /tmp/atuin-*
+        echo "  OK: atuin updated"
+    fi
+
+    # tokei
+    echo "Updating tokei..."
+    TOKEI_URL=$(gh_latest XAMPPRocky/tokei "x86_64-unknown-linux-musl\\.tar\\.gz")
+    if [ -n "$TOKEI_URL" ]; then
+        curl -fsSL -o /tmp/tokei-upd.tar.gz "$TOKEI_URL"
+        tar xzf /tmp/tokei-upd.tar.gz -C /tmp
+        sudo install /tmp/tokei /usr/local/bin/ 2>/dev/null || true
+        rm -rf /tmp/tokei-upd.tar.gz /tmp/tokei
+        echo "  OK: tokei updated"
+    fi
+
+    # nushell
+    echo "Updating nu..."
+    NU_URL=$(gh_latest nushell/nushell "x86_64-unknown-linux-musl\\.tar\\.gz")
+    if [ -n "$NU_URL" ]; then
+        curl -fsSL -o /tmp/nu-upd.tar.gz "$NU_URL"
+        tar xzf /tmp/nu-upd.tar.gz -C /tmp
+        find /tmp -maxdepth 2 -name nu -type f -executable -exec sudo install {} /usr/local/bin/ \;
+        rm -rf /tmp/nu-upd.tar.gz /tmp/nu-*
+        echo "  OK: nu updated"
+    fi
+
+    # tealdeer (single binary, no extension)
+    echo "Updating tldr..."
+    TLDR_URL=$(gh_latest tealdeer-rs/tealdeer "x86_64-unknown-linux-musl$")
+    if [ -n "$TLDR_URL" ]; then
+        curl -fsSL -o /tmp/tldr-upd "$TLDR_URL"
+        sudo install /tmp/tldr-upd /usr/local/bin/tldr
+        rm -f /tmp/tldr-upd
+        echo "  OK: tldr updated"
+    fi
+
+    # npm global packages
+    npm update -g 2>/dev/null || true
+
+    # goose
+    curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash 2>/dev/null || true
+
+    # opencode
+    curl -fsSL https://opencode.ai/install | bash 2>/dev/null || true
+
+    echo "=== Background update finished at $(date) ==="
+) &
