@@ -11,9 +11,6 @@ command -v sudo >/dev/null 2>&1        || { echo "Error: sudo not found" >&2; ex
 [ -f "$HOME/.config/shell/bootstrap.sh" ] || { echo "Error: dotfiles not cloned — run: git clone https://github.com/hugotown/dotfiles.git ~/.config" >&2; exit 1; }
 [ -f "$HOME/.local/share/sops/age/keys.txt" ] || { echo "Error: age key not found at ~/.local/share/sops/age/keys.txt" >&2; exit 1; }
 
-echo "setting up claude config"
-cp -r ~/.config/claude ~/.claude
-
 # 1. Install packages
 echo "Installing packages..."
 sudo pacman -S --needed --noconfirm \
@@ -78,13 +75,7 @@ echo ""
 echo "Running bootstrap..."
 bash "$HOME/.config/shell/bootstrap.sh"
 
-# 3. Install Claude Code (if not already installed)
-if ! command -v claude >/dev/null; then
-    echo "Installing Claude Code..."
-    curl -fsSL https://claude.ai/install.sh | bash
-fi
-
-# 4. Install Opencode (if not already installed)
+# 3. Install Opencode (if not already installed)
 if ! command -v opencode >/dev/null; then
     echo "Installing Opencode..."
     curl -fsSL https://opencode.ai/install | bash

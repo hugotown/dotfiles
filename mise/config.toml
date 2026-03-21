@@ -2,7 +2,7 @@
 uv = 'latest'
 pipx = 'latest'
 
-node = { version = "lts", postinstall = "npm install -g agent-browser && agent-browser install && npx playwright install" }
+node = { version = "lts", postinstall = "npm install -g agent-browser && agent-browser install && npm install -g playwright && playwright install" }
 
 python = "3.14.0"
 

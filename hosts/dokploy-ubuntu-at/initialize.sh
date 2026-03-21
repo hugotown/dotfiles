@@ -4,14 +4,13 @@ set -euo pipefail
 echo "=== Dokploy Ubuntu Setup (SSH container) ==="
 echo ""
 
+export DEBIAN_FRONTEND=noninteractive
+
 # --- Constraints ---
 [ "$(uname -s)" = "Linux" ]            || { echo "Error: must run on Linux" >&2; exit 1; }
 [ "$(id -u)" -ne 0 ]                   || { echo "Error: do not run as root" >&2; exit 1; }
 command -v sudo >/dev/null 2>&1        || { echo "Error: sudo not found" >&2; exit 1; }
 [ -f "$HOME/.config/shell/bootstrap.sh" ] || { echo "Error: dotfiles not cloned — run: git clone https://github.com/hugotown/dotfiles.git ~/.config" >&2; exit 1; }
-
-echo "Setting up claude config"
-cp -r ~/.config/claude ~/.claude || true
 
 # ──────────────────────────────────────────────
 # 1. System packages (apt) — only what mise CAN'T manage
@@ -19,7 +18,7 @@ cp -r ~/.config/claude ~/.claude || true
 # ──────────────────────────────────────────────
 echo "Installing system packages..."
 sudo apt-get update
-sudo apt-get install -y \
+sudo apt-get install -y --no-install-recommends \
     zsh bash fish \
     neovim tmux \
     bat ripgrep fd-find fzf jq \
@@ -230,11 +229,6 @@ bash "$HOME/.config/shell/bootstrap.sh"
 # ──────────────────────────────────────────────
 # 6. AI coding tools
 # ──────────────────────────────────────────────
-if ! command -v claude >/dev/null; then
-    echo "Installing Claude Code..."
-    curl -fsSL https://claude.ai/install.sh | bash
-fi
-
 if ! command -v opencode >/dev/null; then
     echo "Installing Opencode..."
     curl -fsSL https://opencode.ai/install | bash

@@ -11,9 +11,6 @@ command -v git >/dev/null 2>&1         || { echo "Error: git not found (install 
 [ -f "$HOME/.local/share/sops/age/keys.txt" ] || { echo "Error: age key not found at ~/.local/share/sops/age/keys.txt" >&2; exit 1; }
 [ -f "$HOME/.config/shell/bootstrap.sh" ]    || { echo "Error: dotfiles not cloned — run: git clone https://github.com/hugotown/dotfiles.git ~/.config" >&2; exit 1; }
 
-echo "setting up claude config"
-cp -r ~/.config/claude ~/.claude
-
 echo "install rust"
 curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh -s -- -y
 source "$HOME/.cargo/env"
@@ -69,11 +66,6 @@ echo ""
 
 echo "Running bootstrap..."
 bash "$HOME/.config/shell/bootstrap.sh"
-
-if ! command -v claude >/dev/null; then
-  echo "Installing Claude Code..."
-  curl -fsSL https://claude.ai/install.sh | bash
-fi
 
 if ! command -v opencode >/dev/null; then
   echo "Installing Opencode..."

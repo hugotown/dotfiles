@@ -15,16 +15,20 @@ services:
         set -e
         export DEBIAN_FRONTEND=noninteractive
 
+        # Prevent apt from trying to start/stop services inside container
+        printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d
+        chmod +x /usr/sbin/policy-rc.d
+
         if [ ! -f /home/hugo/.setup-done ]; then
           echo "=== First boot setup ==="
 
-          # Minimal base
+          # Minimal base (exclude systemd-resolved to avoid resolv.conf conflicts)
           apt-get update
-          apt-get install -y openssh-server git sudo zsh curl build-essential
+          apt-get install -y --no-install-recommends openssh-server git sudo zsh curl build-essential
 
           # Create user
           if ! id hugo &>/dev/null; then
-            useradd -m -s /bin/zsh -G sudo hugo
+            useradd --no-log-init -m -s /bin/zsh -G sudo hugo
             echo "hugo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           fi
 
@@ -55,11 +59,11 @@ services:
 
           # Reinstall system packages (lost on container recreate)
           apt-get update
-          apt-get install -y openssh-server git sudo zsh curl build-essential
+          apt-get install -y --no-install-recommends openssh-server git sudo zsh curl build-essential
 
           # Recreate user if lost (ephemeral /etc)
           if ! id hugo &>/dev/null; then
-            useradd -m -s /bin/zsh -G sudo hugo
+            useradd --no-log-init -m -s /bin/zsh -G sudo hugo
             echo "hugo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           fi
 
