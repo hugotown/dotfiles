@@ -56,6 +56,11 @@ export PATH="$HOME/.local/bin:$PATH"
 echo "Installing mise tools (runtimes + postinstall hooks)..."
 mise install -y
 
+# Python packages (after mise so uv is available)
+echo "Installing Python packages..."
+eval "$(mise activate bash)" 2>/dev/null || true
+uv pip install -q google-genai Pillow duckdb streamlit plotly 2>/dev/null || true
+
 # ──────────────────────────────────────────────
 # 3. CLI tools not in apt or mise — binary releases
 # ──────────────────────────────────────────────
