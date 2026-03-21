@@ -3,6 +3,9 @@
 # Platform-agnostic paths
 export PATH="$HOME/.cargo/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$PATH"
 
+# Homebrew (Linux)
+[ -d /home/linuxbrew/.linuxbrew ] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
 # Nix-specific paths (only if Nix is present)
 if [ -d /nix ]; then
     export PATH="/nix/var/nix/profiles/default/bin:$HOME/.nix-profile/bin:$PATH"
