@@ -164,7 +164,7 @@ fi
 
 # tokei
 if ! command -v tokei >/dev/null; then
-    dl /tmp/tokei.tar.gz "https://github.com/XAMPPRocky/tokei/releases/download/v13.0.0-alpha.8/tokei-x86_64-unknown-linux-musl.tar.gz"
+    dl /tmp/tokei.tar.gz "https://github.com/XAMPPRocky/tokei/releases/download/v13.0.0-alpha.0/tokei-x86_64-unknown-linux-musl.tar.gz"
     tar xzf /tmp/tokei.tar.gz -C /tmp && sudo install /tmp/tokei /usr/local/bin/ && rm -f /tmp/tokei /tmp/tokei.tar.gz
 fi
 
@@ -206,7 +206,7 @@ fi
 
 # diffnav
 if ! command -v diffnav >/dev/null; then
-    dl /tmp/diffnav.tar.gz "https://github.com/dlvhdr/diffnav/releases/download/v0.2.8/diffnav_0.2.8_linux_amd64.tar.gz"
+    dl /tmp/diffnav.tar.gz "https://github.com/dlvhdr/diffnav/releases/download/v0.10.0/diffnav_Linux_x86_64.tar.gz"
     tar xzf /tmp/diffnav.tar.gz -C /tmp diffnav && sudo install /tmp/diffnav /usr/local/bin/ && rm -f /tmp/diffnav /tmp/diffnav.tar.gz
 fi
 
