@@ -31,10 +31,13 @@ sudo apt-get install -y \
     poppler-utils \
     unzip zip \
     build-essential pkg-config libssl-dev cmake \
+    zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
+    libncursesw5-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev \
     libgtk-3-dev libgtk-4-dev \
     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev \
     libenchant-2-dev libsecret-1-dev \
     libwebkit2gtk-4.1-dev \
+    libevent-2.1-7t64 libflite1 libavif16 \
     xvfb
 
 # Fix fd/bat binary names (Ubuntu renames them)
@@ -52,9 +55,6 @@ export PATH="$HOME/.local/bin:$PATH"
 
 echo "Installing mise tools (runtimes + postinstall hooks)..."
 mise install -y
-
-# Playwright system deps (needs apt, but playwright itself installed via mise node postinstall)
-sudo npx playwright install-deps 2>/dev/null || true
 
 # ──────────────────────────────────────────────
 # 3. CLI tools not in apt or mise — binary releases
