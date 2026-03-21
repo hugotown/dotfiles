@@ -125,29 +125,105 @@ if ! command -v diffnav >/dev/null; then
 fi
 
 # ──────────────────────────────────────────────
-# 4. Cargo tools — use mise-managed rust
+# 4. CLI tools — precompiled binaries (no cargo compile)
 # ──────────────────────────────────────────────
-echo "Installing cargo tools..."
-eval "$(mise activate bash)" 2>/dev/null || true
+echo "Installing CLI tools (precompiled binaries)..."
 
-cargo_install_if_missing() {
-    local cmd="$1"; shift
-    command -v "$cmd" >/dev/null || cargo install "$@" 2>/dev/null || true
+# Helper: download and install from GitHub releases
+gh_install() {
+    local cmd="$1" repo="$2" pattern="$3"
+    command -v "$cmd" >/dev/null && return 0
+    echo "  Installing $cmd..."
+    local url
+    url=$(curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" \
+        | grep -Po "\"browser_download_url\": *\"[^\"]*${pattern}[^\"]*\"" \
+        | head -1 | grep -Po 'https://[^"]+')
+    [ -z "$url" ] && { echo "  WARN: could not find release for $cmd"; return 0; }
+    local file="/tmp/${cmd}-release"
+    curl -fsSL -o "$file" "$url"
+    case "$url" in
+        *.tar.gz|*.tgz) tar xzf "$file" -C /tmp; sudo install "/tmp/$cmd" /usr/local/bin/ 2>/dev/null || find /tmp -name "$cmd" -type f -executable -exec sudo install {} /usr/local/bin/ \; ;;
+        *.zip) unzip -o "$file" -d /tmp/"${cmd}-extract" && find /tmp/"${cmd}-extract" -name "$cmd" -type f -executable -exec sudo install {} /usr/local/bin/ \; ;;
+        *) sudo install "$file" /usr/local/bin/"$cmd" ;;
+    esac
+    rm -rf "$file" /tmp/"${cmd}-extract" 2>/dev/null
 }
 
-cargo_install_if_missing yazi    --locked yazi-fm yazi-cli
-cargo_install_if_missing eza     eza
-cargo_install_if_missing zellij  --locked zellij
-cargo_install_if_missing dust    du-dust
-cargo_install_if_missing procs   procs
-cargo_install_if_missing xh      xh
-cargo_install_if_missing tokei   tokei
-cargo_install_if_missing watchexec watchexec-cli
-cargo_install_if_missing just    just
-cargo_install_if_missing tldr    tealdeer
-cargo_install_if_missing nu      nu
-cargo_install_if_missing ouch    ouch
-cargo_install_if_missing worktrunk worktrunk
+# yazi
+if ! command -v yazi >/dev/null; then
+    curl -fsSL "$(curl -fsSL https://api.github.com/repos/sxyazi/yazi/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.zip"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/yazi.zip
+    unzip -o /tmp/yazi.zip -d /tmp/yazi-extract
+    sudo install /tmp/yazi-extract/yazi-x86_64-unknown-linux-musl/yazi /usr/local/bin/
+    sudo install /tmp/yazi-extract/yazi-x86_64-unknown-linux-musl/ya /usr/local/bin/ 2>/dev/null || true
+    rm -rf /tmp/yazi.zip /tmp/yazi-extract
+fi
+
+# eza
+gh_install eza eza-community/eza "x86_64-unknown-linux-musl.tar.gz"
+
+# zellij
+gh_install zellij zellij-org/zellij "x86_64-unknown-linux-musl.tar.gz"
+
+# dust
+if ! command -v dust >/dev/null; then
+    curl -fsSL "$(curl -fsSL https://api.github.com/repos/bootandy/dust/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.tar\.gz"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/dust.tar.gz
+    tar xzf /tmp/dust.tar.gz -C /tmp
+    find /tmp -name dust -type f -executable -exec sudo install {} /usr/local/bin/ \;
+    rm -rf /tmp/dust.tar.gz /tmp/dust-*
+fi
+
+# procs
+if ! command -v procs >/dev/null; then
+    curl -fsSL "$(curl -fsSL https://api.github.com/repos/dalance/procs/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-linux\.zip"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/procs.zip
+    unzip -o /tmp/procs.zip -d /tmp
+    sudo install /tmp/procs /usr/local/bin/
+    rm -f /tmp/procs.zip /tmp/procs
+fi
+
+# xh
+if ! command -v xh >/dev/null; then
+    curl -fsSL "$(curl -fsSL https://api.github.com/repos/ducaale/xh/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.tar\.gz"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/xh.tar.gz
+    tar xzf /tmp/xh.tar.gz -C /tmp
+    find /tmp -name xh -type f -executable -exec sudo install {} /usr/local/bin/ \;
+    rm -rf /tmp/xh.tar.gz /tmp/xh-*
+fi
+
+# tokei
+gh_install tokei XAMPPRocky/tokei "x86_64-unknown-linux-musl.tar.gz"
+
+# watchexec
+if ! command -v watchexec >/dev/null; then
+    curl -fsSL "$(curl -fsSL https://api.github.com/repos/watchexec/watchexec/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.tar\.xz"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/watchexec.tar.xz
+    tar xJf /tmp/watchexec.tar.xz -C /tmp
+    find /tmp -name watchexec -type f -executable -exec sudo install {} /usr/local/bin/ \;
+    rm -rf /tmp/watchexec.tar.xz /tmp/watchexec-*
+fi
+
+# just
+gh_install just casey/just "x86_64-unknown-linux-musl.tar.gz"
+
+# tealdeer (tldr)
+if ! command -v tldr >/dev/null; then
+    curl -fsSL "$(curl -fsSL https://api.github.com/repos/tealdeer-rs/tealdeer/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/tldr
+    sudo install /tmp/tldr /usr/local/bin/
+    rm -f /tmp/tldr
+fi
+
+# nushell
+if ! command -v nu >/dev/null; then
+    curl -fsSL "$(curl -fsSL https://api.github.com/repos/nushell/nushell/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.tar\.gz"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/nu.tar.gz
+    tar xzf /tmp/nu.tar.gz -C /tmp
+    find /tmp -name nu -type f -executable -exec sudo install {} /usr/local/bin/ \;
+    rm -rf /tmp/nu.tar.gz /tmp/nu-*
+fi
+
+# ouch
+if ! command -v ouch >/dev/null; then
+    curl -fsSL "$(curl -fsSL https://api.github.com/repos/ouch-org/ouch/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.tar\.gz"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/ouch.tar.gz
+    tar xzf /tmp/ouch.tar.gz -C /tmp
+    find /tmp -name ouch -type f -executable -exec sudo install {} /usr/local/bin/ \;
+    rm -rf /tmp/ouch.tar.gz /tmp/ouch-*
+fi
 
 # ──────────────────────────────────────────────
 # 5. npm/go global tools
