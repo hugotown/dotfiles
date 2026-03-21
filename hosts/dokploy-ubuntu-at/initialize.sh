@@ -29,7 +29,7 @@ sudo apt-get install -y \
     duf git-delta hyperfine \
     gnupg age \
     poppler-utils \
-    unzip zip \
+    unzip zip xz-utils \
     build-essential pkg-config libssl-dev cmake \
     zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
     libncursesw5-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev \
@@ -62,96 +62,66 @@ eval "$(mise activate bash)" 2>/dev/null || true
 uv pip install -q google-genai Pillow duckdb streamlit plotly 2>/dev/null || true
 
 # ──────────────────────────────────────────────
-# 3. CLI tools not in apt or mise — binary releases
+# 3. CLI tools — pinned versions (instant download, no API calls)
+#    Updated in background after setup completes
 # ──────────────────────────────────────────────
-echo "Installing CLI tools..."
+echo "Installing CLI tools (precompiled binaries)..."
 
-# glow (not in Ubuntu repos)
+dl() { curl -fsSL -o "$1" "$2"; }
+
+# glow
 if ! command -v glow >/dev/null; then
-    GLOW_VERSION=$(curl -s "https://api.github.com/repos/charmbracelet/glow/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
-    curl -Lo /tmp/glow.deb "https://github.com/charmbracelet/glow/releases/download/v${GLOW_VERSION}/glow_${GLOW_VERSION}_amd64.deb"
-    sudo dpkg -i /tmp/glow.deb
-    rm -f /tmp/glow.deb
+    dl /tmp/glow.deb "https://github.com/charmbracelet/glow/releases/download/v2.1.1/glow_2.1.1_amd64.deb"
+    sudo dpkg -i /tmp/glow.deb && rm -f /tmp/glow.deb
 fi
 
-# starship prompt
+# starship
 if ! command -v starship >/dev/null; then
-    curl -sS https://starship.rs/install.sh | sudo sh -s -- -y -b /usr/local/bin
+    dl /tmp/starship.tar.gz "https://github.com/starship/starship/releases/download/v1.23.0/starship-x86_64-unknown-linux-musl.tar.gz"
+    tar xzf /tmp/starship.tar.gz -C /tmp && sudo install /tmp/starship /usr/local/bin/ && rm -f /tmp/starship /tmp/starship.tar.gz
 fi
 
 # zoxide
 if ! command -v zoxide >/dev/null; then
-    curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+    dl /tmp/zoxide.tar.gz "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.7/zoxide-0.9.7-x86_64-unknown-linux-musl.tar.gz"
+    tar xzf /tmp/zoxide.tar.gz -C /tmp && sudo install /tmp/zoxide /usr/local/bin/ && rm -f /tmp/zoxide /tmp/zoxide.tar.gz
 fi
 
-# atuin (shell history)
+# atuin
 if ! command -v atuin >/dev/null; then
-    curl -sSf https://setup.atuin.sh | bash
+    dl /tmp/atuin.tar.gz "https://github.com/atuinsh/atuin/releases/download/v18.13.3/atuin-x86_64-unknown-linux-musl.tar.gz"
+    tar xzf /tmp/atuin.tar.gz -C /tmp
+    sudo install /tmp/atuin-x86_64-unknown-linux-musl/atuin /usr/local/bin/
+    rm -rf /tmp/atuin.tar.gz /tmp/atuin-x86_64-unknown-linux-musl
 fi
 
 # lazygit
 if ! command -v lazygit >/dev/null; then
-    LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
-    curl -Lo /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
-    tar xf /tmp/lazygit.tar.gz -C /tmp lazygit
-    sudo install /tmp/lazygit /usr/local/bin/lazygit
-    rm -f /tmp/lazygit /tmp/lazygit.tar.gz
+    dl /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v0.50.0/lazygit_0.50.0_Linux_x86_64.tar.gz"
+    tar xzf /tmp/lazygit.tar.gz -C /tmp lazygit && sudo install /tmp/lazygit /usr/local/bin/ && rm -f /tmp/lazygit /tmp/lazygit.tar.gz
 fi
 
 # lazydocker
 if ! command -v lazydocker >/dev/null; then
-    curl -sSfL https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/install_update_linux.sh | bash
+    dl /tmp/lazydocker.tar.gz "https://github.com/jesseduffield/lazydocker/releases/download/v0.24.1/lazydocker_0.24.1_Linux_x86_64.tar.gz"
+    tar xzf /tmp/lazydocker.tar.gz -C /tmp lazydocker && sudo install /tmp/lazydocker /usr/local/bin/ && rm -f /tmp/lazydocker /tmp/lazydocker.tar.gz
 fi
 
 # sops
 if ! command -v sops >/dev/null; then
-    SOPS_VERSION=$(curl -s "https://api.github.com/repos/getsops/sops/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
-    curl -Lo /tmp/sops "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
-    sudo install /tmp/sops /usr/local/bin/sops
-    rm -f /tmp/sops
+    dl /tmp/sops "https://github.com/getsops/sops/releases/download/v3.10.2/sops-v3.10.2.linux.amd64"
+    sudo install /tmp/sops /usr/local/bin/ && rm -f /tmp/sops
 fi
 
 # duckdb
 if ! command -v duckdb >/dev/null; then
-    curl -Lo /tmp/duckdb.zip "https://github.com/duckdb/duckdb/releases/latest/download/duckdb_cli-linux-amd64.zip"
-    unzip -o /tmp/duckdb.zip -d /tmp
-    sudo install /tmp/duckdb /usr/local/bin/duckdb
-    rm -f /tmp/duckdb /tmp/duckdb.zip
+    dl /tmp/duckdb.zip "https://github.com/duckdb/duckdb/releases/download/v1.3.0/duckdb_cli-linux-amd64.zip"
+    unzip -o /tmp/duckdb.zip -d /tmp && sudo install /tmp/duckdb /usr/local/bin/ && rm -f /tmp/duckdb /tmp/duckdb.zip
 fi
-
-# diffnav
-if ! command -v diffnav >/dev/null; then
-    cd /tmp && git clone https://github.com/dlvhdr/diffnav.git && cd diffnav && go install . && cd /tmp && rm -rf diffnav
-fi
-
-# ──────────────────────────────────────────────
-# 4. CLI tools — precompiled binaries (no cargo compile)
-# ──────────────────────────────────────────────
-echo "Installing CLI tools (precompiled binaries)..."
-
-# Helper: download and install from GitHub releases
-gh_install() {
-    local cmd="$1" repo="$2" pattern="$3"
-    command -v "$cmd" >/dev/null && return 0
-    echo "  Installing $cmd..."
-    local url
-    url=$(curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" \
-        | grep -Po "\"browser_download_url\": *\"[^\"]*${pattern}[^\"]*\"" \
-        | head -1 | grep -Po 'https://[^"]+')
-    [ -z "$url" ] && { echo "  WARN: could not find release for $cmd"; return 0; }
-    local file="/tmp/${cmd}-release"
-    curl -fsSL -o "$file" "$url"
-    case "$url" in
-        *.tar.gz|*.tgz) tar xzf "$file" -C /tmp; sudo install "/tmp/$cmd" /usr/local/bin/ 2>/dev/null || find /tmp -name "$cmd" -type f -executable -exec sudo install {} /usr/local/bin/ \; ;;
-        *.zip) unzip -o "$file" -d /tmp/"${cmd}-extract" && find /tmp/"${cmd}-extract" -name "$cmd" -type f -executable -exec sudo install {} /usr/local/bin/ \; ;;
-        *) sudo install "$file" /usr/local/bin/"$cmd" ;;
-    esac
-    rm -rf "$file" /tmp/"${cmd}-extract" 2>/dev/null
-}
 
 # yazi
 if ! command -v yazi >/dev/null; then
-    curl -fsSL "$(curl -fsSL https://api.github.com/repos/sxyazi/yazi/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.zip"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/yazi.zip
+    dl /tmp/yazi.zip "https://github.com/sxyazi/yazi/releases/download/v25.5.28/yazi-x86_64-unknown-linux-musl.zip"
     unzip -o /tmp/yazi.zip -d /tmp/yazi-extract
     sudo install /tmp/yazi-extract/yazi-x86_64-unknown-linux-musl/yazi /usr/local/bin/
     sudo install /tmp/yazi-extract/yazi-x86_64-unknown-linux-musl/ya /usr/local/bin/ 2>/dev/null || true
@@ -159,14 +129,20 @@ if ! command -v yazi >/dev/null; then
 fi
 
 # eza
-gh_install eza eza-community/eza "x86_64-unknown-linux-musl.tar.gz"
+if ! command -v eza >/dev/null; then
+    dl /tmp/eza.tar.gz "https://github.com/eza-community/eza/releases/download/v0.21.3/eza_x86_64-unknown-linux-musl.tar.gz"
+    tar xzf /tmp/eza.tar.gz -C /tmp && sudo install /tmp/eza /usr/local/bin/ && rm -f /tmp/eza /tmp/eza.tar.gz
+fi
 
 # zellij
-gh_install zellij zellij-org/zellij "x86_64-unknown-linux-musl.tar.gz"
+if ! command -v zellij >/dev/null; then
+    dl /tmp/zellij.tar.gz "https://github.com/zellij-org/zellij/releases/download/v0.42.2/zellij-x86_64-unknown-linux-musl.tar.gz"
+    tar xzf /tmp/zellij.tar.gz -C /tmp && sudo install /tmp/zellij /usr/local/bin/ && rm -f /tmp/zellij /tmp/zellij.tar.gz
+fi
 
 # dust
 if ! command -v dust >/dev/null; then
-    curl -fsSL "$(curl -fsSL https://api.github.com/repos/bootandy/dust/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.tar\.gz"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/dust.tar.gz
+    dl /tmp/dust.tar.gz "https://github.com/bootandy/dust/releases/download/v1.2.1/dust-v1.2.1-x86_64-unknown-linux-musl.tar.gz"
     tar xzf /tmp/dust.tar.gz -C /tmp
     find /tmp -name dust -type f -executable -exec sudo install {} /usr/local/bin/ \;
     rm -rf /tmp/dust.tar.gz /tmp/dust-*
@@ -174,44 +150,47 @@ fi
 
 # procs
 if ! command -v procs >/dev/null; then
-    curl -fsSL "$(curl -fsSL https://api.github.com/repos/dalance/procs/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-linux\.zip"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/procs.zip
-    unzip -o /tmp/procs.zip -d /tmp
-    sudo install /tmp/procs /usr/local/bin/
-    rm -f /tmp/procs.zip /tmp/procs
+    dl /tmp/procs.zip "https://github.com/dalance/procs/releases/download/v0.14.9/procs-v0.14.9-x86_64-linux.zip"
+    unzip -o /tmp/procs.zip -d /tmp && sudo install /tmp/procs /usr/local/bin/ && rm -f /tmp/procs.zip /tmp/procs
 fi
 
 # xh
 if ! command -v xh >/dev/null; then
-    curl -fsSL "$(curl -fsSL https://api.github.com/repos/ducaale/xh/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.tar\.gz"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/xh.tar.gz
+    dl /tmp/xh.tar.gz "https://github.com/ducaale/xh/releases/download/v0.24.1/xh-v0.24.1-x86_64-unknown-linux-musl.tar.gz"
     tar xzf /tmp/xh.tar.gz -C /tmp
     find /tmp -name xh -type f -executable -exec sudo install {} /usr/local/bin/ \;
     rm -rf /tmp/xh.tar.gz /tmp/xh-*
 fi
 
 # tokei
-gh_install tokei XAMPPRocky/tokei "x86_64-unknown-linux-musl.tar.gz"
+if ! command -v tokei >/dev/null; then
+    dl /tmp/tokei.tar.gz "https://github.com/XAMPPRocky/tokei/releases/download/v13.0.0-alpha.8/tokei-x86_64-unknown-linux-musl.tar.gz"
+    tar xzf /tmp/tokei.tar.gz -C /tmp && sudo install /tmp/tokei /usr/local/bin/ && rm -f /tmp/tokei /tmp/tokei.tar.gz
+fi
 
 # watchexec
 if ! command -v watchexec >/dev/null; then
-    curl -fsSL "$(curl -fsSL https://api.github.com/repos/watchexec/watchexec/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.tar\.xz"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/watchexec.tar.xz
+    dl /tmp/watchexec.tar.xz "https://github.com/watchexec/watchexec/releases/download/v2.3.2/watchexec-2.3.2-x86_64-unknown-linux-musl.tar.xz"
     tar xJf /tmp/watchexec.tar.xz -C /tmp
     find /tmp -name watchexec -type f -executable -exec sudo install {} /usr/local/bin/ \;
     rm -rf /tmp/watchexec.tar.xz /tmp/watchexec-*
 fi
 
 # just
-gh_install just casey/just "x86_64-unknown-linux-musl.tar.gz"
+if ! command -v just >/dev/null; then
+    dl /tmp/just.tar.gz "https://github.com/casey/just/releases/download/1.44.0/just-1.44.0-x86_64-unknown-linux-musl.tar.gz"
+    tar xzf /tmp/just.tar.gz -C /tmp just && sudo install /tmp/just /usr/local/bin/ && rm -f /tmp/just /tmp/just.tar.gz
+fi
 
 # tealdeer (tldr)
 if ! command -v tldr >/dev/null; then
-    curl -fsSL "$(curl -fsSL https://api.github.com/repos/tealdeer-rs/tealdeer/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/tldr
-    sudo install /tmp/tldr /usr/local/bin/
-    rm -f /tmp/tldr
+    dl /tmp/tldr "https://github.com/tealdeer-rs/tealdeer/releases/download/v1.7.1/tealdeer-linux-x86_64-musl"
+    sudo install /tmp/tldr /usr/local/bin/ && rm -f /tmp/tldr
 fi
 
 # nushell
 if ! command -v nu >/dev/null; then
-    curl -fsSL "$(curl -fsSL https://api.github.com/repos/nushell/nushell/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.tar\.gz"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/nu.tar.gz
+    dl /tmp/nu.tar.gz "https://github.com/nushell/nushell/releases/download/0.105.1/nu-0.105.1-x86_64-unknown-linux-musl.tar.gz"
     tar xzf /tmp/nu.tar.gz -C /tmp
     find /tmp -name nu -type f -executable -exec sudo install {} /usr/local/bin/ \;
     rm -rf /tmp/nu.tar.gz /tmp/nu-*
@@ -219,14 +198,20 @@ fi
 
 # ouch
 if ! command -v ouch >/dev/null; then
-    curl -fsSL "$(curl -fsSL https://api.github.com/repos/ouch-org/ouch/releases/latest | grep -Po '"browser_download_url": *"[^"]*x86_64-unknown-linux-musl\.tar\.gz"' | head -1 | grep -Po 'https://[^"]+')" -o /tmp/ouch.tar.gz
+    dl /tmp/ouch.tar.gz "https://github.com/ouch-org/ouch/releases/download/0.5.1/ouch-x86_64-unknown-linux-musl.tar.gz"
     tar xzf /tmp/ouch.tar.gz -C /tmp
     find /tmp -name ouch -type f -executable -exec sudo install {} /usr/local/bin/ \;
     rm -rf /tmp/ouch.tar.gz /tmp/ouch-*
 fi
 
+# diffnav
+if ! command -v diffnav >/dev/null; then
+    dl /tmp/diffnav.tar.gz "https://github.com/dlvhdr/diffnav/releases/download/v0.2.8/diffnav_0.2.8_linux_amd64.tar.gz"
+    tar xzf /tmp/diffnav.tar.gz -C /tmp diffnav && sudo install /tmp/diffnav /usr/local/bin/ && rm -f /tmp/diffnav /tmp/diffnav.tar.gz
+fi
+
 # ──────────────────────────────────────────────
-# 5. npm/go global tools
+# 4. npm/go global tools
 # ──────────────────────────────────────────────
 npm install -g @google/gemini-cli 2>/dev/null || true
 gh extension install dlvhdr/gh-dash 2>/dev/null || true
@@ -237,13 +222,13 @@ if ! command -v goose >/dev/null; then
 fi
 
 # ──────────────────────────────────────────────
-# 6. Shell bootstrap (symlinks + cached integrations)
+# 5. Shell bootstrap (symlinks + cached integrations)
 # ──────────────────────────────────────────────
 echo "Running bootstrap..."
 bash "$HOME/.config/shell/bootstrap.sh"
 
 # ──────────────────────────────────────────────
-# 7. AI coding tools
+# 6. AI coding tools
 # ──────────────────────────────────────────────
 if ! command -v claude >/dev/null; then
     echo "Installing Claude Code..."
