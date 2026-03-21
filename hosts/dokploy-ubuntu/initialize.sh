@@ -76,7 +76,7 @@ fi
 
 # starship prompt
 if ! command -v starship >/dev/null; then
-    curl -sS https://starship.rs/install.sh | sh -s -- -y
+    curl -sS https://starship.rs/install.sh | sudo sh -s -- -y -b /usr/local/bin
 fi
 
 # zoxide
