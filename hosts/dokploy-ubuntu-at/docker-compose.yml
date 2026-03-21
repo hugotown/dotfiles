@@ -24,11 +24,15 @@ services:
 
           # Minimal base (exclude systemd-resolved to avoid resolv.conf conflicts)
           apt-get update
-          apt-get install -y --no-install-recommends openssh-server git sudo zsh curl build-essential
+          apt-get install -y --no-install-recommends openssh-server git sudo zsh curl build-essential ca-certificates
 
           # Create user
           if ! id hugo &>/dev/null; then
-            useradd --no-log-init -m -s /bin/zsh -G sudo hugo
+            if [ -d /home/hugo ]; then
+              useradd --no-log-init --no-create-home -s /bin/zsh -G sudo hugo
+            else
+              useradd --no-log-init -m -s /bin/zsh -G sudo hugo
+            fi
             echo "hugo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           fi
 
@@ -59,11 +63,15 @@ services:
 
           # Reinstall system packages (lost on container recreate)
           apt-get update
-          apt-get install -y --no-install-recommends openssh-server git sudo zsh curl build-essential
+          apt-get install -y --no-install-recommends openssh-server git sudo zsh curl build-essential ca-certificates
 
           # Recreate user if lost (ephemeral /etc)
           if ! id hugo &>/dev/null; then
-            useradd --no-log-init -m -s /bin/zsh -G sudo hugo
+            if [ -d /home/hugo ]; then
+              useradd --no-log-init --no-create-home -s /bin/zsh -G sudo hugo
+            else
+              useradd --no-log-init -m -s /bin/zsh -G sudo hugo
+            fi
             echo "hugo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           fi
 
