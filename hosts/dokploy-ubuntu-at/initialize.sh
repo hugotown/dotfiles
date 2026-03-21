@@ -26,9 +26,8 @@ sudo apt-get install -y \
     curl wget tree btop ncdu \
     git gh \
     httpie \
-    duf git-delta \
-    gnupg \
-    glow \
+    duf git-delta hyperfine \
+    gnupg age \
     poppler-utils \
     unzip zip \
     build-essential pkg-config libssl-dev cmake \
@@ -61,6 +60,14 @@ sudo npx playwright install-deps 2>/dev/null || true
 # 3. CLI tools not in apt or mise — binary releases
 # ──────────────────────────────────────────────
 echo "Installing CLI tools..."
+
+# glow (not in Ubuntu repos)
+if ! command -v glow >/dev/null; then
+    GLOW_VERSION=$(curl -s "https://api.github.com/repos/charmbracelet/glow/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+    curl -Lo /tmp/glow.deb "https://github.com/charmbracelet/glow/releases/download/v${GLOW_VERSION}/glow_${GLOW_VERSION}_amd64.deb"
+    sudo dpkg -i /tmp/glow.deb
+    rm -f /tmp/glow.deb
+fi
 
 # starship prompt
 if ! command -v starship >/dev/null; then
@@ -99,16 +106,6 @@ if ! command -v sops >/dev/null; then
     rm -f /tmp/sops
 fi
 
-# age (encryption for sops)
-if ! command -v age >/dev/null; then
-    AGE_VERSION=$(curl -s "https://api.github.com/repos/FiloSottile/age/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
-    curl -Lo /tmp/age.tar.gz "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-amd64.tar.gz"
-    tar xf /tmp/age.tar.gz -C /tmp
-    sudo install /tmp/age/age /usr/local/bin/age
-    sudo install /tmp/age/age-keygen /usr/local/bin/age-keygen
-    rm -rf /tmp/age /tmp/age.tar.gz
-fi
-
 # duckdb
 if ! command -v duckdb >/dev/null; then
     curl -Lo /tmp/duckdb.zip "https://github.com/duckdb/duckdb/releases/latest/download/duckdb_cli-linux-amd64.zip"
@@ -145,7 +142,6 @@ cargo_install_if_missing just    just
 cargo_install_if_missing tldr    tealdeer
 cargo_install_if_missing nu      nu
 cargo_install_if_missing ouch    ouch
-cargo_install_if_missing hx      hyperfine
 cargo_install_if_missing worktrunk worktrunk
 
 # ──────────────────────────────────────────────
