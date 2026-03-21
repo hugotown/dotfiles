@@ -20,7 +20,7 @@ sudo pacman -S --needed --noconfirm \
     fish nushell zsh bash \
     zoxide atuin starship yazi \
     sops age gnupg \
-    neovim alacritty kitty wezterm tmux \
+    neovim alacritty kitty wezterm tmux zellij \
     bat ripgrep eza fd fzf jq \
     curl wget tree btop ncdu just lazygit \
     git github-cli \
