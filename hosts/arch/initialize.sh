@@ -29,7 +29,10 @@ sudo pacman -S --needed --noconfirm \
     dust duf git-delta \
     lazydocker pnpm nodejs \
     glow chafa ouch jless mpv ffmpegthumbnailer poppler \
-    ffmpeg imagemagick p7zip duckdb resvg iperf3 go rustup
+    ffmpeg imagemagick p7zip duckdb resvg iperf3 go rustup \
+    gtk3 gtk4 gstreamer gst-plugins-base-libs gst-plugins-bad-libs \
+    graphene flite harfbuzz-icu libmanette enchant hyphen woff2 \
+    xorg-server-xvfb webkit2gtk-4.1 libxml2-legacy
 
 sudo pacman -S --needed --noconfirm go-yq 2>/dev/null || true
 

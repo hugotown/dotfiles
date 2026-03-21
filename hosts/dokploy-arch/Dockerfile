@@ -14,7 +14,10 @@ RUN pacman -Syu --noconfirm && \
     hyperfine tokei watchexec \
     dust duf git-delta \
     lazydocker pnpm nodejs \
-    glow chafa ouch jless ffmpegthumbnailer poppler && \
+    glow chafa ouch jless ffmpegthumbnailer poppler \
+    gtk3 gtk4 gstreamer gst-plugins-base-libs gst-plugins-bad-libs \
+    graphene flite harfbuzz-icu libmanette enchant hyphen woff2 \
+    xorg-server-xvfb webkit2gtk-4.1 libxml2-legacy && \
     pacman -S --needed --noconfirm go-yq 2>/dev/null || true && \
     pacman -Scc --noconfirm
 
