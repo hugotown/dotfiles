@@ -66,6 +66,12 @@ if ! command -v goose >/dev/null; then
     curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash
 fi
 
+# Google Cloud SDK
+if [ ! -d "$HOME/google-cloud-sdk" ]; then
+    echo "Installing Google Cloud SDK..."
+    curl -s https://sdk.cloud.google.com | bash -s -- --disable-prompts
+fi
+
 echo "Installing mise..."
 curl https://mise.run | sh
 

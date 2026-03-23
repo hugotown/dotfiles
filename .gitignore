@@ -43,6 +43,7 @@ CLAUDE,nd
 
 # Environment variables - machine specific configuration
 environment.d/
+shell/env.local.*
 
 # Browser data (VERY SENSITIVE - contains passwords, cookies, history)
 chromium/

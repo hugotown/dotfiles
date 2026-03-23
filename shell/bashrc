@@ -27,3 +27,7 @@ add-secret() {
 }
 
 if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init bash)"; fi
+
+# Google Cloud SDK
+[ -f "$HOME/google-cloud-sdk/path.bash.inc" ] && . "$HOME/google-cloud-sdk/path.bash.inc"
+[ -f "$HOME/google-cloud-sdk/completion.bash.inc" ] && . "$HOME/google-cloud-sdk/completion.bash.inc"

@@ -14,6 +14,11 @@ command -q mise; and mise activate fish | source
 test -f ~/.cache/shell/starship.fish; and source ~/.cache/shell/starship.fish
 
 
+# Google Cloud SDK
+if test -d "$HOME/google-cloud-sdk/bin"
+    fish_add_path --prepend --global $HOME/google-cloud-sdk/bin
+end
+
 function add-secret
     if test (count $argv) -lt 2
         echo "Usage: add-secret VAR_NAME value" >&2; return 1

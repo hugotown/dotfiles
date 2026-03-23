@@ -31,6 +31,4 @@ if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)
 [ -f "$HOME/google-cloud-sdk/path.zsh.inc" ] && . "$HOME/google-cloud-sdk/path.zsh.inc"
 [ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ] && . "$HOME/google-cloud-sdk/completion.zsh.inc"
 
-# Google Vertex AI for OpenCode
-export GOOGLE_CLOUD_PROJECT=avantechgeneralservices
-export VERTEX_LOCATION=global
+export PATH="/opt/homebrew/opt/libpq/bin:$PATH"

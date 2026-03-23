@@ -38,3 +38,6 @@ alias ga = git add -p
 alias gcoall = git checkout -- .
 alias gr = git remote
 alias gre = git reset
+
+# Google Cloud SDK (after mise which resets PATH)
+$env.PATH = ($env.PATH | split row (char esep) | prepend $"($env.HOME)/google-cloud-sdk/bin" | uniq)

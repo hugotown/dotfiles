@@ -7,6 +7,7 @@ $env.PATH = (
     | prepend $"($env.HOME)/.local/bin"
     | prepend $"($env.HOME)/.npm-global/bin"
     | prepend $"($env.HOME)/.cargo/bin"
+    | prepend $"($env.HOME)/google-cloud-sdk/bin"
     | uniq
 )
 
@@ -36,3 +37,6 @@ if (which sops | is-not-empty) and ($"($env.HOME)/.local/share/sops/age/keys.txt
     }
     if "GEMINI_API_KEY" in $env { $env.GOOGLE_GENERATIVE_AI_API_KEY = $env.GEMINI_API_KEY }
 }
+
+# Host-specific overrides (not tracked in git)
+if ($"($env.HOME)/.config/shell/env.local.nu" | path exists) { source $"($env.HOME)/.config/shell/env.local.nu" }

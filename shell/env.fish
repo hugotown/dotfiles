@@ -28,3 +28,6 @@ if command -q sops; and command -q yq; and test -f "$HOME/.local/share/sops/age/
     end
     set -q GEMINI_API_KEY; and set -gx GOOGLE_GENERATIVE_AI_API_KEY $GEMINI_API_KEY
 end
+
+# Host-specific overrides (not tracked in git)
+test -f ~/.config/shell/env.local.fish; and source ~/.config/shell/env.local.fish

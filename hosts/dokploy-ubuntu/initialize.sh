@@ -99,13 +99,21 @@ if ! command -v goose >/dev/null; then
 fi
 
 # ──────────────────────────────────────────────
-# 5. Shell bootstrap (symlinks + cached integrations)
+# 5. Google Cloud SDK
+# ──────────────────────────────────────────────
+if [ ! -d "$HOME/google-cloud-sdk" ]; then
+    echo "Installing Google Cloud SDK..."
+    curl -s https://sdk.cloud.google.com | bash -s -- --disable-prompts
+fi
+
+# ──────────────────────────────────────────────
+# 6. Shell bootstrap (symlinks + cached integrations)
 # ──────────────────────────────────────────────
 echo "Running bootstrap..."
 bash "$HOME/.config/shell/bootstrap.sh"
 
 # ──────────────────────────────────────────────
-# 6. AI coding tools
+# 7. AI coding tools
 # ──────────────────────────────────────────────
 if ! command -v opencode >/dev/null; then
     echo "Installing Opencode..."

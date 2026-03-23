@@ -99,13 +99,46 @@ if ! command -v goose >/dev/null; then
 fi
 
 # ──────────────────────────────────────────────
-# 5. Shell bootstrap (symlinks + cached integrations)
+# 5. Google Cloud SDK
+# ──────────────────────────────────────────────
+if [ ! -d "$HOME/google-cloud-sdk" ]; then
+    echo "Installing Google Cloud SDK..."
+    curl -s https://sdk.cloud.google.com | bash -s -- --disable-prompts
+fi
+
+# ──────────────────────────────────────────────
+# 6. Shell bootstrap (symlinks + cached integrations)
 # ──────────────────────────────────────────────
 echo "Running bootstrap..."
 bash "$HOME/.config/shell/bootstrap.sh"
 
 # ──────────────────────────────────────────────
-# 6. AI coding tools
+# 7. Host-specific env vars (written to env.local files, gitignored)
+# ──────────────────────────────────────────────
+echo "Configuring host-specific environment..."
+VERTEX_PROJECT="aplus-c967d"
+VERTEX_LOC="global"
+
+cat > "$HOME/.config/shell/env.local.zsh" <<EOF
+# Host-specific environment (not tracked in git)
+export GOOGLE_CLOUD_PROJECT=$VERTEX_PROJECT
+export VERTEX_LOCATION=$VERTEX_LOC
+EOF
+
+cat > "$HOME/.config/shell/env.local.fish" <<EOF
+# Host-specific environment (not tracked in git)
+set -gx GOOGLE_CLOUD_PROJECT $VERTEX_PROJECT
+set -gx VERTEX_LOCATION $VERTEX_LOC
+EOF
+
+cat > "$HOME/.config/shell/env.local.nu" <<EOF
+# Host-specific environment (not tracked in git)
+\$env.GOOGLE_CLOUD_PROJECT = "$VERTEX_PROJECT"
+\$env.VERTEX_LOCATION = "$VERTEX_LOC"
+EOF
+
+# ──────────────────────────────────────────────
+# 8. AI coding tools
 # ──────────────────────────────────────────────
 if ! command -v opencode >/dev/null; then
     echo "Installing Opencode..."
