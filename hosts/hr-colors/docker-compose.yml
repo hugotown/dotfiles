@@ -1,0 +1,89 @@
+---
+services:
+  hr-colors:
+    image: ubuntu:24.04
+    container_name: hr-colors
+    hostname: hr-colors
+    ports:
+      - 2227:22
+    volumes:
+      - hr-colors-home:/home/hugo
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+
+        # Prevent apt from trying to start/stop services inside container
+        printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d
+        chmod +x /usr/sbin/policy-rc.d
+
+        if [ ! -f /home/hugo/.setup-done ]; then
+          echo "=== First boot setup ==="
+
+          # Minimal base (exclude systemd-resolved to avoid resolv.conf conflicts)
+          apt-get update
+          apt-get install -y --no-install-recommends openssh-server git sudo zsh curl build-essential ca-certificates
+
+          # Create user
+          if ! id hugo &>/dev/null; then
+            if [ -d /home/hugo ]; then
+              useradd --no-log-init --no-create-home -s /bin/zsh -G sudo hugo
+            else
+              useradd --no-log-init -m -s /bin/zsh -G sudo hugo
+            fi
+            echo "hugo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          fi
+
+          # SSH: key-only auth
+          mkdir -p /run/sshd
+          sed -i 's/#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+          sed -i 's/#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+          sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+          mkdir -p /home/hugo/.ssh
+          echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILNFiYwlRsbJW8jbrem22AX7f80L65tS90eQNojqjp9z hugo@hr-colors" > /home/hugo/.ssh/authorized_keys
+          chmod 700 /home/hugo/.ssh
+          chmod 600 /home/hugo/.ssh/authorized_keys
+          chown -R hugo:hugo /home/hugo/.ssh
+
+          # Fix volume permissions and clone dotfiles
+          chown -R hugo:hugo /home/hugo
+          rm -rf /home/hugo/.config
+          su - hugo -c "git clone https://github.com/hugotown/dotfiles.git /home/hugo/.config"
+
+          # Run the dotfiles initialize script
+          su - hugo -c "bash /home/hugo/.config/hosts/hr-colors/initialize.sh"
+
+          chown -R hugo:hugo /home/hugo
+          touch /home/hugo/.setup-done
+          echo "=== Setup complete ==="
+        else
+          echo "=== Setup already done, re-provisioning ephemeral layer ==="
+
+          # Reinstall system packages (lost on container recreate)
+          apt-get update
+          apt-get install -y --no-install-recommends openssh-server git sudo zsh curl build-essential ca-certificates
+
+          # Recreate user if lost (ephemeral /etc)
+          if ! id hugo &>/dev/null; then
+            if [ -d /home/hugo ]; then
+              useradd --no-log-init --no-create-home -s /bin/zsh -G sudo hugo
+            else
+              useradd --no-log-init -m -s /bin/zsh -G sudo hugo
+            fi
+            echo "hugo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          fi
+
+          mkdir -p /run/sshd
+
+          # Re-run initialize.sh to reinstall all tools and re-bootstrap shell
+          chown -R hugo:hugo /home/hugo
+          su - hugo -c "bash /home/hugo/.config/hosts/hr-colors/initialize.sh" || true
+        fi
+
+        echo "Starting sshd..."
+        /usr/sbin/sshd -D
+
+volumes:
+  hr-colors-home:
