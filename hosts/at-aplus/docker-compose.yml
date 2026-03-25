@@ -42,7 +42,7 @@ services:
           sed -i 's/#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
           sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
           mkdir -p /home/hugo/.ssh
-          echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOcd2alTWq9tDq/lRkwzmULTdQlVB7t4HxClIVczmvok hugo@at-aplus" > /home/hugo/.ssh/authorized_keys
+          echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJRzfp8TjIT2/DeJUiIRxVR/0OSJu/+h6bgsnKy+7Lol hugo@at-aplus" > /home/hugo/.ssh/authorized_keys
           chmod 700 /home/hugo/.ssh
           chmod 600 /home/hugo/.ssh/authorized_keys
           chown -R hugo:hugo /home/hugo/.ssh
