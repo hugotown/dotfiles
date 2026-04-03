@@ -92,8 +92,6 @@ playwright install chromium 2>/dev/null || true
 # ──────────────────────────────────────────────
 # 4. npm/go global tools
 # ──────────────────────────────────────────────
-npm install -g @google/gemini-cli 2>/dev/null || true
-
 # goose
 if ! command -v goose >/dev/null; then
     curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash

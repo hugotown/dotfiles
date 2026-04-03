@@ -35,7 +35,6 @@ if (which sops | is-not-empty) and ($"($env.HOME)/.local/share/sops/age/keys.txt
     for file in (glob $"($env.HOME)/.config/secrets/*.yaml") {
         try { sops -d $file | from yaml | load-env }
     }
-    if "GEMINI_API_KEY" in $env { $env.GOOGLE_GENERATIVE_AI_API_KEY = $env.GEMINI_API_KEY }
 }
 
 # Host-specific overrides (not tracked in git)

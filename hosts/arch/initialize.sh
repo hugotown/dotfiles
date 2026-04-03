@@ -54,8 +54,7 @@ if ! command -v diffnav >/dev/null; then
     cd /tmp && git clone https://github.com/dlvhdr/diffnav.git && cd diffnav && go install . && cd /tmp && rm -rf diffnav
 fi
 
-# gemini-cli + worktrunk (npm/cargo)
-npm install -g @google/gemini-cli 2>/dev/null || true
+# worktrunk (cargo)
 cargo install worktrunk 2>/dev/null || true
 
 # gh extensions

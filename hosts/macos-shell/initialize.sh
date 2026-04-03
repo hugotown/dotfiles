@@ -51,7 +51,7 @@ brew install \
   curl wget tree btop ncdu just lazygit lazydocker \
   glow mdcat chafa ouch jless mpv ffmpegthumbnailer pandoc \
   duckdb iperf3 \
-  dlvhdr/formulae/diffnav gemini-cli worktrunk
+  dlvhdr/formulae/diffnav worktrunk
 
 # gh extensions
 gh extension install dlvhdr/gh-dash 2>/dev/null || true

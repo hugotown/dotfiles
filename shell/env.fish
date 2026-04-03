@@ -26,7 +26,6 @@ if command -q sops; and command -q yq; and test -f "$HOME/.local/share/sops/age/
             test (count $kv) -eq 2; and set -gx $kv[1] $kv[2]
         end
     end
-    set -q GEMINI_API_KEY; and set -gx GOOGLE_GENERATIVE_AI_API_KEY $GEMINI_API_KEY
 end
 
 # Host-specific overrides (not tracked in git)

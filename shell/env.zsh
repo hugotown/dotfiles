@@ -32,7 +32,6 @@ if command -v sops >/dev/null 2>&1 && [ -f "$HOME/.local/share/sops/age/keys.txt
         done < <(sops -d "$_f" 2>/dev/null)
     done
     unset _f _line _key _val
-    [ -n "${GEMINI_API_KEY:-}" ] && export GOOGLE_GENERATIVE_AI_API_KEY="$GEMINI_API_KEY"
 fi
 
 # Host-specific overrides (not tracked in git)
