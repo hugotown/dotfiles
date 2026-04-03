@@ -86,7 +86,7 @@ sudo "$(mise which npx)" playwright install-deps 2>/dev/null || true
 # Python packages (after mise so uv is available)
 echo "Installing Python packages..."
 eval "$(mise activate bash)" 2>/dev/null || true
-uv pip install -q google-genai Pillow duckdb streamlit plotly 2>/dev/null || true
+uv pip install --system -q google-genai Pillow duckdb streamlit plotly 2>/dev/null || true
 
 # ──────────────────────────────────────────────
 # 4. npm/go global tools
