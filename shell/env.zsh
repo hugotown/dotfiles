@@ -1,7 +1,8 @@
 # Portable environment - works on Nix, NixOS, and Arch Linux
 
 # Platform-agnostic paths
-export PATH="$HOME/.cargo/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
+export PNPM_HOME="$HOME/.local/share/pnpm"
+export PATH="$PNPM_HOME:$HOME/.cargo/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
 
 # Homebrew (Linux)
 [ -d /home/linuxbrew/.linuxbrew ] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"

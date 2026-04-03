@@ -1,6 +1,7 @@
 # Portable environment - works on Nix, NixOS, and Arch Linux
 
 # Platform-agnostic paths
+$env.PNPM_HOME = $"($env.HOME)/.local/share/pnpm"
 $env.PATH = (
     $env.PATH
     | split row (char esep)
@@ -8,6 +9,7 @@ $env.PATH = (
     | prepend $"($env.HOME)/.npm-global/bin"
     | prepend $"($env.HOME)/.cargo/bin"
     | prepend $"($env.HOME)/google-cloud-sdk/bin"
+    | prepend $env.PNPM_HOME
     | uniq
 )
 

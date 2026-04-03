@@ -1,6 +1,8 @@
 # Portable environment - works on Nix, NixOS, and Arch Linux
 
 # Platform-agnostic paths
+set -gx PNPM_HOME "$HOME/.local/share/pnpm"
+fish_add_path --prepend --global $PNPM_HOME
 fish_add_path --prepend --global $HOME/.cargo/bin
 fish_add_path --prepend --global $HOME/.npm-global/bin
 fish_add_path --prepend --global $HOME/.local/bin
