@@ -96,6 +96,11 @@ cat > "$HOME/.config/shell/env.local.nu" <<EOF
 \$env.VERTEX_LOCATION = "$VERTEX_LOC"
 EOF
 
+if ! command -v claude >/dev/null; then
+  echo "Installing Claude Code..."
+  curl -fsSL https://claude.ai/install.sh | bash
+fi
+
 if ! command -v opencode >/dev/null; then
   echo "Installing Opencode..."
   curl -fsSL https://opencode.ai/install | bash

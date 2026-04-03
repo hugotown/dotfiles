@@ -113,6 +113,11 @@ bash "$HOME/.config/shell/bootstrap.sh"
 # ──────────────────────────────────────────────
 # 7. AI coding tools
 # ──────────────────────────────────────────────
+if ! command -v claude >/dev/null; then
+    echo "Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+fi
+
 if ! command -v opencode >/dev/null; then
     echo "Installing Opencode..."
     curl -fsSL https://opencode.ai/install | bash
