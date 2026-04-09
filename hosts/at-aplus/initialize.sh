@@ -106,6 +106,22 @@ if [ ! -d "$HOME/google-cloud-sdk" ]; then
 fi
 
 # ──────────────────────────────────────────────
+# 5b. kubectl + gke-gcloud-auth-plugin (via Google Cloud apt repo)
+# ──────────────────────────────────────────────
+if ! command -v kubectl >/dev/null || ! command -v gke-gcloud-auth-plugin >/dev/null; then
+    echo "Installing kubectl and gke-gcloud-auth-plugin..."
+    if [ ! -f /etc/apt/sources.list.d/google-cloud-sdk.list ]; then
+        sudo install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+            sudo gpg --dearmor -o /etc/apt/keyrings/cloud.google.gpg
+        echo "deb [signed-by=/etc/apt/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
+            sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+        sudo apt-get update
+    fi
+    sudo -n apt-get install -y kubectl google-cloud-cli-gke-gcloud-auth-plugin
+fi
+
+# ──────────────────────────────────────────────
 # 6. Shell bootstrap (symlinks + cached integrations)
 # ──────────────────────────────────────────────
 echo "Running bootstrap..."

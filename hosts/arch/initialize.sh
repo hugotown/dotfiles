@@ -29,7 +29,8 @@ sudo pacman -S --needed --noconfirm \
     ffmpeg imagemagick p7zip duckdb resvg iperf3 go rustup \
     gtk3 gtk4 gstreamer gst-plugins-base-libs gst-plugins-bad-libs \
     graphene flite harfbuzz-icu libmanette enchant hyphen woff2 \
-    xorg-server-xvfb webkit2gtk-4.1 libxml2-legacy
+    xorg-server-xvfb webkit2gtk-4.1 libxml2-legacy \
+    kubectl
 
 sudo pacman -S --needed --noconfirm go-yq 2>/dev/null || true
 
@@ -69,6 +70,12 @@ fi
 if [ ! -d "$HOME/google-cloud-sdk" ]; then
     echo "Installing Google Cloud SDK..."
     curl -s https://sdk.cloud.google.com | bash -s -- --disable-prompts
+fi
+
+# gke-gcloud-auth-plugin (via gcloud components — not in Arch official repos)
+if ! command -v gke-gcloud-auth-plugin >/dev/null; then
+    echo "Installing gke-gcloud-auth-plugin..."
+    "$HOME/google-cloud-sdk/bin/gcloud" components install gke-gcloud-auth-plugin --quiet
 fi
 
 echo "Installing mise..."

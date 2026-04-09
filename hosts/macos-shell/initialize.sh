@@ -51,6 +51,7 @@ brew install \
   curl wget tree btop ncdu just lazygit lazydocker \
   glow mdcat chafa ouch jless mpv ffmpegthumbnailer pandoc \
   duckdb iperf3 \
+  kubernetes-cli \
   dlvhdr/formulae/diffnav worktrunk
 
 # gh extensions
@@ -66,6 +67,12 @@ fi
 if [ ! -d "$HOME/google-cloud-sdk" ]; then
     echo "Installing Google Cloud SDK..."
     curl -s https://sdk.cloud.google.com | bash -s -- --disable-prompts
+fi
+
+# gke-gcloud-auth-plugin (via gcloud components — keeps it in sync with curl-installed SDK)
+if ! command -v gke-gcloud-auth-plugin >/dev/null; then
+    echo "Installing gke-gcloud-auth-plugin..."
+    "$HOME/google-cloud-sdk/bin/gcloud" components install gke-gcloud-auth-plugin --quiet
 fi
 
 echo ""
