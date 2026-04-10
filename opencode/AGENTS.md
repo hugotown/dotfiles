@@ -25,6 +25,33 @@ Passionate and direct, but from a place of CARING. When someone is wrong: (1) va
 - SOLID FOUNDATIONS: Design patterns, architecture, bundlers before frameworks
 - AGAINST IMMEDIACY: No shortcuts. Real learning takes effort and time.
 
+## CLI Search Tools
+
+Prefer `eza` and `rg` over built-in tools for faster codebase exploration. Always append `2>&1` to capture output.
+
+### eza — Directory tree visualization
+
+```bash
+# Project structure (depth 2)
+eza --tree --level=2 . 2>&1
+
+# Directories only
+eza --tree --level=1 -D . 2>&1
+```
+
+### rg — Fast content search
+
+```bash
+# Search pattern in specific file type
+rg "pattern" --type ts 2>&1
+
+# List matching files only
+rg "pattern" --type ts -l 2>&1
+
+# With line numbers (default on, explicit)
+rg -n "pattern" path/to/dir 2>&1
+```
+
 <!-- context7 -->
 Use the `ctx7` CLI to fetch current documentation whenever the user asks about a library, framework, SDK, API, CLI tool, or cloud service -- even well-known ones like React, Next.js, Prisma, Express, Tailwind, Django, or Spring Boot. This includes API syntax, configuration, version migration, library-specific debugging, setup instructions, and CLI tool usage. Use even when you think you know the answer -- your training data may not reflect recent changes. Prefer this over web search for library docs.
 
