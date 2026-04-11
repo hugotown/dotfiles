@@ -155,9 +155,9 @@ async function conventions($: BunShell): Promise<string> {
       parts.push(`File names in src/: ${names.join(", ")}`)
     }
 
-    // Test file pattern
+    // Test file pattern (search by filename, not content)
     const tests =
-      await $`rg -l '\\.(test|spec)\\.(ts|tsx|js|jsx)$' --max-count 5 . 2>&1`
+      await $`rg --files -g '*.{test,spec}.{ts,tsx,js,jsx}' . 2>&1`
         .nothrow()
         .quiet()
         .text()

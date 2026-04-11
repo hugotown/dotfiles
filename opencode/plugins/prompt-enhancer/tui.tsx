@@ -19,24 +19,9 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 // ── Enhancement flow ─────────────────────────────────────────────────
 
-async function triggerEnhance(
-  api: TuiPluginApi,
-  options: Record<string, unknown> | undefined,
-) {
-  // 1. Read current prompt by getting it through the state/client
-  //    We clear + append as the replacement mechanism
-  //    First, we need the current text — but the SDK client does not
-  //    expose a "getPrompt" method. We use a workaround:
-  //    The prompt is available through our captured ref (see slot below).
-
-  // This function is called from the component which passes the current text
-  throw new Error("triggerEnhance must be called from EnhanceButton component")
-}
-
 async function doEnhance(
   api: TuiPluginApi,
   currentPrompt: string,
-  sessionId: string,
   options: Record<string, unknown> | undefined,
 ): Promise<string> {
   if (!currentPrompt.trim()) {
@@ -173,7 +158,6 @@ function EnhanceButton(props: {
         doEnhance(
           props.api,
           currentText,
-          props.session_id,
           props.options,
         ),
         30000,
@@ -301,7 +285,6 @@ const tui: TuiPlugin = async (api, options, meta) => {
             doEnhance(
               api,
               currentText,
-              sessionId,
               options,
             ),
             30000,
