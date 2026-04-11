@@ -6,6 +6,17 @@ import type {
 } from "@opencode-ai/plugin/tui"
 import { createSignal } from "solid-js"
 
+// ── Timeout utility ──────────────────────────────────────────────────
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error("Enhancement timed out")), ms),
+    ),
+  ])
+}
+
 // ── Enhancement flow ─────────────────────────────────────────────────
 
 async function triggerEnhance(
@@ -158,11 +169,14 @@ function EnhanceButton(props: {
     })
 
     try {
-      const enhanced = await doEnhance(
-        props.api,
-        currentText,
-        props.session_id,
-        props.options,
+      const enhanced = await withTimeout(
+        doEnhance(
+          props.api,
+          currentText,
+          props.session_id,
+          props.options,
+        ),
+        30000,
       )
 
       // Replace the prompt: clear then append the enhanced text
@@ -283,11 +297,14 @@ const tui: TuiPlugin = async (api, options, meta) => {
         })
 
         try {
-          const enhanced = await doEnhance(
-            api,
-            currentText,
-            sessionId,
-            options,
+          const enhanced = await withTimeout(
+            doEnhance(
+              api,
+              currentText,
+              sessionId,
+              options,
+            ),
+            30000,
           )
 
           await api.client.tui.clearPrompt()
