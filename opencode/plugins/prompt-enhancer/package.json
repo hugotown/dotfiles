@@ -1,10 +1,9 @@
 {
   "name": "prompt-enhancer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "exports": {
-    "./server": "./server.ts",
-    "./tui": "./tui.tsx"
+    "./server": "./server.ts"
   },
   "dependencies": {}
 }

@@ -385,13 +385,114 @@ const PromptEnhancerServer: Plugin = async ({
         try {
           await client.tui.showToast({
             body: {
-              message: "prompt-enhancer active (Ctrl+Shift+B)",
+              message: "prompt-enhancer active (/enhance)",
               variant: "success",
             },
           })
         } catch {
           // TUI not available
         }
+      }
+    },
+
+    // Intercept /enhance command to rewrite prompt inline
+    "command.execute.before": async (input, output) => {
+      if (input.command !== "enhance") return
+
+      const rawPrompt = input.arguments?.trim()
+      if (!rawPrompt) {
+        await log($, "WARN", "Empty /enhance — no arguments")
+        return
+      }
+
+      await log($, "ENHANCE", `Intercepted /enhance: "${rawPrompt.slice(0, 80)}"`)
+
+      try {
+        // Collect context using our collectors
+        const ctx = await collectContext($, rawPrompt)
+        const rewriteUserPrompt = buildRewriteUserPrompt(rawPrompt, ctx)
+
+        // Create ephemeral session for the rewrite
+        const tempSession = await client.session.create({
+          body: { title: "[prompt-enhancer] rewrite" },
+        })
+        const tempId = tempSession.data?.id
+
+        if (!tempId) {
+          await log($, "ERROR", "Failed to create temp session for /enhance")
+          return
+        }
+
+        try {
+          const result = await client.session.prompt({
+            path: { id: tempId },
+            body: {
+              parts: [
+                {
+                  type: "text" as const,
+                  text:
+                    REWRITE_SYSTEM_PROMPT + "\n\n---\n\n" + rewriteUserPrompt,
+                },
+              ],
+            },
+          })
+
+          // Extract enhanced text from response
+          const responseParts =
+            (result as any)?.data?.parts ?? (result as any)?.parts ?? []
+          let enhanced = ""
+          for (const part of responseParts) {
+            if (part.type === "text" && part.text) {
+              enhanced += part.text
+            }
+          }
+
+          if (enhanced.trim()) {
+            // Replace the user's prompt input with the enhanced version
+            await client.tui.clearPrompt()
+            await client.tui.appendPrompt({
+              body: { text: enhanced.trim() },
+            })
+
+            await client.tui.showToast({
+              body: {
+                message: "Prompt enhanced — review and press Enter",
+                variant: "success",
+              },
+            })
+
+            await log(
+              $,
+              "REWRITE",
+              `Enhanced ${rawPrompt.length} → ${enhanced.trim().length} chars`,
+            )
+
+            // Replace the command output with a minimal message
+            // so the LLM doesn't process the original prompt
+            output.parts = [
+              {
+                type: "text" as const,
+                text: "[prompt-enhancer] Prompt has been enhanced and placed in your input. Review and press Enter to send.",
+              },
+            ]
+          }
+        } finally {
+          // Clean up ephemeral session
+          try {
+            await client.session.delete({ path: { id: tempId } })
+          } catch {
+            // Best effort
+          }
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        await log($, "ERROR", `/enhance failed: ${msg}`)
+        await client.tui.showToast({
+          body: {
+            message: `Enhancement failed: ${msg}`,
+            variant: "error",
+          },
+        })
       }
     },
   }
