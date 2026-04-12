@@ -232,7 +232,10 @@ Use delegation_read(id) to retrieve the full result.`,
           }, DEFAULT_TIMEOUT_MS)
           timeoutTimers.set(id, timer)
 
-          // Fire prompt (async, don't await)
+          // Fire prompt (async, don't await — finalize on resolution)
+          // session.prompt() is blocking: it resolves when the agent finishes
+          // all tool calls and produces its final response. This is the
+          // canonical completion signal, not session.idle events.
           client.session.prompt({
             path: { id: session.data.id },
             body: {
@@ -240,6 +243,8 @@ Use delegation_read(id) to retrieve the full result.`,
               parts: [{ type: "text", text: args.prompt }],
               tools: { delegate: false, task: false, todowrite: false },
             },
+          }).then(() => {
+            void finalizeDelegation(client, id, "complete")
           }).catch((err: Error) => {
             void finalizeDelegation(client, id, "error", err.message)
           })
@@ -333,23 +338,6 @@ Shows running and completed delegations with their status.`,
           return `## Delegations\n\n${lines.join("\n")}`
         },
       }),
-    },
-
-    // Event hook for session.idle detection
-    event: async ({ event }: any) => {
-      if (event.type === "session.idle" || event.type === "session.status") {
-        const sessionID = event.properties?.sessionID
-        if (!sessionID) return
-
-        const delegationId = delegationsBySession.get(sessionID)
-        if (!delegationId) return
-
-        const delegation = delegations.get(delegationId)
-        if (!delegation || isTerminal(delegation.status)) return
-
-        await log("info", `Delegation ${delegationId} completed (session.idle)`)
-        await finalizeDelegation(client, delegationId, "complete")
-      }
     },
 
     // Routing guard: redirect read-only subagents from task to delegate
