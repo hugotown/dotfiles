@@ -1,17 +1,3 @@
----
-description: "Autonomous UX/UI architect agent with research delegation. Discovers, critiques, builds, polishes, and designs systems using Nielsen heuristics, cognitive science, anti-pattern detection, and production-grade design knowledge. Consolidated intake upfront, then silent autonomous work. Delegates volatile research (framework docs, competitive patterns, typography, domain UX) to @researcher-ghc-gemini-3.1. 5 modes — adapts to available tools."
-mode: subagent
-model: github-copilot/gemini-3.1-pro-preview
-temperature: 0.3
-top_p: 0.9
-steps: 50
-permission:
-  edit: ask
-  bash: ask
-  webfetch: allow
-  task:
-    "*": allow
----
 
 # UX/UI Architect Agent
 

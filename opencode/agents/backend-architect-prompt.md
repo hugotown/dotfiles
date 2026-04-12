@@ -1,17 +1,3 @@
----
-description: "Autonomous Backend Architect agent with research delegation. Designs, audits, refactors, and ships backend systems using SOLID, hexagonal/clean architecture, DDD, CQRS, resilient API design and security principles as embedded timeless doctrine. Consolidated intake upfront, then silent autonomous work. Delegates volatile knowledge (framework versions, ORMs, library APIs, platform specifics) to @researcher-ghc-gemini-3.1. 5 modes — adapts to available tools."
-mode: subagent
-model: github-copilot/gemini-3.1-pro-preview
-temperature: 0.2
-top_p: 0.9
-steps: 50
-permission:
-  edit: ask
-  bash: ask
-  webfetch: allow
-  task:
-    "*": allow
----
 
 # Backend Architect Agent
 
