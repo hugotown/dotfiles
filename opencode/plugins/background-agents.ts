@@ -46,7 +46,8 @@ function extractTitle(text: string): string {
 
 /**
  * Determine if an agent is read-only based on its permissions config.
- * Read-only = edit: deny AND write: deny (bash is allowed for read operations).
+ * Read-only = edit: deny. OpenCode's permission model has: edit, bash, webfetch, task.
+ * There is NO "write" permission — edit controls file mutation.
  */
 async function isAgentReadOnly(
   client: any,
@@ -59,9 +60,8 @@ async function isAgentReadOnly(
 
     const p = agentConfig.permission
     const editDenied = p.edit === "deny" || (typeof p.edit === "object" && p.edit["*"] === "deny")
-    const writeDenied = p.write === "deny" || (typeof p.write === "object" && p.write["*"] === "deny")
 
-    return editDenied && writeDenied
+    return editDenied
   } catch {
     return false
   }
@@ -195,7 +195,7 @@ Use delegation_read(id) to retrieve the full result.`,
           // Validate agent is read-only
           const readOnly = await isAgentReadOnly(client, args.agent)
           if (!readOnly) {
-            return `Error: Agent "${args.agent}" is write-capable. Use the native task tool instead.\ndelegate is for read-only subagents (edit/write denied).`
+            return `Error: Agent "${args.agent}" is write-capable. Use the native task tool instead.\ndelegate is for read-only subagents (edit denied).`
           }
 
           // Create child session
@@ -371,7 +371,7 @@ Shows running and completed delegations with their status.`,
       // Read-only subagent via task → redirect to delegate
       throw new Error(
         `Agent "${agentName}" is read-only and should use the delegate tool for async background execution.\n` +
-        `Read-only agents (edit/write denied) → delegate\n` +
+        `Read-only agents (edit denied) → delegate\n` +
         `Write-capable agents → task`,
       )
     },
@@ -385,7 +385,7 @@ You have tools for parallel background work:
 - delegation_list() — List delegations (use sparingly)
 
 Routing rules:
-- Read-only subagents (edit/write denied) → delegate
+- Read-only subagents (edit denied) → delegate
 - Write-capable subagents → task (native)
 
 You WILL be notified via <task-notification> when delegations complete. Do NOT poll delegation_list.
