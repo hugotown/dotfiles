@@ -24,6 +24,7 @@ const delegationsBySession = new Map<string, string>()
 const timeoutTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
 const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000 // 15 minutes
+const MAX_TERMINAL_DELEGATIONS = 50
 
 // ── Helpers ──
 
@@ -138,6 +139,19 @@ async function finalizeDelegation(
     })
   } catch {
     // Notification is best-effort
+  }
+
+  // Evict oldest terminal delegations to prevent unbounded Map growth
+  const terminalEntries = Array.from(delegations.entries())
+    .filter(([, d]) => isTerminal(d.status))
+  if (terminalEntries.length > MAX_TERMINAL_DELEGATIONS) {
+    terminalEntries
+      .sort(([, a], [, b]) => (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0))
+      .slice(0, terminalEntries.length - MAX_TERMINAL_DELEGATIONS)
+      .forEach(([key, d]) => {
+        delegations.delete(key)
+        delegationsBySession.delete(d.sessionID)
+      })
   }
 }
 
@@ -269,6 +283,11 @@ Use this after receiving a <task-notification>.`,
                 resolve()
               }, remainingMs)
             })
+          }
+
+          // Re-check after wait: if still not terminal, report it
+          if (!isTerminal(delegation.status)) {
+            return `Delegation "${delegation.id}" is still running after waiting. You will be notified via <task-notification> when it completes.`
           }
 
           // Read result from child session
