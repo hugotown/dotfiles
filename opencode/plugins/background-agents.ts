@@ -345,6 +345,11 @@ Shows running and completed delegations with their status.`,
       // Only intercept task tool
       if (input.tool !== "task") return
 
+      // If the calling session is a swarm agent, skip routing guard.
+      // The swarm plugin manages its own agent orchestration.
+      const swarmBridge = (globalThis as any).__agentSwarm
+      if (swarmBridge?.isAgentInSwarm?.(input.sessionID)) return
+
       const agentName = output.args?.subagent_type
       if (!agentName) return
 
