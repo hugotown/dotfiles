@@ -1,0 +1,647 @@
+# Lean Delegation Plugin — Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Replace agent-hub-server.ts and agent-file-lock.ts with a single background-agents.ts plugin that uses the OpenCode SDK natively for async agent delegation.
+
+**Architecture:** A single plugin file that registers 3 custom tools (delegate, delegation_read, delegation_list), guards the task tool for routing enforcement, hooks into session.idle for completion detection, and injects context into compaction/system prompts. All state is in-memory with results persisted in OpenCode's child sessions.
+
+**Tech Stack:** TypeScript, @opencode-ai/plugin SDK, OpenCode session API
+
+**Spec:** `docs/superpowers/specs/2026-04-12-lean-delegation-design.md`
+
+---
+
+### Task 1: Create the background-agents.ts plugin skeleton
+
+**Files:**
+- Create: `plugins/background-agents.ts`
+
+- [ ] **Step 1: Create the plugin file with types, state, and empty hooks**
+
+```typescript
+import type { Plugin } from "@opencode-ai/plugin"
+import { tool } from "@opencode-ai/plugin"
+
+// ── Types ──
+
+interface DelegationRecord {
+  id: string
+  sessionID: string
+  parentSessionID: string
+  parentAgent: string
+  agent: string
+  prompt: string
+  status: "running" | "complete" | "error" | "timeout"
+  createdAt: Date
+  completedAt?: Date
+  title?: string
+  error?: string
+}
+
+// ── State (in-memory, per OpenCode process) ──
+
+const delegations = new Map<string, DelegationRecord>()
+const delegationsBySession = new Map<string, string>()
+const timeoutTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000 // 15 minutes
+
+// ── Helpers ──
+
+function generateId(): string {
+  return crypto.randomUUID().slice(0, 8)
+}
+
+function isTerminal(status: DelegationRecord["status"]): boolean {
+  return status === "complete" || status === "error" || status === "timeout"
+}
+
+/**
+ * Extract a short title from result text (first non-empty line, truncated).
+ */
+function extractTitle(text: string): string {
+  const line = text.split("\n").find((l) => l.trim().length > 0) || "Delegation result"
+  return line.slice(0, 50).trim() + (line.length > 50 ? "..." : "")
+}
+
+/**
+ * Determine if an agent is read-only based on its permissions config.
+ * Read-only = edit: deny AND write: deny (bash is allowed for read operations).
+ */
+async function isAgentReadOnly(
+  client: any,
+  agentName: string,
+): Promise<boolean> {
+  try {
+    const config = await client.config.get()
+    const agentConfig = config.data?.agent?.[agentName]
+    if (!agentConfig?.permission) return false
+
+    const p = agentConfig.permission
+    const editDenied = p.edit === "deny" || (typeof p.edit === "object" && p.edit["*"] === "deny")
+    const writeDenied = p.write === "deny" || (typeof p.write === "object" && p.write["*"] === "deny")
+
+    return editDenied && writeDenied
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Check if an agent is a subagent by mode.
+ */
+async function isSubAgent(client: any, agentName: string): Promise<boolean> {
+  try {
+    const result = await client.app.agents({})
+    const agents = (result.data ?? []) as { name: string; mode?: string }[]
+    const agent = agents.find((a: any) => a.name === agentName)
+    return agent?.mode === "subagent"
+  } catch {
+    return false
+  }
+}
+
+// ── Plugin ──
+
+const BackgroundAgents: Plugin = async ({ client }) => {
+  const log = (level: string, msg: string) =>
+    client.app.log({ body: { service: "background-agents", level, message: msg } }).catch(() => {})
+
+  await log("info", "background-agents plugin loaded")
+
+  return {
+    // Hooks will be added in subsequent tasks
+  }
+}
+
+export default BackgroundAgents
+export { BackgroundAgents }
+```
+
+- [ ] **Step 2: Verify the plugin loads without errors**
+
+Restart OpenCode. Check logs for "background-agents plugin loaded" message. No errors should appear.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add plugins/background-agents.ts
+git commit -m "feat: add background-agents plugin skeleton with types and helpers"
+```
+
+---
+
+### Task 2: Implement the `delegate` tool
+
+**Files:**
+- Modify: `plugins/background-agents.ts`
+
+- [ ] **Step 1: Add the finalizeDelegation helper function**
+
+Add after the helper functions, before the Plugin definition:
+
+```typescript
+/**
+ * Finalize a delegation: mark terminal, extract title, notify parent.
+ */
+async function finalizeDelegation(
+  client: any,
+  id: string,
+  status: "complete" | "error" | "timeout",
+  errorMsg?: string,
+): Promise<void> {
+  const delegation = delegations.get(id)
+  if (!delegation || isTerminal(delegation.status)) return
+
+  delegation.status = status
+  delegation.completedAt = new Date()
+  if (errorMsg) delegation.error = errorMsg
+
+  // Clear timeout timer
+  const timer = timeoutTimers.get(id)
+  if (timer) {
+    clearTimeout(timer)
+    timeoutTimers.delete(id)
+  }
+
+  // Extract title from result
+  try {
+    const messages = await client.session.messages({ path: { id: delegation.sessionID } })
+    const msgData = messages.data as { info: { role: string }; parts: { type: string; text?: string }[] }[] | undefined
+    const assistantMsgs = msgData?.filter((m: any) => m.info.role === "assistant") ?? []
+    const lastMsg = assistantMsgs[assistantMsgs.length - 1]
+    const textParts = lastMsg?.parts?.filter((p: any) => p.type === "text") ?? []
+    const resultText = textParts.map((p: any) => p.text).join("\n")
+    if (resultText) delegation.title = extractTitle(resultText)
+  } catch {
+    // Title extraction is best-effort
+  }
+
+  // Notify parent
+  try {
+    const notification = [
+      "<task-notification>",
+      `<task-id>${delegation.id}</task-id>`,
+      `<status>${delegation.status}</status>`,
+      delegation.title ? `<title>${delegation.title}</title>` : "",
+      delegation.error ? `<error>${delegation.error}</error>` : "",
+      `<retrieval>Use delegation_read("${delegation.id}") for full output.</retrieval>`,
+      "</task-notification>",
+    ].filter(Boolean).join("\n")
+
+    await client.session.prompt({
+      path: { id: delegation.parentSessionID },
+      body: {
+        noReply: true,
+        agent: delegation.parentAgent,
+        parts: [{ type: "text", text: notification }],
+      },
+    })
+  } catch {
+    // Notification is best-effort
+  }
+}
+```
+
+- [ ] **Step 2: Add the delegate tool to the plugin return**
+
+Replace the empty return object with:
+
+```typescript
+return {
+  tool: {
+    delegate: tool({
+      description: `Delegate a task to a background agent. Returns immediately with an ID.
+Use for research, analysis, or any read-only task that can run in parallel.
+You WILL receive a <task-notification> when complete. Do NOT poll.
+Use delegation_read(id) to retrieve the full result.`,
+      args: {
+        prompt: tool.schema.string().describe("Detailed prompt for the agent. Must be in English."),
+        agent: tool.schema.string().describe("Agent name to delegate to (must be a read-only subagent)."),
+      },
+      async execute(args, ctx) {
+        if (!ctx?.sessionID || !ctx?.messageID) {
+          return "Error: delegate requires session context."
+        }
+
+        // Validate agent exists
+        const agentsResult = await client.app.agents({})
+        const agents = (agentsResult.data ?? []) as { name: string; mode?: string; description?: string }[]
+        const targetAgent = agents.find((a: any) => a.name === args.agent)
+
+        if (!targetAgent) {
+          const available = agents
+            .filter((a: any) => a.mode === "subagent")
+            .map((a: any) => `- ${a.name}${a.description ? `: ${a.description}` : ""}`)
+            .join("\n")
+          return `Error: Agent "${args.agent}" not found.\n\nAvailable subagents:\n${available || "(none)"}`
+        }
+
+        // Validate agent is read-only
+        const readOnly = await isAgentReadOnly(client, args.agent)
+        if (!readOnly) {
+          return `Error: Agent "${args.agent}" is write-capable. Use the native task tool instead.\ndelegate is for read-only subagents (edit/write denied).`
+        }
+
+        // Create child session
+        const session = await client.session.create({
+          body: {
+            title: `Delegation: ${args.agent}`,
+            parentID: ctx.sessionID,
+          },
+        })
+
+        if (!session.data?.id) {
+          return "Error: Failed to create delegation session."
+        }
+
+        // Register delegation
+        const id = generateId()
+        const delegation: DelegationRecord = {
+          id,
+          sessionID: session.data.id,
+          parentSessionID: ctx.sessionID,
+          parentAgent: ctx.agent,
+          agent: args.agent,
+          prompt: args.prompt.slice(0, 200),
+          status: "running",
+          createdAt: new Date(),
+        }
+
+        delegations.set(id, delegation)
+        delegationsBySession.set(session.data.id, id)
+
+        // Schedule timeout
+        const timer = setTimeout(() => {
+          void finalizeDelegation(client, id, "timeout", `Timed out after ${DEFAULT_TIMEOUT_MS / 1000}s`)
+        }, DEFAULT_TIMEOUT_MS)
+        timeoutTimers.set(id, timer)
+
+        // Fire prompt (async, don't await)
+        client.session.prompt({
+          path: { id: session.data.id },
+          body: {
+            agent: args.agent,
+            parts: [{ type: "text", text: args.prompt }],
+            tools: { delegate: false, task: false, todowrite: false },
+          },
+        }).catch((err: Error) => {
+          void finalizeDelegation(client, id, "error", err.message)
+        })
+
+        await log("info", `Delegated to ${args.agent}: ${id} (session: ${session.data.id})`)
+
+        return `Delegation started: ${id}\nAgent: ${args.agent}\nYou will be notified when complete. Do NOT poll.`
+      },
+    }),
+  },
+
+  // Event hook for session.idle detection
+  event: async ({ event }: any) => {
+    if (event.type === "session.idle" || event.type === "session.status") {
+      const sessionID = event.properties?.sessionID
+      if (!sessionID) return
+
+      const delegationId = delegationsBySession.get(sessionID)
+      if (!delegationId) return
+
+      const delegation = delegations.get(delegationId)
+      if (!delegation || isTerminal(delegation.status)) return
+
+      await log("info", `Delegation ${delegationId} completed (session.idle)`)
+      await finalizeDelegation(client, delegationId, "complete")
+    }
+  },
+}
+```
+
+- [ ] **Step 3: Verify delegate tool appears in OpenCode**
+
+Restart OpenCode. The `delegate` tool should be available. Test with a simple delegation:
+```
+delegate a quick research task to researcher-ghc-claude-haiku-4.5: "What is the current version of Bun?"
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add plugins/background-agents.ts
+git commit -m "feat: implement delegate tool with child session creation and notification"
+```
+
+---
+
+### Task 3: Implement `delegation_read` and `delegation_list` tools
+
+**Files:**
+- Modify: `plugins/background-agents.ts`
+
+- [ ] **Step 1: Add delegation_read tool**
+
+Add to the `tool` object in the return, after `delegate`:
+
+```typescript
+delegation_read: tool({
+  description: `Read the output of a completed delegation by ID.
+If the delegation is still running, waits for completion.
+Use this after receiving a <task-notification>.`,
+  args: {
+    id: tool.schema.string().describe("The delegation ID (e.g., 'a3f8bc12')"),
+  },
+  async execute(args, ctx) {
+    if (!ctx?.sessionID) return "Error: delegation_read requires session context."
+
+    const delegation = delegations.get(args.id)
+    if (!delegation) {
+      return `Error: Delegation "${args.id}" not found.\nUse delegation_list() to see available delegations.`
+    }
+
+    // If still running, wait for completion
+    if (!isTerminal(delegation.status)) {
+      const remainingMs = Math.max(
+        DEFAULT_TIMEOUT_MS - (Date.now() - delegation.createdAt.getTime()),
+        5000,
+      )
+      await new Promise<void>((resolve) => {
+        const check = setInterval(() => {
+          if (isTerminal(delegation.status)) {
+            clearInterval(check)
+            resolve()
+          }
+        }, 500)
+        setTimeout(() => {
+          clearInterval(check)
+          resolve()
+        }, remainingMs)
+      })
+    }
+
+    // Read result from child session
+    if (delegation.status === "error") {
+      return `Delegation "${delegation.id}" failed: ${delegation.error || "Unknown error"}`
+    }
+
+    if (delegation.status === "timeout") {
+      return `Delegation "${delegation.id}" timed out after ${DEFAULT_TIMEOUT_MS / 1000}s.`
+    }
+
+    try {
+      const messages = await client.session.messages({ path: { id: delegation.sessionID } })
+      const msgData = messages.data as { info: { role: string }; parts: { type: string; text?: string }[] }[] | undefined
+      const assistantMsgs = msgData?.filter((m: any) => m.info.role === "assistant") ?? []
+      const lastMsg = assistantMsgs[assistantMsgs.length - 1]
+      const textParts = lastMsg?.parts?.filter((p: any) => p.type === "text") ?? []
+      const result = textParts.map((p: any) => p.text).join("\n")
+
+      return result || `Delegation "${delegation.id}" completed but produced no text output.`
+    } catch (err: any) {
+      return `Error reading delegation result: ${err?.message ?? "unknown"}`
+    }
+  },
+}),
+```
+
+- [ ] **Step 2: Add delegation_list tool**
+
+Add to the `tool` object after `delegation_read`:
+
+```typescript
+delegation_list: tool({
+  description: `List all delegations for the current session tree.
+Shows running and completed delegations with their status.`,
+  args: {},
+  async execute(_args, ctx) {
+    if (!ctx?.sessionID) return "Error: delegation_list requires session context."
+
+    if (delegations.size === 0) {
+      return "No delegations found."
+    }
+
+    const lines = Array.from(delegations.values()).map((d) => {
+      const unread = d.status !== "running" && !d.title ? " [unread]" : ""
+      return `- **${d.id}** [${d.status}] agent=${d.agent}${d.title ? ` | ${d.title}` : ""}${unread}`
+    })
+
+    return `## Delegations\n\n${lines.join("\n")}`
+  },
+}),
+```
+
+- [ ] **Step 3: Verify both tools work**
+
+Restart OpenCode. After a delegation completes:
+1. `delegation_list` should show the delegation with status
+2. `delegation_read(<id>)` should return the full result text
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add plugins/background-agents.ts
+git commit -m "feat: add delegation_read and delegation_list tools"
+```
+
+---
+
+### Task 4: Add routing guard (tool.execute.before)
+
+**Files:**
+- Modify: `plugins/background-agents.ts`
+
+- [ ] **Step 1: Add tool.execute.before hook**
+
+Add to the return object, after the `event` hook:
+
+```typescript
+"tool.execute.before": async (input: any, output: any) => {
+  // Only intercept task tool
+  if (input.tool !== "task") return
+
+  const agentName = output.args?.subagent_type
+  if (!agentName) return
+
+  // Check if agent is a subagent
+  const isSub = await isSubAgent(client, agentName)
+  if (!isSub) return
+
+  // Check if read-only
+  const readOnly = await isAgentReadOnly(client, agentName)
+  if (!readOnly) return
+
+  // Read-only subagent via task → redirect to delegate
+  throw new Error(
+    `Agent "${agentName}" is read-only and should use the delegate tool for async background execution.\n` +
+    `Read-only agents (edit/write denied) → delegate\n` +
+    `Write-capable agents → task`,
+  )
+},
+```
+
+- [ ] **Step 2: Verify routing guard works**
+
+Restart OpenCode. Try to use the `task` tool with a read-only subagent name. It should throw an error suggesting `delegate` instead.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add plugins/background-agents.ts
+git commit -m "feat: add routing guard to redirect read-only subagents from task to delegate"
+```
+
+---
+
+### Task 5: Add compaction and system prompt hooks
+
+**Files:**
+- Modify: `plugins/background-agents.ts`
+
+- [ ] **Step 1: Add system prompt injection**
+
+Add to the return object:
+
+```typescript
+"experimental.chat.system.transform": async (_input: any, output: any) => {
+  output.system.push(`<delegation-system>
+You have tools for parallel background work:
+- delegate(prompt, agent) — Launch a task to a read-only subagent, returns ID immediately
+- delegation_read(id) — Retrieve completed result
+- delegation_list() — List delegations (use sparingly)
+
+Routing rules:
+- Read-only subagents (edit/write denied) → delegate
+- Write-capable subagents → task (native)
+
+You WILL be notified via <task-notification> when delegations complete. Do NOT poll delegation_list.
+</delegation-system>`)
+},
+```
+
+- [ ] **Step 2: Add compaction hook**
+
+Add to the return object:
+
+```typescript
+"experimental.session.compacting": async (input: any, output: any) => {
+  const running = Array.from(delegations.values()).filter((d) => d.status === "running")
+  const completed = Array.from(delegations.values()).filter((d) => isTerminal(d.status))
+
+  if (running.length === 0 && completed.length === 0) return
+
+  const lines = ["## Active Delegations"]
+
+  if (running.length > 0) {
+    lines.push("")
+    for (const d of running) {
+      lines.push(`- **${d.id}** [running] agent=${d.agent} since ${d.createdAt.toISOString()}`)
+    }
+    lines.push("")
+    lines.push("> You will be notified via <task-notification> when these complete.")
+  }
+
+  if (completed.length > 0) {
+    lines.push("")
+    lines.push("## Completed Delegations")
+    lines.push("")
+    for (const d of completed.slice(-10)) {
+      lines.push(`- **${d.id}** [${d.status}] agent=${d.agent}${d.title ? ` | ${d.title}` : ""}`)
+    }
+    lines.push("")
+    lines.push('Use delegation_read("id") to retrieve full output.')
+  }
+
+  output.context.push(lines.join("\n"))
+},
+```
+
+- [ ] **Step 3: Verify hooks are active**
+
+Restart OpenCode. The delegation rules should be visible in the system prompt context. Compaction should include delegation state when sessions are compacted.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add plugins/background-agents.ts
+git commit -m "feat: add compaction and system prompt hooks for delegation context"
+```
+
+---
+
+### Task 6: Remove old plugins and clean up
+
+**Files:**
+- Delete: `plugins/agent-hub-server.ts`
+- Delete: `plugins/agent-file-lock.ts`
+- Delete: `plugins/agent-hub-server/` (directory)
+
+- [ ] **Step 1: Remove old plugin files**
+
+```bash
+rm plugins/agent-hub-server.ts
+rm plugins/agent-file-lock.ts
+rm -rf plugins/agent-hub-server/
+```
+
+- [ ] **Step 2: Clean up test files (optional)**
+
+```bash
+rm -rf ~/.config/opencode/test-file-lock/
+```
+
+- [ ] **Step 3: Verify OpenCode loads cleanly**
+
+Restart OpenCode. Verify:
+- No errors about missing plugins
+- `background-agents plugin loaded` appears in logs
+- `smart-edit-guard` still works
+- `oc-db-sync` still works
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add -A
+git commit -m "chore: remove agent-hub-server and agent-file-lock plugins
+
+Replaced by background-agents.ts which uses the OpenCode SDK natively
+for async agent delegation instead of Unix sockets and in-memory locks."
+```
+
+---
+
+### Task 7: Integration verification
+
+**Files:**
+- None (verification only)
+
+- [ ] **Step 1: Test delegate with a real research agent**
+
+In OpenCode, run:
+```
+delegate a task to researcher-ghc-claude-haiku-4.5: "What are the top 3 features of Bun 1.2?"
+```
+
+Expected: Returns an ID immediately. After ~30s, a `<task-notification>` should arrive.
+
+- [ ] **Step 2: Test delegation_read**
+
+After receiving the notification, run:
+```
+delegation_read("<the-id-from-step-1>")
+```
+
+Expected: Full research result text.
+
+- [ ] **Step 3: Test routing guard**
+
+Try to use `task` tool with a read-only agent name. Expected: Error redirecting to `delegate`.
+
+- [ ] **Step 4: Test delegation_list**
+
+Run `delegation_list()`. Expected: Shows the delegation from step 1 with status.
+
+- [ ] **Step 5: Verify smart-edit-guard still works**
+
+Make an edit with a wrong `oldString`. Expected: smart-edit-guard catches it with closest-match hint.
+
+- [ ] **Step 6: Verify oc-db-sync still works**
+
+Complete a session. If `CLOUD_OPENCODE_POSTGRESQL_CN` is set, verify sync happens on `session.idle`.
