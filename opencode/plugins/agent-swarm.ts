@@ -145,17 +145,30 @@ const AgentSwarm: Plugin = async ({ client }) => {
       "</swarm-event>",
     ].filter(Boolean).join("\n")
 
+    // Try to trigger orchestrator response (auto-react).
+    // If session is busy, fallback to noReply (context injection).
     try {
       await client.session.prompt({
         path: { id: swarm.parentSessionID },
         body: {
-          noReply: true,
           agent: swarm.parentAgent,
           parts: [{ type: "text", text: lines }],
         },
       })
     } catch {
-      // Notification is best-effort
+      // Session busy or unavailable — inject as silent context
+      try {
+        await client.session.prompt({
+          path: { id: swarm.parentSessionID },
+          body: {
+            noReply: true,
+            agent: swarm.parentAgent,
+            parts: [{ type: "text", text: lines }],
+          },
+        })
+      } catch {
+        // Best-effort — notification lost
+      }
     }
   }
 
