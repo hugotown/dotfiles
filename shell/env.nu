@@ -27,6 +27,21 @@ if ("/nix" | path exists) {
     }
 }
 
+# Homebrew (macOS)
+if ("/opt/homebrew/bin/brew" | path exists) {
+    $env.PATH = ($env.PATH | split row (char esep) | prepend "/opt/homebrew/sbin" | prepend "/opt/homebrew/bin" | uniq)
+    $env.HOMEBREW_PREFIX = "/opt/homebrew"
+    $env.HOMEBREW_CELLAR = "/opt/homebrew/Cellar"
+    $env.HOMEBREW_REPOSITORY = "/opt/homebrew"
+}
+# Homebrew (Linux)
+if ("/home/linuxbrew/.linuxbrew/bin/brew" | path exists) {
+    $env.PATH = ($env.PATH | split row (char esep) | prepend "/home/linuxbrew/.linuxbrew/sbin" | prepend "/home/linuxbrew/.linuxbrew/bin" | uniq)
+    $env.HOMEBREW_PREFIX = "/home/linuxbrew/.linuxbrew"
+    $env.HOMEBREW_CELLAR = "/home/linuxbrew/.linuxbrew/Cellar"
+    $env.HOMEBREW_REPOSITORY = "/home/linuxbrew/.linuxbrew/Homebrew"
+}
+
 $env.EDITOR = "nvim"
 $env.TERMINAL = "alacritty"
 

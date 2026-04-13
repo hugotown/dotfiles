@@ -14,6 +14,11 @@ if test -d /nix
     test -d /run/current-system/sw/bin; and fish_add_path --prepend --global /run/current-system/sw/bin
 end
 
+# Homebrew (macOS)
+test -x /opt/homebrew/bin/brew; and eval (/opt/homebrew/bin/brew shellenv)
+# Homebrew (Linux)
+test -d /home/linuxbrew/.linuxbrew; and eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv)
+
 set -gx EDITOR nvim
 set -gx TERMINAL alacritty
 
