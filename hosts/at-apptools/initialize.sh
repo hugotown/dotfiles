@@ -28,6 +28,7 @@ sudo apt-get install -y --no-install-recommends \
     libwebkit2gtk-4.1-dev \
     libevent-2.1-7t64 libflite1 libavif16 \
     xvfb \
+    gnupg \
     procps file
 
 # ──────────────────────────────────────────────
