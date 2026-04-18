@@ -16,7 +16,7 @@ echo "Installing packages..."
 sudo pacman -S --needed --noconfirm \
     fish nushell zsh bash \
     zoxide atuin starship yazi \
-    sops age gnupg \
+    sops age gnupg oath-toolkit \
     neovim alacritty kitty wezterm tmux zellij \
     bat ripgrep eza fd fzf jq \
     curl wget tree btop ncdu just lazygit \
@@ -30,7 +30,7 @@ sudo pacman -S --needed --noconfirm \
     gtk3 gtk4 gstreamer gst-plugins-base-libs gst-plugins-bad-libs \
     graphene flite harfbuzz-icu libmanette enchant hyphen woff2 \
     xorg-server-xvfb webkit2gtk-4.1 libxml2-legacy \
-    kubectl
+    kubectl rsync
 
 sudo pacman -S --needed --noconfirm go-yq 2>/dev/null || true
 
@@ -96,6 +96,23 @@ fi
 if ! command -v opencode >/dev/null; then
     echo "Installing Opencode..."
     curl -fsSL https://opencode.ai/install | bash
+fi
+
+# Link ~/.claude → ~/.config/.claude (after claude install + dotfiles clone)
+CLAUDE_TARGET="$HOME/.config/.claude"
+CLAUDE_LINK="$HOME/.claude"
+mkdir -p "$CLAUDE_TARGET"
+if [ -L "$CLAUDE_LINK" ] && [ "$(readlink "$CLAUDE_LINK")" = "$CLAUDE_TARGET" ]; then
+    echo "✓ ~/.claude already linked to ~/.config/.claude"
+elif [ -e "$CLAUDE_LINK" ] || [ -L "$CLAUDE_LINK" ]; then
+    backup="$CLAUDE_LINK.backup.$(date +%s)"
+    echo "Backing up existing ~/.claude → $backup"
+    mv "$CLAUDE_LINK" "$backup"
+    ln -s "$CLAUDE_TARGET" "$CLAUDE_LINK"
+    echo "✓ Linked ~/.claude → ~/.config/.claude"
+else
+    ln -s "$CLAUDE_TARGET" "$CLAUDE_LINK"
+    echo "✓ Linked ~/.claude → ~/.config/.claude"
 fi
 
 echo ""

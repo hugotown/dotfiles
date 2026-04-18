@@ -29,7 +29,8 @@ sudo apt-get install -y --no-install-recommends \
     libevent-2.1-7t64 libflite1 libavif16 \
     xvfb \
     gnupg \
-    procps file
+    oathtool \
+    procps file rsync
 
 # ──────────────────────────────────────────────
 # 2. Homebrew — CLI tools, shells, terminal utilities
@@ -131,6 +132,26 @@ fi
 if ! command -v opencode >/dev/null; then
     echo "Installing Opencode..."
     curl -fsSL https://opencode.ai/install | bash
+fi
+
+# ──────────────────────────────────────────────
+# 7. Link ~/.claude → ~/.config/.claude
+#    After claude install + dotfiles clone (whichever finishes last)
+# ──────────────────────────────────────────────
+CLAUDE_TARGET="$HOME/.config/.claude"
+CLAUDE_LINK="$HOME/.claude"
+mkdir -p "$CLAUDE_TARGET"
+if [ -L "$CLAUDE_LINK" ] && [ "$(readlink "$CLAUDE_LINK")" = "$CLAUDE_TARGET" ]; then
+    echo "✓ ~/.claude already linked to ~/.config/.claude"
+elif [ -e "$CLAUDE_LINK" ] || [ -L "$CLAUDE_LINK" ]; then
+    backup="$CLAUDE_LINK.backup.$(date +%s)"
+    echo "Backing up existing ~/.claude → $backup"
+    mv "$CLAUDE_LINK" "$backup"
+    ln -s "$CLAUDE_TARGET" "$CLAUDE_LINK"
+    echo "✓ Linked ~/.claude → ~/.config/.claude"
+else
+    ln -s "$CLAUDE_TARGET" "$CLAUDE_LINK"
+    echo "✓ Linked ~/.claude → ~/.config/.claude"
 fi
 
 echo ""

@@ -43,14 +43,14 @@ brew install --cask font-jetbrains-mono-nerd-font
 brew install \
   ffmpeg sevenzip poppler fd ripgrep fzf zoxide resvg imagemagick yazi \
   fish nushell cocoapods \
-  atuin starship sops age \
+  atuin starship sops age oath-toolkit \
   neovim kitty tmux gh \
   bat eza jq yq git-delta dust duf \
   procs xh httpie tealdeer \
   hyperfine tokei watchexec \
   curl wget tree btop ncdu just lazygit lazydocker \
   glow mdcat chafa ouch jless mpv ffmpegthumbnailer pandoc \
-  duckdb iperf3 \
+  duckdb iperf3 rsync \
   kubernetes-cli \
   dlvhdr/formulae/diffnav worktrunk
 
@@ -111,6 +111,23 @@ fi
 if ! command -v opencode >/dev/null; then
   echo "Installing Opencode..."
   curl -fsSL https://opencode.ai/install | bash
+fi
+
+# Link ~/.claude → ~/.config/.claude (after claude install + dotfiles clone)
+CLAUDE_TARGET="$HOME/.config/.claude"
+CLAUDE_LINK="$HOME/.claude"
+mkdir -p "$CLAUDE_TARGET"
+if [ -L "$CLAUDE_LINK" ] && [ "$(readlink "$CLAUDE_LINK")" = "$CLAUDE_TARGET" ]; then
+    echo "✓ ~/.claude already linked to ~/.config/.claude"
+elif [ -e "$CLAUDE_LINK" ] || [ -L "$CLAUDE_LINK" ]; then
+    backup="$CLAUDE_LINK.backup.$(date +%s)"
+    echo "Backing up existing ~/.claude → $backup"
+    mv "$CLAUDE_LINK" "$backup"
+    ln -s "$CLAUDE_TARGET" "$CLAUDE_LINK"
+    echo "✓ Linked ~/.claude → ~/.config/.claude"
+else
+    ln -s "$CLAUDE_TARGET" "$CLAUDE_LINK"
+    echo "✓ Linked ~/.claude → ~/.config/.claude"
 fi
 
 echo "Setting up macOS-specific configs..."
