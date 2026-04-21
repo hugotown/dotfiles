@@ -14,6 +14,99 @@ pnpm = 'latest'
 # "zig" =  { version = "0.16.0" }
 # "java" = { version = "openjdk-17" }
 
+# Cargo-installed CLIs (mise cargo backend — runs `cargo install` with features)
+"cargo:duckduckgo" = { version = "latest", features = "rust-binary" }
+
 [tasks.ai-telemetry]
 description = "Launch AI Telemetry Streamlit dashboard"
 run = "python -m streamlit run ~/obsidian/ai-telemetry/app.py"
+
+# ──────────────────────────────────────────────────────────────
+# Cloud identity management (gcloud + gws + notebooklm-py)
+# Full guide: ~/.config/mise/cloud-profiles.md
+# ──────────────────────────────────────────────────────────────
+
+[tasks."cloud:setup"]
+description = "One-time: create gcloud configs, gws dirs, notebooklm profiles"
+run = '''
+set -e
+for profile in work personal; do
+  gcloud config configurations list --format='value(name)' | grep -qx $profile \
+    || gcloud config configurations create $profile
+  mkdir -p $HOME/.config/gws/$profile
+  notebooklm profile list 2>/dev/null | grep -q $profile \
+    || notebooklm profile create $profile
+done
+echo "✓ Profiles created. Next:"
+echo "  mise run cloud:login:work"
+echo "  mise run cloud:login:personal"
+'''
+
+[tasks."cloud:login:work"]
+description = "Login/refresh the 3 tools (work, via Edge)"
+run = '''
+set -e
+echo "→ [work] gcloud auth login"
+gcloud config configurations activate work 2>/dev/null \
+  || gcloud config configurations create work
+gcloud auth login
+
+echo "→ [work] gws auth login"
+mkdir -p $HOME/.config/gws/work
+GOOGLE_WORKSPACE_CLI_CONFIG_DIR=$HOME/.config/gws/work gws auth login
+
+echo "→ [work] notebooklm: reading cookies from Edge (no browser opens)"
+notebooklm profile create work 2>/dev/null || true
+notebooklm -p work login --browser edge
+
+echo "✓ [work] all 3 tools authenticated"
+'''
+
+[tasks."cloud:login:personal"]
+description = "Login/refresh the 3 tools (personal, via Safari)"
+run = '''
+set -e
+echo "→ [personal] gcloud auth login"
+gcloud config configurations activate personal 2>/dev/null \
+  || gcloud config configurations create personal
+gcloud auth login
+
+echo "→ [personal] gws auth login"
+mkdir -p $HOME/.config/gws/personal
+GOOGLE_WORKSPACE_CLI_CONFIG_DIR=$HOME/.config/gws/personal gws auth login
+
+echo "→ [personal] notebooklm: reading cookies from Safari"
+echo "   (if this fails with Permission denied, grant Full Disk Access"
+echo "    to your terminal in System Settings → Privacy & Security)"
+notebooklm profile create personal 2>/dev/null || true
+notebooklm -p personal login --browser safari
+
+echo "✓ [personal] all 3 tools authenticated"
+'''
+
+[tasks."cloud:check"]
+description = "Health-check credentials across all profiles"
+run = '''
+set +e
+for profile in work personal; do
+  echo "== $profile =="
+  gcloud --configuration=$profile auth print-access-token >/dev/null 2>&1 \
+    && echo "  gcloud      ✓" \
+    || echo "  gcloud      ✗ → mise run cloud:login:$profile"
+  GOOGLE_WORKSPACE_CLI_CONFIG_DIR=$HOME/.config/gws/$profile \
+    gws auth status 2>/dev/null | grep -q '"credential_source": "none"' \
+    && echo "  gws         ✗ → mise run cloud:login:$profile" \
+    || echo "  gws         ✓"
+  notebooklm -p $profile auth check --test >/dev/null 2>&1 \
+    && echo "  notebooklm  ✓" \
+    || echo "  notebooklm  ✗ → mise run cloud:refresh-notebooklm:$profile"
+done
+'''
+
+[tasks."cloud:refresh-notebooklm:work"]
+description = "Refresh notebooklm cookies only (work) from Edge — fast, no browser"
+run = "notebooklm -p work login --browser edge"
+
+[tasks."cloud:refresh-notebooklm:personal"]
+description = "Refresh notebooklm cookies only (personal) from Safari"
+run = "notebooklm -p personal login --browser safari"

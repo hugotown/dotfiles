@@ -202,6 +202,18 @@ disabled = false
 symbol = "☸ "
 format = '[$symbol$context( \($namespace\))]($style) '
 style = "fg:blue"
+# Solo mostrar el módulo cuando estemos dentro de un repo con manifiestos k8s.
+# Starship escanea SOLO el directorio actual (no padres), así que esto se
+# activa al hacer `cd` a la raíz del repo o a una subcarpeta con estos files.
+detect_files = ["k8s.yaml", "kustomization.yaml", "Chart.yaml", "skaffold.yaml", "Tiltfile"]
+detect_folders = ["k8s", "kubernetes", "manifests", "helm", "charts"]
+
+# Resaltar en rojo cualquier contexto cuyo nombre contenga "prod" o "production".
+# Las reglas se evalúan en orden — la más específica primero.
+[[kubernetes.contexts]]
+context_pattern = ".*(prod|production).*"
+style = "bold fg:red"
+symbol = "☸ ⚠ "
 
 [terraform]
 symbol = "󱁢 "
