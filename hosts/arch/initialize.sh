@@ -30,7 +30,8 @@ sudo pacman -S --needed --noconfirm \
     gtk3 gtk4 gstreamer gst-plugins-base-libs gst-plugins-bad-libs \
     graphene flite harfbuzz-icu libmanette enchant hyphen woff2 \
     xorg-server-xvfb webkit2gtk-4.1 libxml2-legacy \
-    kubectl rsync
+    kubectl rsync \
+    llvm clang lld lldb
 
 sudo pacman -S --needed --noconfirm go-yq 2>/dev/null || true
 
@@ -80,6 +81,9 @@ fi
 
 echo "Installing mise..."
 curl https://mise.run | sh
+export PATH="$HOME/.local/bin:$PATH"
+echo "Installing mise tools (runtimes + cargo tools)..."
+"$HOME/.local/bin/mise" install -y
 
 echo ""
 

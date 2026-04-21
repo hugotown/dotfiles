@@ -62,7 +62,8 @@ brew install \
     dust procs xh tokei \
     watchexec just tealdeer \
     nushell ouch diffnav \
-    sops duckdb
+    sops duckdb \
+    llvm lld
 
 # gh extensions
 gh extension install dlvhdr/gh-dash 2>/dev/null || true

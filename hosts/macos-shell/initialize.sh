@@ -26,6 +26,9 @@ fi
 
 echo "Installing mise-in-place mise.jdx"
 curl https://mise.run | sh
+export PATH="$HOME/.local/bin:$PATH"
+echo "Installing mise tools (runtimes + cargo tools)..."
+"$HOME/.local/bin/mise" install -y
 
 # 1. Install Homebrew if missing
 if ! command -v brew >/dev/null; then
@@ -52,6 +55,7 @@ brew install \
   glow mdcat chafa ouch jless mpv ffmpegthumbnailer pandoc \
   duckdb iperf3 rsync \
   kubernetes-cli \
+  llvm lld \
   dlvhdr/formulae/diffnav worktrunk
 
 # gh extensions
