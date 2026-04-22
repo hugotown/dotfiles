@@ -14,8 +14,10 @@ pnpm = 'latest'
 # "zig" =  { version = "0.16.0" }
 # "java" = { version = "openjdk-17" }
 
-# Cargo-installed CLIs (mise cargo backend — runs `cargo install` with features)
+# Cargo-installed CLIs (mise cargo backend — runs `cargo install --locked` by default)
 "cargo:duckduckgo" = { version = "latest", features = "rust-binary" }
+"cargo:trunk" = "latest"
+"cargo:worktrunk" = "latest"
 
 [tasks.ai-telemetry]
 description = "Launch AI Telemetry Streamlit dashboard"

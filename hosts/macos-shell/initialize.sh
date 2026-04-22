@@ -56,7 +56,7 @@ brew install \
   duckdb iperf3 rsync \
   kubernetes-cli \
   llvm lld \
-  dlvhdr/formulae/diffnav worktrunk
+  dlvhdr/formulae/diffnav
 
 # gh extensions
 gh extension install dlvhdr/gh-dash 2>/dev/null || true

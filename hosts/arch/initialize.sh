@@ -56,9 +56,6 @@ if ! command -v diffnav >/dev/null; then
     cd /tmp && git clone https://github.com/dlvhdr/diffnav.git && cd diffnav && go install . && cd /tmp && rm -rf diffnav
 fi
 
-# worktrunk (cargo)
-cargo install worktrunk 2>/dev/null || true
-
 # gh extensions
 gh extension install dlvhdr/gh-dash 2>/dev/null || true
 
