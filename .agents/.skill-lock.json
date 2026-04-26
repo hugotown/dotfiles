@@ -1,0 +1,44 @@
+{
+  "version": 3,
+  "skills": {
+    "web-search": {
+      "source": "brave/brave-search-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/brave/brave-search-skills.git",
+      "skillPath": "skills/web-search/SKILL.md",
+      "skillFolderHash": "ff25c76da8ea72dd48f129156e386fdeba6f6232",
+      "pluginName": "brave-search-skills",
+      "installedAt": "2026-04-11T21:59:00.829Z",
+      "updatedAt": "2026-04-11T21:59:00.829Z"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/vercel-labs/skills.git",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "skillFolderHash": "3013fdeb8a11b10b1eb795ec3ae8bfca38f7c26d",
+      "installedAt": "2026-04-11T21:59:10.136Z",
+      "updatedAt": "2026-04-11T21:59:10.136Z"
+    }
+  },
+  "dismissed": {
+    "findSkillsPrompt": true
+  },
+  "lastSelectedAgents": [
+    "amp",
+    "antigravity",
+    "cline",
+    "codex",
+    "cursor",
+    "deepagents",
+    "firebender",
+    "gemini-cli",
+    "github-copilot",
+    "kimi-cli",
+    "opencode",
+    "warp",
+    "claude-code",
+    "goose",
+    "pi"
+  ]
+}

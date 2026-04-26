@@ -16,6 +16,11 @@ gcloud/
 .claude/*
 !.claude/settings.json
 
+# Claude agents - ignore all by default, allowlist what should be tracked
+.agents/*
+!.agents/skills/
+!.agents/.skill-lock.json
+
 # Flutter SDK - machine-specific cache/state
 flutter/
 
