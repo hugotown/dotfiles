@@ -134,6 +134,23 @@ else
     echo "✓ Linked ~/.claude → ~/.config/.claude"
 fi
 
+# Link ~/.agents → ~/.config/.agents (Claude agents skills directory)
+AGENTS_TARGET="$HOME/.config/.agents"
+AGENTS_LINK="$HOME/.agents"
+mkdir -p "$AGENTS_TARGET"
+if [ -L "$AGENTS_LINK" ] && [ "$(readlink "$AGENTS_LINK")" = "$AGENTS_TARGET" ]; then
+    echo "✓ ~/.agents already linked to ~/.config/.agents"
+elif [ -e "$AGENTS_LINK" ] || [ -L "$AGENTS_LINK" ]; then
+    backup="$AGENTS_LINK.backup.$(date +%s)"
+    echo "Backing up existing ~/.agents → $backup"
+    mv "$AGENTS_LINK" "$backup"
+    ln -s "$AGENTS_TARGET" "$AGENTS_LINK"
+    echo "✓ Linked ~/.agents → ~/.config/.agents"
+else
+    ln -s "$AGENTS_TARGET" "$AGENTS_LINK"
+    echo "✓ Linked ~/.agents → ~/.config/.agents"
+fi
+
 echo "Setting up macOS-specific configs..."
 
 # Nushell on macOS uses ~/Library/Application Support/nushell/ instead of ~/.config/nushell/
