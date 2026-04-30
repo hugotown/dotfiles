@@ -20,5 +20,6 @@
     "deploy-on-aws@claude-plugins-official": true
   },
   "effortLevel": "xhigh",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark"
 }
