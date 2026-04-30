@@ -1,74 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    "superpowers@git+https://github.com/obra/superpowers.git"
-  ],
+  "plugin": ["superpowers@git+https://github.com/obra/superpowers.git"],
   "agent": {
-    "researcher-ghc-claude-haiku-4.5": {
-      "description": "Self-contained general research agent with adaptive depth, runtime tool discovery, and token-efficient multi-hop investigation. Use for technical research, market analysis, comparative analysis, state-of-art surveys, codebase investigation, and validation research.",
-      "mode": "subagent",
-      "model": "github-copilot/claude-haiku-4.5",
-      "temperature": 0.2,
-      "prompt": "{file:./agents/researcher-prompt.md}",
-      "permission": {
-        "edit": "deny",
-        "bash": "allow",
-        "webfetch": "deny"
-      },
-      "color": "info"
-    },
-    "researcher-ghc-claude-sonnet-4": {
-      "description": "Self-contained general research agent with adaptive depth, runtime tool discovery, and token-efficient multi-hop investigation. Use for technical research, market analysis, comparative analysis, state-of-art surveys, codebase investigation, and validation research.",
-      "mode": "subagent",
-      "model": "github-copilot/claude-sonnet-4",
-      "temperature": 0.2,
-      "prompt": "{file:./agents/researcher-prompt.md}",
-      "permission": {
-        "edit": "deny",
-        "bash": "allow",
-        "webfetch": "deny"
-      },
-      "color": "info"
-    },
-    "researcher-ghc-gemini-2.5-pro": {
-      "description": "Self-contained general research agent with adaptive depth, runtime tool discovery, and token-efficient multi-hop investigation. Use for technical research, market analysis, comparative analysis, state-of-art surveys, codebase investigation, and validation research.",
-      "mode": "subagent",
-      "model": "github-copilot/gemini-2.5-pro",
-      "temperature": 0.2,
-      "prompt": "{file:./agents/researcher-prompt.md}",
-      "permission": {
-        "edit": "deny",
-        "bash": "allow",
-        "webfetch": "deny"
-      },
-      "color": "info"
-    },
-    "researcher-ghc-gpt-5-mini": {
-      "description": "Self-contained general research agent with adaptive depth, runtime tool discovery, and token-efficient multi-hop investigation. Use for technical research, market analysis, comparative analysis, state-of-art surveys, codebase investigation, and validation research.",
-      "mode": "subagent",
-      "model": "github-copilot/gpt-5-mini",
-      "temperature": 0.2,
-      "prompt": "{file:./agents/researcher-prompt.md}",
-      "permission": {
-        "edit": "deny",
-        "bash": "allow",
-        "webfetch": "deny"
-      },
-      "color": "info"
-    },
-    "researcher-ghc-gpt-5.4-mini": {
-      "description": "Self-contained general research agent with adaptive depth, runtime tool discovery, and token-efficient multi-hop investigation. Use for technical research, market analysis, comparative analysis, state-of-art surveys, codebase investigation, and validation research.",
-      "mode": "subagent",
-      "model": "github-copilot/gpt-5.4-mini",
-      "temperature": 0.2,
-      "prompt": "{file:./agents/researcher-prompt.md}",
-      "permission": {
-        "edit": "deny",
-        "bash": "allow",
-        "webfetch": "deny"
-      },
-      "color": "info"
-    },
     "backend-architect-ghc-gemini-3.1": {
       "description": "Autonomous Backend Architect agent with research delegation. Designs, audits, refactors, and ships backend systems using SOLID, hexagonal/clean architecture, DDD, CQRS, resilient API design and security principles as embedded timeless doctrine. Consolidated intake upfront, then silent autonomous work. Delegates volatile knowledge (framework versions, ORMs, library APIs, platform specifics) to @researcher-ghc-gemini-3.1. 5 modes — adapts to available tools.",
       "mode": "subagent",

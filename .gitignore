@@ -13,13 +13,13 @@ gh/
 gcloud/
 
 # Claude Code - conversation history, sessions, transcripts (only settings.json is tracked)
-.claude/*
-!.claude/settings.json
+claude/*
+!claude/settings.json
 
 # Claude agents - ignore all by default, allowlist what should be tracked
-.agents/*
-!.agents/skills/
-!.agents/.skill-lock.json
+agents/*
+!agents/skills/
+!agents/.skill-lock.json
 
 # Flutter SDK - machine-specific cache/state
 flutter/
