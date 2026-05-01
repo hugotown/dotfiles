@@ -17,7 +17,6 @@ pnpm = 'latest'
 # Cargo-installed CLIs (mise cargo backend — runs `cargo install --locked` by default)
 "cargo:duckduckgo" = { version = "latest", features = "rust-binary" }
 "cargo:trunk" = "latest"
-"cargo:worktrunk" = "latest"
 
 [tasks.ai-telemetry]
 description = "Launch AI Telemetry Streamlit dashboard"
