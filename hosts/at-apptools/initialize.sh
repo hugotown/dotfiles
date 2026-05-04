@@ -213,8 +213,8 @@ fi
 #     Runs AFTER ~/.claude symlink so SKILL.md lands in the dotfiles repo
 # ──────────────────────────────────────────────
 if ! command -v graphify >/dev/null; then
-    echo "Installing graphifyy..."
-    uv tool install graphifyy
+    echo "Installing graphifyy with office+video extras..."
+    uv tool install "graphifyy[office,video]"
     graphify install
 fi
 
