@@ -133,6 +133,13 @@ else
     echo "✓ Linked ~/.agents → ~/.config/.agents"
 fi
 
+# graphifyy (uv tool — provides /graphify skill; needs ~/.claude symlink in place)
+if ! command -v graphify >/dev/null; then
+    echo "Installing graphifyy..."
+    uv tool install graphifyy
+    graphify install
+fi
+
 echo ""
 echo "=== Done ==="
 echo "Open a new terminal. Fish/Nushell/Zsh/Bash are ready."

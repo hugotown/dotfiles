@@ -182,6 +182,16 @@ else
     echo "✓ Linked ~/.agents → ~/.config/.agents"
 fi
 
+# ──────────────────────────────────────────────
+# 10. graphifyy (uv tool — provides /graphify skill)
+#     Runs AFTER ~/.claude symlink so SKILL.md lands in the dotfiles repo
+# ──────────────────────────────────────────────
+if ! command -v graphify >/dev/null; then
+    echo "Installing graphifyy..."
+    uv tool install graphifyy
+    graphify install
+fi
+
 echo ""
 echo "=== Done ==="
 echo "Open a new terminal. Fish/Nushell/Zsh/Bash are ready."
