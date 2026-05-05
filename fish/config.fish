@@ -7,6 +7,7 @@ source ~/.config/shell/env.fish
 source ~/.config/shell/integrations/zoxide.fish
 source ~/.config/shell/integrations/atuin.fish
 source ~/.config/shell/integrations/yazi.fish
+source ~/.config/shell/integrations/tv.fish
 source ~/.config/shell/integrations/cldy.fish
 command -q mise; and mise activate fish | source
 

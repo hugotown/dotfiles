@@ -25,6 +25,7 @@ add-secret() {
 [ -d "$HOME/.antigravity/antigravity/bin" ] && export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 
 autoload -Uz compinit && compinit
+[ -f ~/.config/shell/integrations/tv.zsh ] && source ~/.config/shell/integrations/tv.zsh
 if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)"; fi
 
 # Google Cloud SDK (portable paths)
@@ -32,3 +33,5 @@ if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)
 [ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ] && . "$HOME/google-cloud-sdk/completion.zsh.inc"
 
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+
+export GEMINI_API_KEY="AIzaSyBhbQzOoBabkJiHNa0cgppI6jR-akAp3ZY"

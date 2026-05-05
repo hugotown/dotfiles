@@ -61,7 +61,7 @@ brew install \
     yazi eza zellij \
     dust procs xh tokei \
     watchexec just tealdeer \
-    nushell ouch diffnav \
+    nushell ouch diffnav television \
     sops duckdb \
     llvm lld
 

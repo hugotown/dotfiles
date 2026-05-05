@@ -56,6 +56,12 @@ if ! command -v diffnav >/dev/null; then
     cd /tmp && git clone https://github.com/dlvhdr/diffnav.git && cd diffnav && go install . && cd /tmp && rm -rf diffnav
 fi
 
+# television (fuzzy finder TUI) — not in pacman, install via official script
+if ! command -v tv >/dev/null; then
+    echo "Installing television..."
+    curl -sSL https://raw.githubusercontent.com/alexpasmantier/television/refs/heads/main/install.sh | sh
+fi
+
 # gh extensions
 gh extension install dlvhdr/gh-dash 2>/dev/null || true
 

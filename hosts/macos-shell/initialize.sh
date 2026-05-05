@@ -48,7 +48,7 @@ brew install \
   fish nushell cocoapods \
   atuin starship sops age oath-toolkit \
   neovim kitty tmux gh \
-  bat eza jq yq git-delta dust duf \
+  bat eza jq yq git-delta dust duf television \
   procs xh httpie tealdeer \
   hyperfine tokei watchexec \
   curl wget tree btop ncdu just lazygit lazydocker \

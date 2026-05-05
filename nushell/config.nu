@@ -4,6 +4,7 @@
 source ~/.config/shell/integrations/zoxide.nu
 source ~/.config/shell/integrations/atuin.nu
 source ~/.config/shell/integrations/yazi.nu
+source ~/.config/shell/integrations/tv.nu
 source ~/.config/shell/integrations/cldy.nu
 source ~/.cache/shell/mise.nu
 
