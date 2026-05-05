@@ -55,5 +55,5 @@ if (which sops | is-not-empty) and ($"($env.HOME)/.local/share/sops/age/keys.txt
 }
 
 # Host-specific overrides (not tracked in git)
-const env_local_path = $"($nu.home-path)/.config/shell/env.local.nu"
+const env_local_path = $"($nu.home-dir)/.config/shell/env.local.nu"
 if ($env_local_path | path exists) { source $env_local_path }
