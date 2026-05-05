@@ -13,5 +13,6 @@ description = "Switch to the channel"
 command = "tv '{}'"
 mode = "execute"
 
-[preview]
-command = "bat -n --color=always ~/.config/television/cable/'{}'.toml"
+# [preview]
+# command = "bat -n --color=always ~/.config/television/cable/'{}'.toml"
+
