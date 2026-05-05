@@ -20,7 +20,7 @@ description = "Opens the selected entries with the default editor (falls back to
 command = "nvim '{}'"
 shell = "nu"
 # use `mode = "fork"` if you want to return to tv afterwards
-mode = "execute"
+mode = "fork"
 
 [actions.goto_parent_dir]
 description = "Re-opens tv in the parent directory"

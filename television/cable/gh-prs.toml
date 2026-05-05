@@ -31,6 +31,10 @@ command = '''gh pr view '{strip_ansi|split:#:1|split:   :0}' --json number,title
 (.body // "")'
 '''
 
+
+[keybindings]
+ctrl-r = "actions:code-review"
+
 [actions.open]
 description = "Open the PR in the browser"
 command = "gh pr view {strip_ansi|split:#:1|split:   :0} --web"
@@ -49,4 +53,9 @@ mode = "execute"
 [actions.diff]
 description = "View the PR diff"
 command = "gh pr diff {strip_ansi|split:#:1|split:   :0} | less"
+mode = "execute"
+
+[actions.code-review]
+description = "Review PR"
+command = 'wt switch pr:{strip_ansi|split:#:1|split:   :0} -x "script -q /dev/null opencode run \" please do not ask questions review this pull request changes, make a objective code-review and then make a comment in this pull request using: gh --help; adding your observations \" --model opencode/minimax-m2.5-free"'
 mode = "execute"
