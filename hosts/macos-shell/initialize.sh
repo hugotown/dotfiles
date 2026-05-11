@@ -122,6 +122,11 @@ if ! command -v opencode >/dev/null; then
   curl -fsSL https://opencode.ai/install | bash
 fi
 
+if ! command -v wb >/dev/null; then
+  echo "Installing Workbooks..."
+  curl -fsSL https://get.workbooks.dev | sh
+fi
+
 # Link ~/.claude → ~/.config/.claude (after claude install + dotfiles clone)
 CLAUDE_TARGET="$HOME/.config/.claude"
 CLAUDE_LINK="$HOME/.claude"
