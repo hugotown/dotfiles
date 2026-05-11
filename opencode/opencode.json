@@ -1,5 +1,22 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "claude-local-cli": {
+      "npm": "file:///Users/hugoruiz/.config/opencode/packages/claude-cli-provider/index.mjs",
+      "name": "Claude Local CLI Wrapper",
+      "models": {
+        "claude-opus-4-7": {
+          "name": "Claude Opus 4.7 (via Subprocess)"
+        },
+        "claude-sonnet-4-6": {
+          "name": "Claude Sonnet 4.6 (via Subprocess)"
+        },
+        "claude-haiku-4-5-20251001": {
+          "name": "Claude Haiku 4.5 (via Subprocess)"
+        }
+      }
+    }
+  },
   "plugin": ["superpowers@git+https://github.com/obra/superpowers.git"],
   "agent": {
     "backend-architect-ghc-gemini-3.1": {
@@ -27,6 +44,57 @@
       "top_p": 0.9,
       "steps": 50,
       "prompt": "{file:./agents/backend-architect-prompt.md}",
+      "permission": {
+        "edit": "ask",
+        "bash": "ask",
+        "webfetch": "allow",
+        "task": {
+          "*": "allow"
+        }
+      }
+    },
+    "claude-opus-agent": {
+      "description": "General purpose agent powered by Claude Opus 4.7 running via your local proxy.",
+      "mode": "subagent",
+      "model": "claude-local-cli/claude-opus-4-7",
+      "temperature": 0.2,
+      "top_p": 0.9,
+      "steps": 50,
+      "prompt": "{file:../agents/agents/claude-opus-prompt.md}",
+      "permission": {
+        "edit": "ask",
+        "bash": "ask",
+        "webfetch": "allow",
+        "task": {
+          "*": "allow"
+        }
+      }
+    },
+    "claude-sonnet-agent": {
+      "description": "Fast and balanced agent powered by Claude Sonnet 4.6 running via your local proxy.",
+      "mode": "subagent",
+      "model": "claude-local-cli/claude-sonnet-4-6",
+      "temperature": 0.2,
+      "top_p": 0.9,
+      "steps": 50,
+      "prompt": "{file:../agents/agents/claude-sonnet-prompt.md}",
+      "permission": {
+        "edit": "ask",
+        "bash": "ask",
+        "webfetch": "allow",
+        "task": {
+          "*": "allow"
+        }
+      }
+    },
+    "claude-haiku-agent": {
+      "description": "Ultra-fast agent powered by Claude Haiku 4.5 running via your local proxy.",
+      "mode": "subagent",
+      "model": "claude-local-cli/claude-haiku-4-5-20251001",
+      "temperature": 0.2,
+      "top_p": 0.9,
+      "steps": 50,
+      "prompt": "{file:../agents/agents/claude-haiku-prompt.md}",
       "permission": {
         "edit": "ask",
         "bash": "ask",
