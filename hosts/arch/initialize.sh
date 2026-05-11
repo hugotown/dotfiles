@@ -88,6 +88,11 @@ export PATH="$HOME/.local/bin:$PATH"
 echo "Installing mise tools (runtimes + cargo tools)..."
 "$HOME/.local/bin/mise" install -y
 
+# pnpm global settings — disable lifecycle scripts by default (supply chain hardening)
+# https://pnpm.io/cli/install#--ignore-scripts
+echo "Configuring pnpm global settings..."
+"$HOME/.local/bin/mise" exec -- pnpm config set ignore-scripts true --location=global
+
 echo ""
 
 # 2. Run portable bootstrap (symlinks + cached integrations)

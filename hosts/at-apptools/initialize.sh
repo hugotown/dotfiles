@@ -82,6 +82,11 @@ export PATH="$HOME/.local/bin:$PATH"
 echo "Installing mise tools (runtimes + postinstall hooks)..."
 mise install -y
 
+# pnpm global settings — disable lifecycle scripts by default (supply chain hardening)
+# https://pnpm.io/cli/install#--ignore-scripts
+echo "Configuring pnpm global settings..."
+mise exec -- pnpm config set ignore-scripts true --location=global
+
 # Playwright system deps (after node is available via mise)
 echo "Installing Playwright system deps..."
 sudo "$(mise which npx)" playwright install-deps 2>/dev/null || true
