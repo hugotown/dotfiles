@@ -7,9 +7,6 @@
     "~/.pi/agent/extensions/"
   ],
   "enabledModels": [
-    "claude-local-cli/claude-haiku-4-5-20251001",
-    "claude-local-cli/claude-sonnet-4-6",
-    "claude-local-cli/claude-opus-4-7",
     "opencode-go/deepseek-v4-flash",
     "opencode-go/deepseek-v4-pro",
     "opencode-go/glm-5",
