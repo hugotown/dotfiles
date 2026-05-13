@@ -1035,9 +1035,8 @@ export default function (pi: ExtensionAPI) {
   // ---- Live widget re-render bridge ----
   pi.on("session_start", async (_event, ctx) => {
     fs.mkdirSync(path.join(os.homedir(), ".pi", "agent", "agents"), { recursive: true });
-    fs.mkdirSync(path.join(os.homedir(), ".pi", "agent", "chains"), { recursive: true });
     getAgentRepository().reload(ctx.cwd);
-    ctx.ui.notify("Subagentes activos 🚀  Use --sub | --dispatch-only | /agents | /sublist | /subcont | /chains", "info");
+    ctx.ui.notify("Subagentes activos 🚀  Use --sub | --dispatch-only | /agents | /sublist | /subcont", "info");
 
     // Subscribe widget to live updates
     if (ctx.hasUI) {
