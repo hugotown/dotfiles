@@ -16,7 +16,12 @@ const STOP_REASON_MAP = {
 
 function emptyUsage() {
   return {
-    inputTokens: { total: undefined, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
+    inputTokens: {
+      total: undefined,
+      noCache: undefined,
+      cacheRead: undefined,
+      cacheWrite: undefined,
+    },
     outputTokens: { total: undefined, text: undefined, reasoning: undefined },
   };
 }
@@ -36,7 +41,8 @@ function flattenContent(content) {
       if (typeof p === "string") return p;
       if (!p || typeof p !== "object") return "";
       if (p.type === "text") return p.text ?? "";
-      if (p.type === "image" || p.type === "file") return "[binary content omitted]";
+      if (p.type === "image" || p.type === "file")
+        return "[binary content omitted]";
       if (p.type === "tool-call") {
         const args = p.input ?? p.args ?? {};
         return `[tool-call ${p.toolName ?? ""}(${JSON.stringify(args)})]`;
@@ -83,11 +89,15 @@ function buildWarnings(options) {
   ];
   const warnings = [];
   for (const key of unsupported) {
-    if (options[key] !== undefined) warnings.push({ type: "unsupported-setting", setting: key });
+    if (options[key] !== undefined)
+      warnings.push({ type: "unsupported-setting", setting: key });
   }
-  if (options.stopSequences?.length) warnings.push({ type: "unsupported-setting", setting: "stopSequences" });
-  if (options.tools?.length) warnings.push({ type: "unsupported-setting", setting: "tools" });
-  if (options.toolChoice) warnings.push({ type: "unsupported-setting", setting: "toolChoice" });
+  if (options.stopSequences?.length)
+    warnings.push({ type: "unsupported-setting", setting: "stopSequences" });
+  if (options.tools?.length)
+    warnings.push({ type: "unsupported-setting", setting: "tools" });
+  if (options.toolChoice)
+    warnings.push({ type: "unsupported-setting", setting: "toolChoice" });
   if (options.responseFormat?.type === "json")
     warnings.push({ type: "unsupported-setting", setting: "responseFormat" });
   return warnings;
@@ -99,7 +109,10 @@ function extractUsage(rawUsage) {
   const output = rawUsage.output_tokens;
   const cacheRead = rawUsage.cache_read_input_tokens;
   const cacheWrite = rawUsage.cache_creation_input_tokens;
-  const totalIn = typeof input === "number" ? input + (cacheRead ?? 0) + (cacheWrite ?? 0) : undefined;
+  const totalIn =
+    typeof input === "number"
+      ? input + (cacheRead ?? 0) + (cacheWrite ?? 0)
+      : undefined;
   return {
     inputTokens: {
       total: totalIn ?? input,
@@ -130,7 +143,15 @@ class ClaudeCliLanguageModel {
     const cmd = this.settings.claudePath ?? "claude";
     const args = [
       "-p",
-      promptText,
+      `<general-instructions>
+        - do not use any tool unless user explicitly tells you to use them
+        - do not use any skill unless user explicitly tells you to use them
+        - if you have questions ask in plain text
+          <user-request>
+            ${promptText}
+          </user-request>
+        - if there any quirks, gotchas, recommendations, improvements, pendings, please place it all in your response as <quirks>,<gotchas>,etc.
+      </general-instructions>`,
       "--dangerously-skip-permissions",
       "--model",
       this.modelId,
@@ -138,12 +159,14 @@ class ClaudeCliLanguageModel {
       "--output-format",
       "stream-json",
     ];
-    if (Array.isArray(this.settings.extraArgs)) args.push(...this.settings.extraArgs);
+    if (Array.isArray(this.settings.extraArgs))
+      args.push(...this.settings.extraArgs);
 
     const env = { ...process.env, ...(this.settings.env ?? {}) };
     delete env.ANTHROPIC_API_KEY;
     delete env.ANTHROPIC_AUTH_TOKEN;
-    if (this.settings.oauthToken) env.CLAUDE_CODE_OAUTH_TOKEN = this.settings.oauthToken;
+    if (this.settings.oauthToken)
+      env.CLAUDE_CODE_OAUTH_TOKEN = this.settings.oauthToken;
 
     return { cmd, args, env, cwd: this.settings.cwd };
   }
@@ -167,7 +190,11 @@ class ClaudeCliLanguageModel {
 
         let child;
         try {
-          child = spawn(cmd, args, { env, cwd, stdio: ["pipe", "pipe", "pipe"] });
+          child = spawn(cmd, args, {
+            env,
+            cwd,
+            stdio: ["pipe", "pipe", "pipe"],
+          });
         } catch (err) {
           controller.enqueue({ type: "error", error: err });
           controller.enqueue({
@@ -215,8 +242,10 @@ class ClaudeCliLanguageModel {
         };
 
         const closeBlocks = () => {
-          for (const [, state] of textBlocks) controller.enqueue({ type: "text-end", id: state.id });
-          for (const [, state] of reasoningBlocks) controller.enqueue({ type: "reasoning-end", id: state.id });
+          for (const [, state] of textBlocks)
+            controller.enqueue({ type: "text-end", id: state.id });
+          for (const [, state] of reasoningBlocks)
+            controller.enqueue({ type: "reasoning-end", id: state.id });
         };
 
         const handleAssistant = (event) => {
@@ -227,18 +256,26 @@ class ClaudeCliLanguageModel {
             if (!part || typeof part !== "object") return;
             const key = `${msgId}:${idx}`;
             if (part.type === "text") emitDelta("text", key, part.text ?? "");
-            else if (part.type === "thinking") emitDelta("reasoning", key, part.thinking ?? "");
+            else if (part.type === "thinking")
+              emitDelta("reasoning", key, part.thinking ?? "");
           });
         };
 
         const handleResult = (event) => {
           if (event.usage) usage = extractUsage(event.usage);
-          finishReason = mapFinishReason(event.stop_reason ?? (event.is_error ? "error" : "end_turn"));
+          finishReason = mapFinishReason(
+            event.stop_reason ?? (event.is_error ? "error" : "end_turn"),
+          );
           if (typeof event.result === "string") resultText = event.result;
         };
 
         const handleEvent = (event) => {
-          if (!event || typeof event !== "object" || typeof event.type !== "string") return;
+          if (
+            !event ||
+            typeof event !== "object" ||
+            typeof event.type !== "string"
+          )
+            return;
           if (event.type === "assistant") handleAssistant(event);
           else if (event.type === "result") handleResult(event);
         };
@@ -272,7 +309,10 @@ class ClaudeCliLanguageModel {
         };
         if (options.abortSignal) {
           if (options.abortSignal.aborted) onAbort();
-          else options.abortSignal.addEventListener("abort", onAbort, { once: true });
+          else
+            options.abortSignal.addEventListener("abort", onAbort, {
+              once: true,
+            });
         }
 
         child.on("error", (err) => {
@@ -289,7 +329,8 @@ class ClaudeCliLanguageModel {
 
         child.on("close", (code) => {
           if (errored) return;
-          if (options.abortSignal) options.abortSignal.removeEventListener("abort", onAbort);
+          if (options.abortSignal)
+            options.abortSignal.removeEventListener("abort", onAbort);
           if (stdoutBuf.trim()) {
             try {
               handleEvent(JSON.parse(stdoutBuf.trim()));
@@ -297,7 +338,11 @@ class ClaudeCliLanguageModel {
             stdoutBuf = "";
           }
 
-          if (code !== 0 && textBlocks.size === 0 && reasoningBlocks.size === 0) {
+          if (
+            code !== 0 &&
+            textBlocks.size === 0 &&
+            reasoningBlocks.size === 0
+          ) {
             controller.enqueue({
               type: "error",
               error: new Error(
@@ -313,7 +358,11 @@ class ClaudeCliLanguageModel {
             return;
           }
 
-          if (textBlocks.size === 0 && typeof resultText === "string" && resultText.length) {
+          if (
+            textBlocks.size === 0 &&
+            typeof resultText === "string" &&
+            resultText.length
+          ) {
             emitDelta("text", "__final__", resultText);
           }
 
@@ -338,7 +387,11 @@ class ClaudeCliLanguageModel {
     let warnings = [];
     let usage = emptyUsage();
     let finishReason = mapFinishReason(undefined);
-    let response = { id: randomUUID(), timestamp: new Date(), modelId: this.modelId };
+    let response = {
+      id: randomUUID(),
+      timestamp: new Date(),
+      modelId: this.modelId,
+    };
 
     while (true) {
       const { value, done } = await reader.read();
@@ -349,7 +402,11 @@ class ClaudeCliLanguageModel {
           warnings = part.warnings ?? [];
           break;
         case "response-metadata":
-          response = { id: part.id, timestamp: part.timestamp, modelId: part.modelId };
+          response = {
+            id: part.id,
+            timestamp: part.timestamp,
+            modelId: part.modelId,
+          };
           break;
         case "text-start": {
           const obj = { type: "text", text: "" };
@@ -373,7 +430,10 @@ class ClaudeCliLanguageModel {
           break;
         }
         case "reasoning-delta": {
-          const obj = reasoningByBlock.get(part.id) ?? { type: "reasoning", text: "" };
+          const obj = reasoningByBlock.get(part.id) ?? {
+            type: "reasoning",
+            text: "",
+          };
           if (!reasoningByBlock.has(part.id)) {
             reasoningByBlock.set(part.id, obj);
             content.push(obj);
@@ -386,11 +446,15 @@ class ClaudeCliLanguageModel {
           finishReason = part.finishReason;
           break;
         case "error":
-          throw part.error instanceof Error ? part.error : new Error(String(part.error));
+          throw part.error instanceof Error
+            ? part.error
+            : new Error(String(part.error));
       }
     }
 
-    const filtered = content.filter((p) => (p.type === "text" || p.type === "reasoning" ? p.text.length > 0 : true));
+    const filtered = content.filter((p) =>
+      p.type === "text" || p.type === "reasoning" ? p.text.length > 0 : true,
+    );
 
     return {
       content: filtered,
@@ -404,29 +468,34 @@ class ClaudeCliLanguageModel {
 }
 
 export function createClaudeCli(options = {}) {
-  const { name, defaultSettings, ...rest } = options ?? {};
+  const { name, defaultSettings, lockedModelId, ...rest } = options ?? {};
   const baseSettings = { ...(defaultSettings ?? {}), ...rest };
   const providerId = name || DEFAULT_PROVIDER_ID;
 
   const createModel = (modelId, settings) =>
     new ClaudeCliLanguageModel({
-      modelId,
+      modelId: lockedModelId ?? modelId,
       provider: providerId,
       settings: { ...baseSettings, ...(settings ?? {}) },
     });
 
   const provider = function claudeCli(modelId, settings) {
-    if (new.target) throw new Error("claude-cli provider cannot be used with `new`.");
+    if (new.target)
+      throw new Error("claude-cli provider cannot be used with `new`.");
     return createModel(modelId, settings);
   };
   provider.specificationVersion = "v3";
   provider.languageModel = createModel;
   provider.chat = createModel;
   provider.embeddingModel = (modelId) => {
-    throw new Error(`Embedding models are not supported by ${providerId} (requested: ${modelId})`);
+    throw new Error(
+      `Embedding models are not supported by ${providerId} (requested: ${modelId})`,
+    );
   };
   provider.imageModel = (modelId) => {
-    throw new Error(`Image models are not supported by ${providerId} (requested: ${modelId})`);
+    throw new Error(
+      `Image models are not supported by ${providerId} (requested: ${modelId})`,
+    );
   };
   return provider;
 }

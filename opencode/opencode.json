@@ -1,5 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "superpowers@git+https://github.com/obra/superpowers.git"
+  ],
+  "model": "opencode-go/mimo-v2.5",
   "provider": {
     "claude-local-cli": {
       "npm": "file:///Users/hugoruiz/.config/opencode/packages/claude-cli-provider/index.mjs",
@@ -15,111 +19,2489 @@
           "name": "Claude Haiku 4.5 (via Subprocess)"
         }
       }
+    },
+    "claude-opus": {
+      "npm": "file:///Users/hugoruiz/.config/opencode/packages/claude-cli-opus/index.mjs",
+      "name": "Claude Opus CLI",
+      "models": {
+        "default": {
+          "name": "Claude Opus 4.7"
+        }
+      }
+    },
+    "claude-sonnet": {
+      "npm": "file:///Users/hugoruiz/.config/opencode/packages/claude-cli-sonnet/index.mjs",
+      "name": "Claude Sonnet CLI",
+      "models": {
+        "default": {
+          "name": "Claude Sonnet 4.6"
+        }
+      }
+    },
+    "claude-haiku": {
+      "npm": "file:///Users/hugoruiz/.config/opencode/packages/claude-cli-haiku/index.mjs",
+      "name": "Claude Haiku CLI",
+      "models": {
+        "default": {
+          "name": "Claude Haiku 4.5"
+        }
+      }
     }
   },
-  "plugin": ["superpowers@git+https://github.com/obra/superpowers.git"],
   "agent": {
-    "backend-architect-ghc-gemini-3.1": {
-      "description": "Autonomous Backend Architect agent with research delegation. Designs, audits, refactors, and ships backend systems using SOLID, hexagonal/clean architecture, DDD, CQRS, resilient API design and security principles as embedded timeless doctrine. Consolidated intake upfront, then silent autonomous work. Delegates volatile knowledge (framework versions, ORMs, library APIs, platform specifics) to @researcher-ghc-gemini-3.1. 5 modes — adapts to available tools.",
-      "mode": "subagent",
-      "model": "github-copilot/gemini-3.1-pro-preview",
-      "temperature": 0.2,
-      "top_p": 0.9,
-      "steps": 50,
-      "prompt": "{file:./agents/backend-architect-prompt.md}",
-      "permission": {
-        "edit": "ask",
-        "bash": "ask",
-        "webfetch": "allow",
-        "task": {
-          "*": "allow"
-        }
-      }
+    "ai-llm-engineer-opencode-go-deepseek-v4-flash": {
+      "description": "ai-llm-engineer agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
     },
-    "backend-architect-ghc-opus-4.6": {
-      "description": "Autonomous Backend Architect agent with research delegation. Designs, audits, refactors, and ships backend systems using SOLID, hexagonal/clean architecture, DDD, CQRS, resilient API design and security principles as embedded timeless doctrine. Consolidated intake upfront, then silent autonomous work. Delegates volatile knowledge (framework versions, ORMs, library APIs, platform specifics) to @researcher-ghc-gemini-3.1. 5 modes — adapts to available tools.",
-      "mode": "subagent",
+    "ai-llm-engineer-opencode-go-deepseek-v4-pro": {
+      "description": "ai-llm-engineer agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-opencode-go-glm-5": {
+      "description": "ai-llm-engineer agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-opencode-go-glm-5.1": {
+      "description": "ai-llm-engineer agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-opencode-go-kimi-k2.5": {
+      "description": "ai-llm-engineer agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-opencode-go-kimi-k2.6": {
+      "description": "ai-llm-engineer agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-opencode-go-mimo-v2.5": {
+      "description": "ai-llm-engineer agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-opencode-go-mimo-v2.5-pro": {
+      "description": "ai-llm-engineer agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-opencode-go-minimax-m2.5": {
+      "description": "ai-llm-engineer agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-opencode-go-minimax-m2.7": {
+      "description": "ai-llm-engineer agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-opencode-go-qwen3.5-plus": {
+      "description": "ai-llm-engineer agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-opencode-go-qwen3.6-plus": {
+      "description": "ai-llm-engineer agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-github-copilot-claude-haiku-4.5": {
+      "description": "ai-llm-engineer agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-github-copilot-claude-opus-4.5": {
+      "description": "ai-llm-engineer agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-github-copilot-claude-opus-4.6": {
+      "description": "ai-llm-engineer agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
       "model": "github-copilot/claude-opus-4.6",
-      "temperature": 0.2,
-      "top_p": 0.9,
-      "steps": 50,
-      "prompt": "{file:./agents/backend-architect-prompt.md}",
-      "permission": {
-        "edit": "ask",
-        "bash": "ask",
-        "webfetch": "allow",
-        "task": {
-          "*": "allow"
-        }
-      }
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
     },
-    "claude-opus-agent": {
-      "description": "General purpose agent powered by Claude Opus 4.7 running via your local proxy.",
-      "mode": "subagent",
-      "model": "claude-local-cli/claude-opus-4-7",
-      "temperature": 0.2,
-      "top_p": 0.9,
-      "steps": 50,
-      "prompt": "{file:../agents/agents/claude-opus-prompt.md}",
-      "permission": {
-        "edit": "ask",
-        "bash": "ask",
-        "webfetch": "allow",
-        "task": {
-          "*": "allow"
-        }
-      }
+    "ai-llm-engineer-github-copilot-claude-sonnet-4.5": {
+      "description": "ai-llm-engineer agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
     },
-    "claude-sonnet-agent": {
-      "description": "Fast and balanced agent powered by Claude Sonnet 4.6 running via your local proxy.",
-      "mode": "subagent",
-      "model": "claude-local-cli/claude-sonnet-4-6",
-      "temperature": 0.2,
-      "top_p": 0.9,
-      "steps": 50,
-      "prompt": "{file:../agents/agents/claude-sonnet-prompt.md}",
-      "permission": {
-        "edit": "ask",
-        "bash": "ask",
-        "webfetch": "allow",
-        "task": {
-          "*": "allow"
-        }
-      }
+    "ai-llm-engineer-github-copilot-claude-sonnet-4.6": {
+      "description": "ai-llm-engineer agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
     },
-    "claude-haiku-agent": {
-      "description": "Ultra-fast agent powered by Claude Haiku 4.5 running via your local proxy.",
-      "mode": "subagent",
-      "model": "claude-local-cli/claude-haiku-4-5-20251001",
-      "temperature": 0.2,
-      "top_p": 0.9,
-      "steps": 50,
-      "prompt": "{file:../agents/agents/claude-haiku-prompt.md}",
-      "permission": {
-        "edit": "ask",
-        "bash": "ask",
-        "webfetch": "allow",
-        "task": {
-          "*": "allow"
-        }
-      }
+    "ai-llm-engineer-github-copilot-gemini-3-flash-preview": {
+      "description": "ai-llm-engineer agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
     },
-    "ux-ui-ghc-gemini-3.1": {
-      "description": "Autonomous UX/UI architect agent with research delegation. Discovers, critiques, builds, polishes, and designs systems using Nielsen heuristics, cognitive science, anti-pattern detection, and production-grade design knowledge. Consolidated intake upfront, then silent autonomous work. Delegates volatile research (framework docs, competitive patterns, typography, domain UX) to @researcher-ghc-gemini-3.1. 5 modes — adapts to available tools.",
-      "mode": "subagent",
+    "ai-llm-engineer-github-copilot-gemini-3.1-pro-preview": {
+      "description": "ai-llm-engineer agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
       "model": "github-copilot/gemini-3.1-pro-preview",
-      "temperature": 0.3,
-      "top_p": 0.9,
-      "steps": 50,
-      "prompt": "{file:./agents/ux-ui-architect-prompt.md}",
-      "permission": {
-        "edit": "ask",
-        "bash": "ask",
-        "webfetch": "allow",
-        "task": {
-          "*": "allow"
-        }
-      }
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-github-copilot-gpt-5-mini": {
+      "description": "ai-llm-engineer agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-github-copilot-gpt-5.2": {
+      "description": "ai-llm-engineer agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-github-copilot-gpt-5.2-codex": {
+      "description": "ai-llm-engineer agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-github-copilot-gpt-5.3-codex": {
+      "description": "ai-llm-engineer agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-github-copilot-gpt-5.4": {
+      "description": "ai-llm-engineer agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-github-copilot-gpt-5.4-mini": {
+      "description": "ai-llm-engineer agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "ai-llm-engineer-github-copilot-grok-code-fast-1": {
+      "description": "ai-llm-engineer agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/ai-llm-engineer-prompt.md}"
+    },
+    "backend-architect-opencode-go-deepseek-v4-flash": {
+      "description": "backend-architect agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-opencode-go-deepseek-v4-pro": {
+      "description": "backend-architect agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-opencode-go-glm-5": {
+      "description": "backend-architect agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-opencode-go-glm-5.1": {
+      "description": "backend-architect agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-opencode-go-kimi-k2.5": {
+      "description": "backend-architect agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-opencode-go-kimi-k2.6": {
+      "description": "backend-architect agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-opencode-go-mimo-v2.5": {
+      "description": "backend-architect agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-opencode-go-mimo-v2.5-pro": {
+      "description": "backend-architect agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-opencode-go-minimax-m2.5": {
+      "description": "backend-architect agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-opencode-go-minimax-m2.7": {
+      "description": "backend-architect agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-opencode-go-qwen3.5-plus": {
+      "description": "backend-architect agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-opencode-go-qwen3.6-plus": {
+      "description": "backend-architect agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-claude-haiku-4.5": {
+      "description": "backend-architect agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-claude-opus-4.5": {
+      "description": "backend-architect agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-claude-opus-4.6": {
+      "description": "backend-architect agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-claude-sonnet-4.5": {
+      "description": "backend-architect agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-claude-sonnet-4.6": {
+      "description": "backend-architect agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-gemini-3-flash-preview": {
+      "description": "backend-architect agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-gemini-3.1-pro-preview": {
+      "description": "backend-architect agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-gpt-5-mini": {
+      "description": "backend-architect agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-gpt-5.2": {
+      "description": "backend-architect agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-gpt-5.2-codex": {
+      "description": "backend-architect agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-gpt-5.3-codex": {
+      "description": "backend-architect agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-gpt-5.4": {
+      "description": "backend-architect agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-gpt-5.4-mini": {
+      "description": "backend-architect agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "backend-architect-github-copilot-grok-code-fast-1": {
+      "description": "backend-architect agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/backend-architect-prompt.md}"
+    },
+    "code-reviewer-opencode-go-deepseek-v4-flash": {
+      "description": "code-reviewer agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-opencode-go-deepseek-v4-pro": {
+      "description": "code-reviewer agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-opencode-go-glm-5": {
+      "description": "code-reviewer agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-opencode-go-glm-5.1": {
+      "description": "code-reviewer agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-opencode-go-kimi-k2.5": {
+      "description": "code-reviewer agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-opencode-go-kimi-k2.6": {
+      "description": "code-reviewer agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-opencode-go-mimo-v2.5": {
+      "description": "code-reviewer agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-opencode-go-mimo-v2.5-pro": {
+      "description": "code-reviewer agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-opencode-go-minimax-m2.5": {
+      "description": "code-reviewer agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-opencode-go-minimax-m2.7": {
+      "description": "code-reviewer agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-opencode-go-qwen3.5-plus": {
+      "description": "code-reviewer agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-opencode-go-qwen3.6-plus": {
+      "description": "code-reviewer agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-claude-haiku-4.5": {
+      "description": "code-reviewer agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-claude-opus-4.5": {
+      "description": "code-reviewer agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-claude-opus-4.6": {
+      "description": "code-reviewer agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-claude-sonnet-4.5": {
+      "description": "code-reviewer agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-claude-sonnet-4.6": {
+      "description": "code-reviewer agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-gemini-3-flash-preview": {
+      "description": "code-reviewer agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-gemini-3.1-pro-preview": {
+      "description": "code-reviewer agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-gpt-5-mini": {
+      "description": "code-reviewer agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-gpt-5.2": {
+      "description": "code-reviewer agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-gpt-5.2-codex": {
+      "description": "code-reviewer agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-gpt-5.3-codex": {
+      "description": "code-reviewer agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-gpt-5.4": {
+      "description": "code-reviewer agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-gpt-5.4-mini": {
+      "description": "code-reviewer agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "code-reviewer-github-copilot-grok-code-fast-1": {
+      "description": "code-reviewer agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/code-reviewer-prompt.md}"
+    },
+    "data-architect-opencode-go-deepseek-v4-flash": {
+      "description": "data-architect agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-opencode-go-deepseek-v4-pro": {
+      "description": "data-architect agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-opencode-go-glm-5": {
+      "description": "data-architect agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-opencode-go-glm-5.1": {
+      "description": "data-architect agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-opencode-go-kimi-k2.5": {
+      "description": "data-architect agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-opencode-go-kimi-k2.6": {
+      "description": "data-architect agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-opencode-go-mimo-v2.5": {
+      "description": "data-architect agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-opencode-go-mimo-v2.5-pro": {
+      "description": "data-architect agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-opencode-go-minimax-m2.5": {
+      "description": "data-architect agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-opencode-go-minimax-m2.7": {
+      "description": "data-architect agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-opencode-go-qwen3.5-plus": {
+      "description": "data-architect agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-opencode-go-qwen3.6-plus": {
+      "description": "data-architect agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-claude-haiku-4.5": {
+      "description": "data-architect agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-claude-opus-4.5": {
+      "description": "data-architect agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-claude-opus-4.6": {
+      "description": "data-architect agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-claude-sonnet-4.5": {
+      "description": "data-architect agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-claude-sonnet-4.6": {
+      "description": "data-architect agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-gemini-3-flash-preview": {
+      "description": "data-architect agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-gemini-3.1-pro-preview": {
+      "description": "data-architect agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-gpt-5-mini": {
+      "description": "data-architect agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-gpt-5.2": {
+      "description": "data-architect agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-gpt-5.2-codex": {
+      "description": "data-architect agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-gpt-5.3-codex": {
+      "description": "data-architect agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-gpt-5.4": {
+      "description": "data-architect agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-gpt-5.4-mini": {
+      "description": "data-architect agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "data-architect-github-copilot-grok-code-fast-1": {
+      "description": "data-architect agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/data-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-deepseek-v4-flash": {
+      "description": "devops-cloud-architect agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-deepseek-v4-pro": {
+      "description": "devops-cloud-architect agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-glm-5": {
+      "description": "devops-cloud-architect agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-glm-5.1": {
+      "description": "devops-cloud-architect agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-kimi-k2.5": {
+      "description": "devops-cloud-architect agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-kimi-k2.6": {
+      "description": "devops-cloud-architect agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-mimo-v2.5": {
+      "description": "devops-cloud-architect agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-mimo-v2.5-pro": {
+      "description": "devops-cloud-architect agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-minimax-m2.5": {
+      "description": "devops-cloud-architect agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-minimax-m2.7": {
+      "description": "devops-cloud-architect agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-qwen3.5-plus": {
+      "description": "devops-cloud-architect agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-opencode-go-qwen3.6-plus": {
+      "description": "devops-cloud-architect agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-claude-haiku-4.5": {
+      "description": "devops-cloud-architect agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-claude-opus-4.5": {
+      "description": "devops-cloud-architect agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-claude-opus-4.6": {
+      "description": "devops-cloud-architect agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-claude-sonnet-4.5": {
+      "description": "devops-cloud-architect agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-claude-sonnet-4.6": {
+      "description": "devops-cloud-architect agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-gemini-3-flash-preview": {
+      "description": "devops-cloud-architect agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-gemini-3.1-pro-preview": {
+      "description": "devops-cloud-architect agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-gpt-5-mini": {
+      "description": "devops-cloud-architect agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-gpt-5.2": {
+      "description": "devops-cloud-architect agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-gpt-5.2-codex": {
+      "description": "devops-cloud-architect agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-gpt-5.3-codex": {
+      "description": "devops-cloud-architect agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-gpt-5.4": {
+      "description": "devops-cloud-architect agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-gpt-5.4-mini": {
+      "description": "devops-cloud-architect agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "devops-cloud-architect-github-copilot-grok-code-fast-1": {
+      "description": "devops-cloud-architect agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/devops-cloud-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-deepseek-v4-flash": {
+      "description": "frontend-architect agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-deepseek-v4-pro": {
+      "description": "frontend-architect agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-glm-5": {
+      "description": "frontend-architect agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-glm-5.1": {
+      "description": "frontend-architect agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-kimi-k2.5": {
+      "description": "frontend-architect agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-kimi-k2.6": {
+      "description": "frontend-architect agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-mimo-v2.5": {
+      "description": "frontend-architect agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-mimo-v2.5-pro": {
+      "description": "frontend-architect agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-minimax-m2.5": {
+      "description": "frontend-architect agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-minimax-m2.7": {
+      "description": "frontend-architect agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-qwen3.5-plus": {
+      "description": "frontend-architect agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-opencode-go-qwen3.6-plus": {
+      "description": "frontend-architect agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-claude-haiku-4.5": {
+      "description": "frontend-architect agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-claude-opus-4.5": {
+      "description": "frontend-architect agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-claude-opus-4.6": {
+      "description": "frontend-architect agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-claude-sonnet-4.5": {
+      "description": "frontend-architect agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-claude-sonnet-4.6": {
+      "description": "frontend-architect agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-gemini-3-flash-preview": {
+      "description": "frontend-architect agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-gemini-3.1-pro-preview": {
+      "description": "frontend-architect agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-gpt-5-mini": {
+      "description": "frontend-architect agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-gpt-5.2": {
+      "description": "frontend-architect agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-gpt-5.2-codex": {
+      "description": "frontend-architect agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-gpt-5.3-codex": {
+      "description": "frontend-architect agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-gpt-5.4": {
+      "description": "frontend-architect agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-gpt-5.4-mini": {
+      "description": "frontend-architect agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "frontend-architect-github-copilot-grok-code-fast-1": {
+      "description": "frontend-architect agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/frontend-architect-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-deepseek-v4-flash": {
+      "description": "mobile-engineer agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-deepseek-v4-pro": {
+      "description": "mobile-engineer agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-glm-5": {
+      "description": "mobile-engineer agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-glm-5.1": {
+      "description": "mobile-engineer agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-kimi-k2.5": {
+      "description": "mobile-engineer agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-kimi-k2.6": {
+      "description": "mobile-engineer agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-mimo-v2.5": {
+      "description": "mobile-engineer agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-mimo-v2.5-pro": {
+      "description": "mobile-engineer agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-minimax-m2.5": {
+      "description": "mobile-engineer agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-minimax-m2.7": {
+      "description": "mobile-engineer agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-qwen3.5-plus": {
+      "description": "mobile-engineer agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-opencode-go-qwen3.6-plus": {
+      "description": "mobile-engineer agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-claude-haiku-4.5": {
+      "description": "mobile-engineer agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-claude-opus-4.5": {
+      "description": "mobile-engineer agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-claude-opus-4.6": {
+      "description": "mobile-engineer agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-claude-sonnet-4.5": {
+      "description": "mobile-engineer agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-claude-sonnet-4.6": {
+      "description": "mobile-engineer agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-gemini-2.5-pro": {
+      "description": "mobile-engineer agent powered by github-copilot/gemini-2.5-pro",
+      "mode": "all",
+      "model": "github-copilot/gemini-2.5-pro",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-gemini-3-flash-preview": {
+      "description": "mobile-engineer agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-gemini-3.1-pro-preview": {
+      "description": "mobile-engineer agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-gpt-4.1": {
+      "description": "mobile-engineer agent powered by github-copilot/gpt-4.1",
+      "mode": "all",
+      "model": "github-copilot/gpt-4.1",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-gpt-4o": {
+      "description": "mobile-engineer agent powered by github-copilot/gpt-4o",
+      "mode": "all",
+      "model": "github-copilot/gpt-4o",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-gpt-5-mini": {
+      "description": "mobile-engineer agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-gpt-5.2": {
+      "description": "mobile-engineer agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-gpt-5.2-codex": {
+      "description": "mobile-engineer agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-gpt-5.3-codex": {
+      "description": "mobile-engineer agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-gpt-5.4": {
+      "description": "mobile-engineer agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-gpt-5.4-mini": {
+      "description": "mobile-engineer agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "mobile-engineer-github-copilot-grok-code-fast-1": {
+      "description": "mobile-engineer agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/mobile-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-deepseek-v4-flash": {
+      "description": "principal-engineer agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-deepseek-v4-pro": {
+      "description": "principal-engineer agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-glm-5": {
+      "description": "principal-engineer agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-glm-5.1": {
+      "description": "principal-engineer agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-kimi-k2.5": {
+      "description": "principal-engineer agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-kimi-k2.6": {
+      "description": "principal-engineer agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-mimo-v2.5": {
+      "description": "principal-engineer agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-mimo-v2.5-pro": {
+      "description": "principal-engineer agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-minimax-m2.5": {
+      "description": "principal-engineer agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-minimax-m2.7": {
+      "description": "principal-engineer agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-qwen3.5-plus": {
+      "description": "principal-engineer agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-opencode-go-qwen3.6-plus": {
+      "description": "principal-engineer agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-claude-haiku-4.5": {
+      "description": "principal-engineer agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-claude-opus-4.5": {
+      "description": "principal-engineer agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-claude-opus-4.6": {
+      "description": "principal-engineer agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-claude-sonnet-4.5": {
+      "description": "principal-engineer agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-claude-sonnet-4.6": {
+      "description": "principal-engineer agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-gemini-3-flash-preview": {
+      "description": "principal-engineer agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-gemini-3.1-pro-preview": {
+      "description": "principal-engineer agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-gpt-5-mini": {
+      "description": "principal-engineer agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-gpt-5.2": {
+      "description": "principal-engineer agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-gpt-5.2-codex": {
+      "description": "principal-engineer agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-gpt-5.3-codex": {
+      "description": "principal-engineer agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-gpt-5.4": {
+      "description": "principal-engineer agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-gpt-5.4-mini": {
+      "description": "principal-engineer agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "principal-engineer-github-copilot-grok-code-fast-1": {
+      "description": "principal-engineer agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/principal-engineer-prompt.md}"
+    },
+    "product-manager-opencode-go-deepseek-v4-flash": {
+      "description": "product-manager agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-opencode-go-deepseek-v4-pro": {
+      "description": "product-manager agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-opencode-go-glm-5": {
+      "description": "product-manager agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-opencode-go-glm-5.1": {
+      "description": "product-manager agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-opencode-go-kimi-k2.5": {
+      "description": "product-manager agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-opencode-go-kimi-k2.6": {
+      "description": "product-manager agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-opencode-go-mimo-v2.5": {
+      "description": "product-manager agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-opencode-go-mimo-v2.5-pro": {
+      "description": "product-manager agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-opencode-go-minimax-m2.5": {
+      "description": "product-manager agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-opencode-go-minimax-m2.7": {
+      "description": "product-manager agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-opencode-go-qwen3.5-plus": {
+      "description": "product-manager agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-opencode-go-qwen3.6-plus": {
+      "description": "product-manager agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-claude-haiku-4.5": {
+      "description": "product-manager agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-claude-opus-4.5": {
+      "description": "product-manager agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-claude-opus-4.6": {
+      "description": "product-manager agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-claude-sonnet-4.5": {
+      "description": "product-manager agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-claude-sonnet-4.6": {
+      "description": "product-manager agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-gemini-2.5-pro": {
+      "description": "product-manager agent powered by github-copilot/gemini-2.5-pro",
+      "mode": "all",
+      "model": "github-copilot/gemini-2.5-pro",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-gemini-3-flash-preview": {
+      "description": "product-manager agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-gemini-3.1-pro-preview": {
+      "description": "product-manager agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-gpt-4.1": {
+      "description": "product-manager agent powered by github-copilot/gpt-4.1",
+      "mode": "all",
+      "model": "github-copilot/gpt-4.1",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-gpt-4o": {
+      "description": "product-manager agent powered by github-copilot/gpt-4o",
+      "mode": "all",
+      "model": "github-copilot/gpt-4o",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-gpt-5-mini": {
+      "description": "product-manager agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-gpt-5.2": {
+      "description": "product-manager agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-gpt-5.2-codex": {
+      "description": "product-manager agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-gpt-5.3-codex": {
+      "description": "product-manager agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-gpt-5.4": {
+      "description": "product-manager agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-gpt-5.4-mini": {
+      "description": "product-manager agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "product-manager-github-copilot-grok-code-fast-1": {
+      "description": "product-manager agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/product-manager-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-deepseek-v4-flash": {
+      "description": "prompt-engineer agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-deepseek-v4-pro": {
+      "description": "prompt-engineer agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-glm-5": {
+      "description": "prompt-engineer agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-glm-5.1": {
+      "description": "prompt-engineer agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-kimi-k2.5": {
+      "description": "prompt-engineer agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-kimi-k2.6": {
+      "description": "prompt-engineer agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-mimo-v2.5": {
+      "description": "prompt-engineer agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-mimo-v2.5-pro": {
+      "description": "prompt-engineer agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-minimax-m2.5": {
+      "description": "prompt-engineer agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-minimax-m2.7": {
+      "description": "prompt-engineer agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-qwen3.5-plus": {
+      "description": "prompt-engineer agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-opencode-go-qwen3.6-plus": {
+      "description": "prompt-engineer agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-claude-haiku-4.5": {
+      "description": "prompt-engineer agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-claude-opus-4.5": {
+      "description": "prompt-engineer agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-claude-opus-4.6": {
+      "description": "prompt-engineer agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-claude-sonnet-4.5": {
+      "description": "prompt-engineer agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-claude-sonnet-4.6": {
+      "description": "prompt-engineer agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-gemini-3-flash-preview": {
+      "description": "prompt-engineer agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-gemini-3.1-pro-preview": {
+      "description": "prompt-engineer agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-gpt-5-mini": {
+      "description": "prompt-engineer agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-gpt-5.2": {
+      "description": "prompt-engineer agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-gpt-5.2-codex": {
+      "description": "prompt-engineer agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-gpt-5.3-codex": {
+      "description": "prompt-engineer agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-gpt-5.4": {
+      "description": "prompt-engineer agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-gpt-5.4-mini": {
+      "description": "prompt-engineer agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "prompt-engineer-github-copilot-grok-code-fast-1": {
+      "description": "prompt-engineer agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/prompt-engineer-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-deepseek-v4-flash": {
+      "description": "qa-test-strategist agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-deepseek-v4-pro": {
+      "description": "qa-test-strategist agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-glm-5": {
+      "description": "qa-test-strategist agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-glm-5.1": {
+      "description": "qa-test-strategist agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-kimi-k2.5": {
+      "description": "qa-test-strategist agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-kimi-k2.6": {
+      "description": "qa-test-strategist agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-mimo-v2.5": {
+      "description": "qa-test-strategist agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-mimo-v2.5-pro": {
+      "description": "qa-test-strategist agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-minimax-m2.5": {
+      "description": "qa-test-strategist agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-minimax-m2.7": {
+      "description": "qa-test-strategist agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-qwen3.5-plus": {
+      "description": "qa-test-strategist agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-opencode-go-qwen3.6-plus": {
+      "description": "qa-test-strategist agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-claude-haiku-4.5": {
+      "description": "qa-test-strategist agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-claude-opus-4.5": {
+      "description": "qa-test-strategist agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-claude-opus-4.6": {
+      "description": "qa-test-strategist agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-claude-sonnet-4.5": {
+      "description": "qa-test-strategist agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-claude-sonnet-4.6": {
+      "description": "qa-test-strategist agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-gemini-3-flash-preview": {
+      "description": "qa-test-strategist agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-gemini-3.1-pro-preview": {
+      "description": "qa-test-strategist agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-gpt-5-mini": {
+      "description": "qa-test-strategist agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-gpt-5.2": {
+      "description": "qa-test-strategist agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-gpt-5.2-codex": {
+      "description": "qa-test-strategist agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-gpt-5.3-codex": {
+      "description": "qa-test-strategist agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-gpt-5.4": {
+      "description": "qa-test-strategist agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-gpt-5.4-mini": {
+      "description": "qa-test-strategist agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "qa-test-strategist-github-copilot-grok-code-fast-1": {
+      "description": "qa-test-strategist agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/qa-test-strategist-prompt.md}"
+    },
+    "research-analyst-opencode-go-deepseek-v4-flash": {
+      "description": "research-analyst agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-opencode-go-deepseek-v4-pro": {
+      "description": "research-analyst agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-opencode-go-glm-5": {
+      "description": "research-analyst agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-opencode-go-glm-5.1": {
+      "description": "research-analyst agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-opencode-go-kimi-k2.5": {
+      "description": "research-analyst agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-opencode-go-kimi-k2.6": {
+      "description": "research-analyst agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-opencode-go-mimo-v2.5": {
+      "description": "research-analyst agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-opencode-go-mimo-v2.5-pro": {
+      "description": "research-analyst agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-opencode-go-minimax-m2.5": {
+      "description": "research-analyst agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-opencode-go-minimax-m2.7": {
+      "description": "research-analyst agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-opencode-go-qwen3.5-plus": {
+      "description": "research-analyst agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-opencode-go-qwen3.6-plus": {
+      "description": "research-analyst agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-claude-haiku-4.5": {
+      "description": "research-analyst agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-claude-opus-4.5": {
+      "description": "research-analyst agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-claude-opus-4.6": {
+      "description": "research-analyst agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-claude-sonnet-4.5": {
+      "description": "research-analyst agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-claude-sonnet-4.6": {
+      "description": "research-analyst agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-gemini-2.5-pro": {
+      "description": "research-analyst agent powered by github-copilot/gemini-2.5-pro",
+      "mode": "all",
+      "model": "github-copilot/gemini-2.5-pro",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-gemini-3-flash-preview": {
+      "description": "research-analyst agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-gemini-3.1-pro-preview": {
+      "description": "research-analyst agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-gpt-4.1": {
+      "description": "research-analyst agent powered by github-copilot/gpt-4.1",
+      "mode": "all",
+      "model": "github-copilot/gpt-4.1",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-gpt-4o": {
+      "description": "research-analyst agent powered by github-copilot/gpt-4o",
+      "mode": "all",
+      "model": "github-copilot/gpt-4o",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-gpt-5-mini": {
+      "description": "research-analyst agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-gpt-5.2": {
+      "description": "research-analyst agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-gpt-5.2-codex": {
+      "description": "research-analyst agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-gpt-5.3-codex": {
+      "description": "research-analyst agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-gpt-5.4": {
+      "description": "research-analyst agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-gpt-5.4-mini": {
+      "description": "research-analyst agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "research-analyst-github-copilot-grok-code-fast-1": {
+      "description": "research-analyst agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/research-analyst-prompt.md}"
+    },
+    "security-engineer-opencode-go-deepseek-v4-flash": {
+      "description": "security-engineer agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-opencode-go-deepseek-v4-pro": {
+      "description": "security-engineer agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-opencode-go-glm-5": {
+      "description": "security-engineer agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-opencode-go-glm-5.1": {
+      "description": "security-engineer agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-opencode-go-kimi-k2.5": {
+      "description": "security-engineer agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-opencode-go-kimi-k2.6": {
+      "description": "security-engineer agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-opencode-go-mimo-v2.5": {
+      "description": "security-engineer agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-opencode-go-mimo-v2.5-pro": {
+      "description": "security-engineer agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-opencode-go-minimax-m2.5": {
+      "description": "security-engineer agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-opencode-go-minimax-m2.7": {
+      "description": "security-engineer agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-opencode-go-qwen3.5-plus": {
+      "description": "security-engineer agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-opencode-go-qwen3.6-plus": {
+      "description": "security-engineer agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-claude-haiku-4.5": {
+      "description": "security-engineer agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-claude-opus-4.5": {
+      "description": "security-engineer agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-claude-opus-4.6": {
+      "description": "security-engineer agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-claude-sonnet-4.5": {
+      "description": "security-engineer agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-claude-sonnet-4.6": {
+      "description": "security-engineer agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-gemini-3-flash-preview": {
+      "description": "security-engineer agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-gemini-3.1-pro-preview": {
+      "description": "security-engineer agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-gpt-5-mini": {
+      "description": "security-engineer agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-gpt-5.2": {
+      "description": "security-engineer agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-gpt-5.2-codex": {
+      "description": "security-engineer agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-gpt-5.3-codex": {
+      "description": "security-engineer agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-gpt-5.4": {
+      "description": "security-engineer agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-gpt-5.4-mini": {
+      "description": "security-engineer agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "security-engineer-github-copilot-grok-code-fast-1": {
+      "description": "security-engineer agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/security-engineer-prompt.md}"
+    },
+    "system-architect-opencode-go-deepseek-v4-flash": {
+      "description": "system-architect agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-opencode-go-deepseek-v4-pro": {
+      "description": "system-architect agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-opencode-go-glm-5": {
+      "description": "system-architect agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-opencode-go-glm-5.1": {
+      "description": "system-architect agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-opencode-go-kimi-k2.5": {
+      "description": "system-architect agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-opencode-go-kimi-k2.6": {
+      "description": "system-architect agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-opencode-go-mimo-v2.5": {
+      "description": "system-architect agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-opencode-go-mimo-v2.5-pro": {
+      "description": "system-architect agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-opencode-go-minimax-m2.5": {
+      "description": "system-architect agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-opencode-go-minimax-m2.7": {
+      "description": "system-architect agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-opencode-go-qwen3.5-plus": {
+      "description": "system-architect agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-opencode-go-qwen3.6-plus": {
+      "description": "system-architect agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-claude-haiku-4.5": {
+      "description": "system-architect agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-claude-opus-4.5": {
+      "description": "system-architect agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-claude-opus-4.6": {
+      "description": "system-architect agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-claude-sonnet-4.5": {
+      "description": "system-architect agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-claude-sonnet-4.6": {
+      "description": "system-architect agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-gemini-3-flash-preview": {
+      "description": "system-architect agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-gemini-3.1-pro-preview": {
+      "description": "system-architect agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-gpt-5-mini": {
+      "description": "system-architect agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-gpt-5.2": {
+      "description": "system-architect agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-gpt-5.2-codex": {
+      "description": "system-architect agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-gpt-5.3-codex": {
+      "description": "system-architect agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-gpt-5.4": {
+      "description": "system-architect agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-gpt-5.4-mini": {
+      "description": "system-architect agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "system-architect-github-copilot-grok-code-fast-1": {
+      "description": "system-architect agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/system-architect-prompt.md}"
+    },
+    "technical-writer-opencode-go-deepseek-v4-flash": {
+      "description": "technical-writer agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-opencode-go-deepseek-v4-pro": {
+      "description": "technical-writer agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-opencode-go-glm-5": {
+      "description": "technical-writer agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-opencode-go-glm-5.1": {
+      "description": "technical-writer agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-opencode-go-kimi-k2.5": {
+      "description": "technical-writer agent powered by opencode-go/kimi-k2.5",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.5",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-opencode-go-kimi-k2.6": {
+      "description": "technical-writer agent powered by opencode-go/kimi-k2.6",
+      "mode": "all",
+      "model": "opencode-go/kimi-k2.6",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-opencode-go-mimo-v2.5": {
+      "description": "technical-writer agent powered by opencode-go/mimo-v2.5",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-opencode-go-mimo-v2.5-pro": {
+      "description": "technical-writer agent powered by opencode-go/mimo-v2.5-pro",
+      "mode": "all",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-opencode-go-minimax-m2.5": {
+      "description": "technical-writer agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-opencode-go-minimax-m2.7": {
+      "description": "technical-writer agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-opencode-go-qwen3.5-plus": {
+      "description": "technical-writer agent powered by opencode-go/qwen3.5-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.5-plus",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-opencode-go-qwen3.6-plus": {
+      "description": "technical-writer agent powered by opencode-go/qwen3.6-plus",
+      "mode": "all",
+      "model": "opencode-go/qwen3.6-plus",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-claude-haiku-4.5": {
+      "description": "technical-writer agent powered by github-copilot/claude-haiku-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-haiku-4.5",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-claude-opus-4.5": {
+      "description": "technical-writer agent powered by github-copilot/claude-opus-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.5",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-claude-opus-4.6": {
+      "description": "technical-writer agent powered by github-copilot/claude-opus-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-opus-4.6",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-claude-sonnet-4.5": {
+      "description": "technical-writer agent powered by github-copilot/claude-sonnet-4.5",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.5",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-claude-sonnet-4.6": {
+      "description": "technical-writer agent powered by github-copilot/claude-sonnet-4.6",
+      "mode": "all",
+      "model": "github-copilot/claude-sonnet-4.6",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-gemini-2.5-pro": {
+      "description": "technical-writer agent powered by github-copilot/gemini-2.5-pro",
+      "mode": "all",
+      "model": "github-copilot/gemini-2.5-pro",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-gemini-3-flash-preview": {
+      "description": "technical-writer agent powered by github-copilot/gemini-3-flash-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3-flash-preview",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-gemini-3.1-pro-preview": {
+      "description": "technical-writer agent powered by github-copilot/gemini-3.1-pro-preview",
+      "mode": "all",
+      "model": "github-copilot/gemini-3.1-pro-preview",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-gpt-4.1": {
+      "description": "technical-writer agent powered by github-copilot/gpt-4.1",
+      "mode": "all",
+      "model": "github-copilot/gpt-4.1",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-gpt-4o": {
+      "description": "technical-writer agent powered by github-copilot/gpt-4o",
+      "mode": "all",
+      "model": "github-copilot/gpt-4o",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-gpt-5-mini": {
+      "description": "technical-writer agent powered by github-copilot/gpt-5-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5-mini",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-gpt-5.2": {
+      "description": "technical-writer agent powered by github-copilot/gpt-5.2",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-gpt-5.2-codex": {
+      "description": "technical-writer agent powered by github-copilot/gpt-5.2-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.2-codex",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-gpt-5.3-codex": {
+      "description": "technical-writer agent powered by github-copilot/gpt-5.3-codex",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.3-codex",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-gpt-5.4": {
+      "description": "technical-writer agent powered by github-copilot/gpt-5.4",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-gpt-5.4-mini": {
+      "description": "technical-writer agent powered by github-copilot/gpt-5.4-mini",
+      "mode": "all",
+      "model": "github-copilot/gpt-5.4-mini",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "technical-writer-github-copilot-grok-code-fast-1": {
+      "description": "technical-writer agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/technical-writer-prompt.md}"
+    },
+    "worker-junior-agent-opencode-go-deepseek-v4-flash": {
+      "description": "worker-junior-agent agent powered by opencode-go/deepseek-v4-flash",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "{file:../agents/agents/worker-junior-agent.md}"
+    },
+    "worker-junior-agent-opencode-go-deepseek-v4-pro": {
+      "description": "worker-junior-agent agent powered by opencode-go/deepseek-v4-pro",
+      "mode": "all",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "{file:../agents/agents/worker-junior-agent.md}"
+    },
+    "worker-junior-agent-opencode-go-glm-5": {
+      "description": "worker-junior-agent agent powered by opencode-go/glm-5",
+      "mode": "all",
+      "model": "opencode-go/glm-5",
+      "prompt": "{file:../agents/agents/worker-junior-agent.md}"
+    },
+    "worker-junior-agent-opencode-go-glm-5.1": {
+      "description": "worker-junior-agent agent powered by opencode-go/glm-5.1",
+      "mode": "all",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:../agents/agents/worker-junior-agent.md}"
+    },
+    "worker-junior-agent-opencode-go-minimax-m2.5": {
+      "description": "worker-junior-agent agent powered by opencode-go/minimax-m2.5",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.5",
+      "prompt": "{file:../agents/agents/worker-junior-agent.md}"
+    },
+    "worker-junior-agent-opencode-go-minimax-m2.7": {
+      "description": "worker-junior-agent agent powered by opencode-go/minimax-m2.7",
+      "mode": "all",
+      "model": "opencode-go/minimax-m2.7",
+      "prompt": "{file:../agents/agents/worker-junior-agent.md}"
+    },
+    "worker-junior-agent-github-copilot-grok-code-fast-1": {
+      "description": "worker-junior-agent agent powered by github-copilot/grok-code-fast-1",
+      "mode": "all",
+      "model": "github-copilot/grok-code-fast-1",
+      "prompt": "{file:../agents/agents/worker-junior-agent.md}"
     }
   }
 }
