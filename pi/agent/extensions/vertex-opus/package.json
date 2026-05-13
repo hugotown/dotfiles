@@ -1,0 +1,12 @@
+{
+  "name": "pi-extension-vertex-opus",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "pi": {
+    "extensions": ["./index.ts"]
+  },
+  "dependencies": {
+    "@anthropic-ai/vertex-sdk": "^0.13.0"
+  }
+}

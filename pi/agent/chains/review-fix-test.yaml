@@ -1,0 +1,37 @@
+name: review-fix-test
+description: 3-stage QA pipeline — review code, fix issues, write tests
+steps:
+  - agent: plan
+    prompt: |
+      Review the code referenced by: $ORIGINAL
+
+      Produce a structured review:
+      1. Bugs found (with file:line and severity)
+      2. Code smells (refactor opportunities)
+      3. Missing tests (what scenarios are uncovered)
+
+      Be concrete. Cite real paths.
+
+  - agent: build
+    prompt: |
+      Apply fixes for the bugs identified in this review. Original request: $ORIGINAL
+
+      ===== REVIEW =====
+      $INPUT
+      ===== END REVIEW =====
+
+      Fix only the bugs (severity present in the review). Do NOT touch code smells
+      yet — those are separate concerns. After fixing, list what you changed.
+
+  - agent: build
+    prompt: |
+      Now write tests for the scenarios identified as missing in the original review.
+      The bug fixes are already applied (output above is from the fix step).
+
+      Original request: $ORIGINAL
+
+      ===== POST-FIX STATUS =====
+      $INPUT
+      ===== END STATUS =====
+
+      Write tests for the missing scenarios. Run them. Report results.

@@ -1,0 +1,70 @@
+# Safety Rules — Declarative damage control for Pi agents
+# Reload after editing with: /safety reload
+# See ~/.config/pi/agent/extensions/safety-rules.ts for the schema and matching logic
+
+# Paths that NO tool may touch (read/write/edit/bash all blocked)
+zeroAccessPaths:
+  - ~/.ssh
+  - ~/.aws
+  - ~/.gnupg
+  - /etc/passwd
+  - /etc/shadow
+  - /etc/sudoers
+
+# Paths that may be read but never written/edited
+readOnlyPaths:
+  - "**/package-lock.json"
+  - "**/yarn.lock"
+  - "**/pnpm-lock.yaml"
+  - "**/.git/config"
+  - "**/CHANGELOG.md"
+
+# Paths that bash commands cannot delete (rm/unlink/rmdir)
+noDeletePaths:
+  - ~/Documents
+  - ~/Desktop
+  - ~/obsidian
+  - ~/.config
+  - ~/.pi
+
+# Bash patterns that block or ask for confirmation
+bashToolPatterns:
+  - pattern: "rm -rf /"
+    reason: "Filesystem root deletion"
+    ask: false      # Hard block — never allow this
+
+  - pattern: ":(){ :|:& };:"
+    reason: "Fork bomb"
+    ask: false
+
+  - pattern: "rm -rf"
+    reason: "Recursive force delete"
+    ask: true       # Confirm before allowing
+
+  - pattern: "git push --force"
+    reason: "Force push rewrites remote history"
+    ask: true
+
+  - pattern: "git push -f"
+    reason: "Force push rewrites remote history"
+    ask: true
+
+  - pattern: "git reset --hard"
+    reason: "Discards uncommitted changes"
+    ask: true
+
+  - pattern: "DROP DATABASE"
+    reason: "Destructive SQL statement"
+    ask: true
+
+  - pattern: "TRUNCATE"
+    reason: "Destructive SQL statement"
+    ask: true
+
+  - pattern: "chmod 777"
+    reason: "World-writable permissions"
+    ask: true
+
+  - pattern: "curl http"
+    reason: "HTTP (insecure) network call"
+    ask: true       # Allow HTTPS, ask before HTTP
