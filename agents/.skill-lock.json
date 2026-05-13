@@ -28,6 +28,51 @@
       "skillFolderHash": "23f60d9b4304f20851469987c6e2c92242b94a45",
       "installedAt": "2026-04-26T21:39:07.688Z",
       "updatedAt": "2026-04-26T21:39:07.688Z"
+    },
+    "extract-design": {
+      "source": "Manavarya09/design-extract",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Manavarya09/design-extract.git",
+      "skillPath": "skills/extract-design/SKILL.md",
+      "skillFolderHash": "46669b37440bfd2819363fd950633283d2af1f22",
+      "installedAt": "2026-05-05T00:15:35.119Z",
+      "updatedAt": "2026-05-05T00:15:35.119Z"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/pbakaus/impeccable.git",
+      "skillPath": "skill/SKILL.md",
+      "skillFolderHash": "bc452acaa3a105bb0f4551845e7d48ec2360eefb",
+      "installedAt": "2026-05-05T18:10:54.243Z",
+      "updatedAt": "2026-05-05T18:10:54.243Z"
+    },
+    "gstack": {
+      "source": "garrytan/gstack",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/garrytan/gstack.git",
+      "skillPath": "SKILL.md",
+      "skillFolderHash": "db9447c3339950bb0506c547e5b3225f5def3854",
+      "installedAt": "2026-05-05T18:12:45.795Z",
+      "updatedAt": "2026-05-05T18:12:45.795Z"
+    },
+    "agent-browser": {
+      "source": "vercel-labs/agent-browser",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/vercel-labs/agent-browser.git",
+      "skillPath": "skills/agent-browser/SKILL.md",
+      "skillFolderHash": "121eecacd86c0aab06aef5cd4663e80c5397cd41",
+      "installedAt": "2026-05-06T04:56:38.474Z",
+      "updatedAt": "2026-05-06T18:34:10.097Z"
+    },
+    "portless": {
+      "source": "vercel-labs/portless",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/vercel-labs/portless.git",
+      "skillPath": "skills/portless/SKILL.md",
+      "skillFolderHash": "8bd6c743eff34bb18710b97dc62239a47b829420",
+      "installedAt": "2026-05-13T20:20:29.360Z",
+      "updatedAt": "2026-05-13T20:20:29.360Z"
     }
   },
   "dismissed": {
@@ -40,13 +85,12 @@
     "codex",
     "cursor",
     "deepagents",
+    "dexto",
     "firebender",
     "gemini-cli",
     "github-copilot",
     "kimi-cli",
     "opencode",
-    "warp",
-    "claude-code",
-    "pi"
+    "warp"
   ]
 }

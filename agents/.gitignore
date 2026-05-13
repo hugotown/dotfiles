@@ -1,0 +1,5 @@
+# Allowlist: only track curated skills and the skill lock
+*
+!.gitignore
+!skills/
+!.skill-lock.json
