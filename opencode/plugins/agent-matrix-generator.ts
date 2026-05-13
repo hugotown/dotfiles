@@ -73,7 +73,7 @@ const ROLE_PROFILES: RoleProfile[] = [
   },
   {
     name: "worker-junior",
-    patterns: [/\bworker\b/i, /\bjunior\b/i, /\bworker[- ]?junior\b/i],
+    patterns: [/\bworker[- ]?junior\b/i],
     // `reasoning` is omitted on purpose: reasoning is opt-in per call, not a runtime cost
     // workers pay automatically. Excluding `image` and `attachment` is what actually steers
     // matching toward simpler, non-multimodal models (typically the cheapest tier).
