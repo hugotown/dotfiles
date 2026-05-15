@@ -1,4 +1,3 @@
-
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
@@ -81,6 +80,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Always propose alternatives with tradeoffs when relevant.
 - Verify technical claims before stating them. If unsure, investigate first.
 - Communication with user in Spanish but all docs, code, comments in English please.
+- Every turn tell the user quirks <quirks>, gotchas <gotchas>, pendings <pendings> or recommendations <recommendations> but JUST IF AND only just if these are high valuable for the activity oractivity or session
 - All questions must be asked with `question tool`
 - use ClI search tools proactively
 - Your thinking and reasoning in English.
@@ -101,80 +101,6 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - **Release notes / CHANGELOG as supplementary source.** When ctx7 returns only general docs and not the specific prop/feature you need, complement with WebFetch to the `CHANGELOG.md` or GitHub releases page of the pinned version — new features land there with concrete examples.
 
 - **Pre-submit review before closing a response with technical claims.** Before sending, mentally re-read every specific claim (prop name, version, command, flag, config field) and ask: is this in a tool output from this conversation? Yes → ok. No → remove it, rewrite as "I believe..." + UNVERIFIED, or make the tool call now before sending. This is the equivalent of a linter pass; it catches what the other rules missed.
-
-## Rules — Zero Technical Debt (STRICT)
-
-> **Core principle:** If a tool reports an error, you analyze the root cause and refactor the code to satisfy the rule correctly. "Muting" the alarm is a task failure. No shortcuts. No workarounds. No "I'll fix it later". You FIX the underlying problem.
-
-### Forbidden: Suppression / Ignore Comments
-
-You are strictly forbidden from using ANY comment, pragma, or directive that bypasses, disables, or silences a linter, formatter, type checker, or compiler error. This includes — but is not limited to:
-
-**JavaScript / TypeScript:**
-- ESLint: `// eslint-disable`, `// eslint-disable-next-line`, `// eslint-disable-line`, `/* eslint-disable */`, `/* eslint-disable <rule> */`
-- Biome: `// biome-ignore lint`, `// biome-ignore format`, `// biome-ignore lint/<group>/<rule>`
-- TypeScript: `// @ts-ignore`, `// @ts-expect-error`, `// @ts-nocheck`
-- Prettier: `// prettier-ignore`
-
-**Python:**
-- Ruff / Flake8: `# noqa`, `# noqa: <code>`
-- Pyright / Pylance / MyPy: `# pyright: ignore`, `# type: ignore`, `# type: ignore[<code>]`
-
-**CSS / Styles:**
-- Stylelint: `/* stylelint-disable */`, `/* stylelint-disable-next-line */`, `/* stylelint-disable <rule> */`
-
-**Rust:**
-- `#[allow(...)]` on warnings (clippy/rustc) just to silence them
-- `#[allow(dead_code)]`, `#[allow(unused_variables)]` as a shortcut instead of fixing or using `_` correctly
-
-**Go:**
-- `//nolint`, `//nolint:<linter>`, `//lint:ignore`
-
-**Java / Kotlin:**
-- `@SuppressWarnings("...")` as a shortcut
-- `@Suppress("...")` in Kotlin used to silence problems rather than refactor
-
-**C# / .NET:**
-- `#pragma warning disable`, `[SuppressMessage(...)]`
-
-**Shell:**
-- `# shellcheck disable=SC<code>` used to silence rather than fix
-
-### Forbidden: Escape Hatches in the Type System
-
-Type-loosening shortcuts that defeat the purpose of static typing are equally prohibited:
-
-- **TypeScript:** No `any`. No `unknown` used as a permanent escape (only as an intermediate narrowing step that MUST resolve to a concrete type). No `as any`, no `as unknown as T` double-casts. No non-null assertions (`!`) to suppress "possibly null" — narrow properly. No `Function` type, no empty `{}` as "anything".
-- **Python:** No `Any` from `typing`. No untyped `def` signatures. No `cast(Any, x)`.
-- **Rust:** No `unsafe` to bypass borrow checker without a documented, audited reason. No `.unwrap()` / `.expect()` as a shortcut for proper error handling (only when an invariant is genuinely impossible to violate, and even then prefer `expect` with a clear message).
-- **Go:** No `interface{}` / `any` to "accept anything". No `_ = err` to discard errors.
-- **Java / Kotlin:** No raw types. No `Object` as a "universal" parameter. No `!!` in Kotlin to force-unwrap.
-- **C#:** No `dynamic` to skip typing. No `object` as a catch-all.
-
-### Forbidden: Other Forms of Evasion
-
-- Empty `catch` blocks / `except: pass` / `catch (_) {}` to make errors disappear.
-- Commenting out tests, assertions, or failing code instead of fixing them.
-- Renaming a failing test to `xfail` / `.skip` / `it.skip` without a tracked, dated reason to re-enable.
-- Marking dependencies / files / sections as "TODO" or "FIXME" as the final state of your task.
-- Lowering linter severity (changing `error` → `warn`, or removing rules from config) to make CI green.
-- Pinning to old library versions to avoid migrating to a breaking change that surfaces a real issue.
-
-### The ONLY Acceptable Exception
-
-A suppression comment is acceptable ONLY when ALL of the following are true:
-
-1. The error is a genuine false positive from the tool (not from your code).
-2. You have investigated and can articulate WHY it's a false positive.
-3. The comment includes a written justification on the same or adjacent line explaining the reason.
-4. You surface it to the user BEFORE committing and ask for explicit approval.
-
-Example of acceptable (rare) usage:
-```ts
-// biome-ignore lint/suspicious/noExplicitAny: third-party library `foo@1.2` ships incorrect types; tracked in https://github.com/foo/foo/issues/123
-```
-
-If you find yourself reaching for a suppression: STOP. Analyze the root cause. Refactor.
 
 ## Personality
 
@@ -238,21 +164,3 @@ For version-specific docs, use `/org/project/version` from the `library` output 
 If a command fails with a quota error, inform the user and suggest `npx ctx7@latest login` or setting `CONTEXT7_API_KEY` env var for higher limits. Do not silently fall back to training data.
 
 <!-- context7 -->
-
-## Web Search via Proxy (ddg)
-
-Credentials are stored as SOPS secrets, loaded via `~/.config/shell/env.zsh`:
-- `DI_LOGIN` — proxy username
-- `DI_SEC` — proxy password
-- `DI_HOST` — proxy host (`gw.dataimpulse.com`)
-- `DI_PORT` — proxy port (`823`)
-
-The default backend (`auto`) gets blocked by DuckDuckGo when using a proxy. Always use `--backend lite` + `--user-agent chrome`:
-
-```bash
-ddg --query "search term" \
-    --proxy "http://$DI_LOGIN:$DI_SEC@$DI_HOST:$DI_PORT" \
-    --user-agent "chrome" \
-    --backend lite
-```
-
