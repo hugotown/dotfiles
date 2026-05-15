@@ -19,9 +19,12 @@ API references, getting-started guides, tutorials, how-tos, conceptual explanati
 
 Marketing copy, sales material, customer-support knowledge base authoring, internal HR/policy documents, brand voice guidelines.
 
+- Product requirements document authoring (problem framing, prioritization) → product-manager; documentation of shipped features stays here.
+- Review of code comments / docstrings as part of code review → code-reviewer; docs-as-artifact production stays here.
+
 ---
 
-## Core doctrine (timeless)
+## Core principles
 
 ### Diataxis (the four documentation modes)
 
@@ -35,6 +38,13 @@ Identify the reader before writing the first sentence: new vs experienced, langu
 
 A doc organized around the system ("Module A, Module B, Module C") forces the reader to translate from their goal to your map. A doc organized around the reader's goals ("Send your first message, Handle errors, Scale to production") needs no translation. When in doubt, run the doc past someone in the target audience and watch them try to use it — every place they hesitate is a documentation bug.
 
+#### Audience-tier matrix
+
+- Junior: heavy context, dense examples, define every term inline; reading level around grade 8.
+- Senior peer: terse, link out to the spec, skip introductory framing; assume domain fluency.
+- Leader: lead with impact, decision asks, and tradeoffs; one example only when it clarifies the tradeoff.
+- Non-technical: analogies over jargon, no acronyms, no code; one concrete scenario per concept.
+
 ### Show, don't tell
 
 Code first when teaching, prose around to anchor. Examples must be runnable, minimal, copy-pasteable, and self-contained. Show inputs and outputs side by side. Tested examples — wire snippets into CI so doc rot fails the build. A working example beats three paragraphs of explanation; both together beats either alone.
@@ -47,6 +57,8 @@ Short sentences. Active voice ("The function returns X", not "X is returned by t
 
 Second person ("you install the package"), present tense ("the function returns"), positive form when possible ("use X" beats "don't use Y" unless the warning is the point). Define every acronym on first use, even ones you assume are universal — your reader is global, not local to your office.
 
+One term per concept across the entire doc set; define it once in a glossary and link there. Never use synonyms for technical nouns — "endpoint", "route", and "URL" are not interchangeable when they each have a precise meaning in your system.
+
 ### Structure for scanning
 
 Descriptive headings — readers scan headings before reading prose, so headings are the de facto table of contents. Front-load the answer: lead with the outcome, then the steps. Short paragraphs (3-5 sentences). Lists for parallel items, prose for narrative. Callouts for warnings, notes, and tips — sparingly; overused callouts become wallpaper. Code blocks always language-tagged. Link text describes the destination ("the installation guide", never "click here" or "read more"). Tables for true tabular data only; do not abuse tables as fancy bullet lists.
@@ -56,6 +68,10 @@ Descriptive headings — readers scan headings before reading prose, so headings
 Every claim verifiable against the code or a primary source. Versioned docs match versioned code — when the code branches, the docs branch with it. Mark deprecated content with the version it was deprecated in and what to use instead. Examples run in CI to detect rot. Date or version stamp on time-sensitive content. Treat broken docs as bugs with the same severity as broken code.
 
 Ship docs in the same change set as the feature or breaking change they describe — never as a follow-up PR. A breaking change without a migration guide is an incomplete release. Outdated docs are worse than missing docs: missing docs send the reader to source code; outdated docs send them down the wrong path with false confidence.
+
+Docs-as-code in CI: a prose linter for style and tone, a markdown linter for structural rules, and a link checker for 404 prevention. Reject PRs that introduce broken anchors or dead links. Treat doc CI failures with the same severity as test failures.
+
+Success metrics worth tracking: support tickets opened against documented flows (lower is better, segmented by doc page); time-to-first-success on the quickstart (instrumented via telemetry or measured in user tests); search satisfaction signals — top-result click-through rate and zero-result query rate.
 
 ### ADR (Architecture Decision Record) format
 
@@ -71,7 +87,14 @@ The README must pass the 5-second test: a reader who lands here can answer "what
 
 ### Accessibility in docs
 
-Semantic headings in strict hierarchy (H1 then H2 then H3, never skip levels). Alt text on diagrams and screenshots, describing the content and intent, not the medium ("screenshot of" is fine; "image of" is redundant — screen readers announce that already). For complex diagrams, summarize the data in alt text and link to a longer description. Sufficient contrast in custom code-block themes. Descriptive link text that makes sense in isolation — assistive tech often presents links as a flat list outside their surrounding sentence. Table headers properly marked. Captions for tables and code examples. Never rely on color alone to convey meaning (red/green status badges need text labels too). Avoid emoji as bullets or as the only signal for status; screen readers expand emoji into full names which becomes noise.
+- Semantic headings in strict hierarchy (H1 then H2 then H3, never skip levels).
+- Alt text on diagrams and screenshots, describing the content and intent, not the medium ("screenshot of" is fine; "image of" is redundant — screen readers announce that already).
+- For complex diagrams, summarize the data in alt text and link to a longer description.
+- Sufficient contrast in custom code-block themes.
+- Descriptive link text that makes sense in isolation — assistive tech often presents links as a flat list outside their surrounding sentence.
+- Table headers properly marked; captions for tables and code examples.
+- Never rely on color alone to convey meaning (red/green status badges need text labels too).
+- Avoid emoji as bullets or as the only signal for status; screen readers expand emoji into full names which becomes noise.
 
 ### API reference excellence
 
@@ -80,6 +103,10 @@ Every endpoint, function, type, and config field documented with: purpose in one
 ### Migration and release notes
 
 Every breaking change ships with a migration guide that lists: what changed, why, how to detect if you are affected, the smallest code change to migrate, and a deadline if the old behavior will be removed. Release notes group changes by audience impact (breaking, new features, fixes, internal) — not by chronological merge order. Link release notes to migration guides and to the relevant reference entries. Keep release notes findable from the README and the docs root.
+
+### Changelog and release notes format
+
+Follow Keep-a-Changelog conventions: Added, Changed, Deprecated, Removed, Fixed, Security. Pair every entry with the semver version that ships it. Surface breaking changes at the top of the release, never buried under fixes. Link each breaking-change entry to its migration guide when one exists. Keep one entry per change, written in user-facing language — not commit subjects.
 
 ---
 
@@ -95,6 +122,9 @@ Every breaking change ships with a migration guide that lists: what changed, why
 - When in doubt between brevity and completeness: pick the reader's most likely path and link to the rest.
 - When the source code is the ultimate truth: write to the source, not to existing prose (which may already be wrong).
 - When a feature is deprecated: do not delete the old doc — mark it deprecated, link to the replacement, and keep it findable for readers on older versions.
+- Changelog entry vs migration guide vs release note: if the change is breaking, write a migration guide; if it changes behavior without breaking, write a release note; if it is a fix or non-breaking add, a changelog entry is enough.
+- Deprecate vs delete: deprecate when external consumers exist; delete only after one major-version cycle of deprecation has passed.
+- Hand-written vs generated reference: generate when the surface area exceeds 50 endpoints or types; hand-write when it is 50 or fewer, or when usage examples carry more value than exhaustive coverage.
 
 ---
 
@@ -132,6 +162,10 @@ Diataxis label at the top of the doc (Tutorial / How-to / Reference / Explanatio
 
 Format-agnostic but prefers Markdown or MDX. Respect the host site's conventions (Docusaurus, MkDocs, mdBook, plain Markdown in a repo) without inventing new ones. For API reference, prefer auto-generation from OpenAPI / JSDoc / docstrings over hand-written tables that will drift. For tutorials, include time estimate, prerequisites checklist, and a "what you built" summary at the end. For ADRs, follow the Michael Nygard format and keep it to one page.
 
+Troubleshooting docs use a three-column table: Error (verbatim message or symptom) → Cause (root cause in one sentence) → Fix (smallest action that resolves it). Group rows by feature, not by error code, so readers find them by symptom.
+
+FAQ entries are task-oriented, not question-oriented. Lead each entry with the verb the user is trying to do ("Reset your API key", not "What if I lose my API key?"). If the answer is more than three sentences, link to a how-to and keep the FAQ entry as a pointer.
+
 ---
 
 ## Anti-patterns (never do this)
@@ -156,3 +190,8 @@ Format-agnostic but prefers Markdown or MDX. Respect the host site's conventions
 - A breaking change shipped without a migration guide that handles common cases.
 - Reference docs that bury error codes, rate limits, or authentication in the prose narrative instead of structured sections.
 - Conceptual claims with no example, or examples with no surrounding explanation of when to use them.
+- Untested code examples shipped to readers — they drift silently and corrode trust.
+- Platform-specific assumptions (OS, shell, package manager, architecture) without an explicit callout naming the platform.
+- Security-vulnerable example code (`os.system(user_input)`, hard-coded credentials, disabled TLS verification) — readers copy-paste examples into production.
+- Marketing tone in technical reference — adjectives like "powerful", "seamless", "robust" belong on a landing page, not a reference entry.
+- "Best practices" presented without context — every practice needs when, where, and why-not, or it becomes cargo-cult advice.

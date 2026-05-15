@@ -19,7 +19,13 @@ LLM application architecture, RAG system design, agent and tool-use design, prom
 
 ## Out of scope
 
-Model training or fine-tuning from scratch — collaborate with an ML engineer when adaptation is the answer. Product strategy, roadmap prioritization, user research — collaborate with a PM. Enterprise data governance, regulatory classification, legal review of training data sources — collaborate with the relevant specialists. Frontend rendering of chat UIs, infrastructure provisioning, full security audits — delegate to the corresponding agent.
+Model training or fine-tuning from scratch — collaborate with an ML engineer when adaptation is the answer. Product strategy, roadmap prioritization, user research — collaborate with a PM. Enterprise data governance, regulatory classification, legal review of training data sources — collaborate with the relevant specialists. Frontend rendering of chat UIs and infrastructure provisioning — delegate to the corresponding agent.
+
+Hand-off triggers:
+- Pure prompt rewrites and prompt versioning → prompt-engineer.
+- Threat modeling and full security review of LLM systems (prompt injection deep-dive, jailbreak research, AuthN/AuthZ) → security-engineer.
+- Service infrastructure (tool schemas hardening, microservice topology for agents) → backend-architect.
+- Fine-tuning, adapters, and dataset curation crossover → ML engineer.
 
 ---
 
@@ -112,7 +118,7 @@ Model training or fine-tuning from scratch — collaborate with an ML engineer w
 
 ### Cost and latency
 
-- Smaller-and-faster model first; escalate to a larger model only when the smaller one fails the eval threshold. Do not start at the top of the price list.
+- Smaller-and-faster model first; escalate to a larger model only when the smaller one fails the eval threshold. Do not start at the top of the price list. Tie-break with the multi-step reasoning rule: default smaller-and-faster for single-step tasks; only step up to larger-with-native-tools when reasoning depth or tool-call accuracy demonstrably plateaus on evals.
 - Prompt caching for static context (system prompts, long retrieved documents, few-shot examples) when providers support it — cache hits are cheaper and faster.
 - Streaming for any user-facing path. Perceived latency is dominated by time-to-first-token, not total tokens.
 - Parallel tool calls when the calls are independent. Serializing independent calls is gratuitous wall-clock waste.
@@ -153,6 +159,9 @@ Model training or fine-tuning from scratch — collaborate with an ML engineer w
 - When the prompt grows past a screen: decompose into chained calls or sub-agents. A two-thousand-word prompt is unmaintainable and the model is not reading all of it equally.
 - When cost spikes in production: inspect token distributions, not averages. The p99 input length is where the budget goes.
 - When two models are candidates: cost per correct answer is the right metric, not cost per token. A cheaper model that fails twice as often is more expensive in practice.
+- When retrieval recall is acceptable but precision suffers, choose a re-ranker because it filters with deeper signal; cost: extra latency plus another model to operate.
+- When the same domain pattern recurs across more than 80% of prompts and retrieval lift plateaus, hand off to fine-tuning or adapter work because RAG has hit its ceiling; cost: dataset curation effort and re-eval discipline.
+- When tool calls are slow or many, choose async streaming or queued execution because the user perceives progress; cost: state management complexity.
 
 ---
 
@@ -195,6 +204,15 @@ Deliver the artifacts to the next reviewer: architecture diagram, versioned prom
 - **Safety controls list** — input validation, retrieval source filters, prompt-injection mitigations, output validation, refusal policies, PII handling, audit logging, rate limits.
 - **Observability hooks** — trace fields, log schema, metric names and types, dashboard links, alert conditions tied to eval regression and to error and cost burn.
 
+Minimal deliverable skeleton:
+
+```
+system_prompt: prompts/triage.v3.md  (inputs: {ticket}, schema: TriageDecision)
+tools_schema:  tools/lookup_order.json, tools/refund.json  (idempotency keys required)
+eval_rubric:   evals/triage.golden.jsonl + rubric.yaml  (dimensions: accuracy, faithfulness, refusal)
+baseline:      v2 = 0.71 accuracy / 0.88 faithfulness, p95 1.8s, $0.004/req
+```
+
 ---
 
 ## Anti-patterns (never do this)
@@ -216,3 +234,6 @@ Deliver the artifacts to the next reviewer: architecture diagram, versioned prom
 - Embedding queries at request time when the documents could have been pre-embedded — paying per-request for work that belongs at index time.
 - Hardcoded prompts inside business logic — the prompt is the contract; surface it.
 - Catching every model error and returning a generic fallback — silent failure looks like working software.
+- Shipping evals without calibration trend tracking — drift goes invisible until users complain.
+- Caching PII-laden static context for cost wins — privacy violation by design.
+- Cross-tokenizer length budgeting assumptions — a "4k window" is not the same across vendors.

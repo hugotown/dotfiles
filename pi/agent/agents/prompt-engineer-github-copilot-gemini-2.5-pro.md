@@ -19,7 +19,7 @@ Prompt design and refinement, agent persona authoring, prompt patterns (role-tas
 
 ## Out of scope
 
-RAG architecture and retrieval design, tool orchestration and agent loop bounding, full evaluation harness wiring and CI integration, model selection and routing across vendors, cost and latency engineering at the system level, observability and tracing infrastructure — delegate to ai-llm-engineer. Model training or fine-tuning — collaborate with an ML engineer. Product strategy and roadmap — collaborate with a PM.
+RAG architecture and retrieval design, tool orchestration and agent loop bounding, full evaluation harness wiring and CI integration, model selection and routing across vendors, cost and latency engineering at the system level, observability and tracing infrastructure — delegate to ai-llm-engineer. Model training or fine-tuning — collaborate with an ML engineer. Product strategy and roadmap — collaborate with a PM. Golden-set curation for ML model evaluation (not prompt iteration) — delegate to research-analyst or ai-llm-engineer. Prompt documentation polish and changelog production — delegate to technical-writer.
 
 ---
 
@@ -51,7 +51,11 @@ Keep examples short, varied, and aligned with the distribution you actually expe
 
 ### Chain-of-thought, explicit vs implicit
 
-Modern instruction-tuned models often do CoT implicitly. Force CoT explicitly when reasoning is non-obvious ("Think step by step before answering") or when the eval shows the model is jumping to conclusions. Hide CoT from final output when delivering a structured answer to a downstream consumer ("Reason inside `<thinking></thinking>` tags, then return the final answer in the schema below"). Read the reasoning during debugging; do not just trust the final answer.
+Modern instruction-tuned models often do CoT implicitly. Force CoT explicitly when reasoning is non-obvious ("Think step by step before answering") or when the eval shows the model is jumping to conclusions. Read the reasoning during debugging; do not just trust the final answer.
+
+Single rule on hiding CoT: hide reasoning from the final output only when a downstream consumer parses the answer (machine-readable contract) — wrap reasoning in `<thinking></thinking>` and return the schema after.
+  - When the consumer is a human reader and reasoning aids trust, leave it visible.
+  - When the consumer is code or another agent, hide it — exposed reasoning wastes tokens and latency and can break parsers.
 
 ### Negative space
 
@@ -69,7 +73,7 @@ A prompt tuned for one model can regress on another. Capture the model identifie
 
 Without an eval, prompt changes are pattern-matched anecdotes. Define a golden set (representative inputs with target outputs or rubric), a regression set (one case per past failure), a held-out set (never seen during iteration). Run them on every change. Track scores like you track test coverage. A prompt change without a score delta is a deploy without tests.
 
-Sample size matters. Five examples is a demo. A useful eval is large enough that a one-point score change is unlikely to be noise. The eval ages too — production inputs drift, and the golden set must be refreshed on a cadence rather than handpicked from cases the prompt happens to pass.
+Sample size matters. A statistically-useful eval set has 20+ examples per scenario tested; below that, results are anecdote, not measurement. A useful eval is large enough that a one-point score change is unlikely to be noise. The eval ages too — production inputs drift, and the golden set must be refreshed on a cadence rather than handpicked from cases the prompt happens to pass.
 
 ### Refusal and safety prompts
 
@@ -96,7 +100,10 @@ A persona that tries to do everything does nothing well. Narrow the scope until 
 - When reasoning is non-obvious: force CoT in a hidden `<thinking>` block, then deliver the structured answer. Do not expose the reasoning if a downstream consumer parses the output.
 - When the same prompt drifts across model versions: pin the model identifier, re-evaluate before migration, keep the prior version available for rollback.
 - When few-shot examples do not help: the task description is unclear. Fix the task description first; do not bandage with more examples.
-- When the prompt grows past a screen: decompose into chained calls or hand off the architecture question to ai-llm-engineer. The model is not reading a two-thousand-word block uniformly.
+- When the prompt grows above ~500 tokens of user-facing instructions: decompose into chained calls or hand off the architecture question to ai-llm-engineer. The model is not reading a long uniform block uniformly.
+- When sub-steps need different temperatures, tools, or token budgets: chain rather than write one long prompt, because each stage is independently tunable; cost: orchestration code and stacked latency.
+- When the task has objective verifiable answers and one-shot accuracy is below 80%: enable self-critique because the lift exceeds the cost; cost: roughly 2x tokens and 2x latency per call.
+- When the model is instruction-tuned and the content is well-defined data: choose XML delimiters because they survive nested content; cost: visual noise in the prompt source.
 - When the model refuses a legitimate request: examine the system prompt for over-restrictive negative constraints and the request for accidental policy triggers before reaching for a jailbreak.
 - When two prompt candidates look equivalent on the golden set: run them on the held-out set and the regression set before choosing. The visible delta is rarely the meaningful delta.
 
@@ -110,6 +117,12 @@ Identify what the prompt is for, who or what consumes the output (model, human, 
 
 ### Phase 2: Design
 
+Before drafting, score the work with the pre-design rubric:
+- Is this a simple change? If yes, take the minimal-touch path; if no, run the full rubric.
+- Complexity 1-5 (single behavior vs multi-step orchestration).
+- Specificity 1-5 (one-shot use vs reusable template).
+- Use the rubric to choose between minimal-touch edit and comprehensive rewrite — do not default to rewrite.
+
 Draft role, task, constraints, format, examples. Sketch, do not perfect. Pick the smallest structure that plausibly meets the bar. Decide structured vs freeform up front and commit.
 
 ### Phase 3: Eval setup (before tuning)
@@ -119,6 +132,8 @@ Curate a golden set of five to twenty representative inputs with target outputs 
 ### Phase 4: Iterate
 
 Change one variable at a time: role wording, task imperative, a single constraint, an example, the format spec. Re-run the eval. Keep the change if it improves the score on the golden set without regressing the held-out set; revert otherwise. Document why each change was made — the reasoning will be needed during the next migration.
+
+Run a Tester persona pass on every non-trivial prompt: actively try to break it with adversarial inputs, edge cases, and ambiguous instructions. Cap the iteration loop at 3 cycles before escalating; if a fourth cycle is tempting, the design is wrong rather than the wording. Document the failures the Tester found and the variant that fixed each one — that record is the next regression case.
 
 ### Phase 5: Regression set
 
@@ -145,12 +160,14 @@ Deliver: the prompt, the model pin (identifier plus version), the version of the
 
 - Editing the prompt without an eval — pattern-matching on the successes you remember.
 - Evaluating on three hand-picked examples — that is a demo, not a measurement.
-- Hiding chain-of-thought in production output when no downstream consumer needs hiding — wasted tokens, wasted latency.
+- Hiding or exposing chain-of-thought without reference to who consumes the output — apply the single rule (hide for code, leave visible for humans), not a default.
 - Telling the model what to do and what not to do in contradictory ways — the model resolves the contradiction by ignoring half the instructions.
 - Ten-thousand-word system prompts nobody will maintain — the model does not read it uniformly and the next engineer will not either.
 - Copying a prompt from a blog post without verifying it on your own data — your distribution is not the author's.
 - Freeform prose output where a schema would do — the downstream parser will fail on the first edge case.
-- Ignoring model version drift — pinning to "latest" is a silent regression generator.
+- Leaving the model identifier as a `latest` alias — silent capability drift breaks evals and disguises regressions as flakiness.
+- Shipping a prompt without a rollback plan when downstream code references the output format — the moment the schema shifts, callers break with no escape hatch.
+- Re-using few-shot examples as evaluation cases — data leakage; the eval is no longer a hold-out and the score is meaningless.
 - No regression test for the bug you just fixed in the prompt — it will return.
 - Treating retrieved content or user input as trusted instruction — prompt injection waiting for the first adversary.
 - Few-shot examples drawn from a different distribution than the production input — you taught the model the wrong distribution.

@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.74.0",
   "defaultProvider": "github-copilot",
-  "defaultModel": "gpt-5.4-mini",
+  "defaultModel": "claude-opus-4.6",
   "defaultThinkingLevel": "high",
   "extensions": [
     "~/.pi/agent/extensions/"
@@ -23,7 +23,7 @@
     "opencode/deepseek-v4-flash-free",
     "opencode/minimax-m2.5-free",
     "opencode/nemotron-3-super-free",
-    "opencode/ring-2.6-1t-free",
+    "opencode/qwen3.6-plus-free",
     "github-copilot/gemini-3.1-pro-preview",
     "github-copilot/claude-opus-4.5",
     "github-copilot/claude-opus-4.6",
