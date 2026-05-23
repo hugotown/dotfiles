@@ -1,0 +1,14 @@
+{
+  "name": "pi-tool-gemini-generate-image",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "pi": {
+    "extensions": ["./index.ts"]
+  },
+  "dependencies": {
+    "@google/genai": "^2.6.0",
+    "@earendil-works/pi-coding-agent": "0.75.4",
+    "@earendil-works/pi-tui": "0.75.4"
+  }
+}

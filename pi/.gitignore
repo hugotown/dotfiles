@@ -1,3 +1,8 @@
 # Pi local auth tokens — never commit (repo is public).
 agent/auth.json
 agent/sessions
+
+# Dependencies
+node_modules/
+bun.lock
+pi/gemini-output/

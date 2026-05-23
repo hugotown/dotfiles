@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.74.0",
+  "lastChangelogVersion": "0.75.4",
   "defaultProvider": "github-copilot",
   "defaultModel": "claude-opus-4.6",
   "defaultThinkingLevel": "high",
@@ -7,6 +7,9 @@
     "~/.pi/agent/extensions/"
   ],
   "enabledModels": [
+    "claude-local-cli/claude-haiku-4-5-20251001",
+    "claude-local-cli/claude-sonnet-4-6",
+    "claude-local-cli/claude-opus-4-7",
     "opencode-go/deepseek-v4-flash",
     "opencode-go/deepseek-v4-pro",
     "opencode-go/glm-5",
@@ -21,9 +24,7 @@
     "opencode-go/qwen3.6-plus",
     "opencode/big-pickle",
     "opencode/deepseek-v4-flash-free",
-    "opencode/minimax-m2.5-free",
     "opencode/nemotron-3-super-free",
-    "opencode/qwen3.6-plus-free",
     "github-copilot/gemini-3.1-pro-preview",
     "github-copilot/claude-opus-4.5",
     "github-copilot/claude-opus-4.6",
@@ -51,5 +52,6 @@
     "github-copilot/gemini-3-pro-preview",
     "github-copilot/gemini-3-flash-preview"
   ],
-  "packages": []
+  "packages": [],
+  "hideThinkingBlock": false
 }
