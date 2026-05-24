@@ -9,7 +9,7 @@ import { addNode, removeNode } from "./editor.ts";
 import { renderDesign } from "./design-render.ts";
 import { renderRun } from "./run-render.ts";
 
-type Mode = "run" | "design";
+export type Mode = "run" | "design";
 
 const newWorkflow = (): Workflow => ({ name: "untitled", vsm: [{ sipoc: "design", nodes: [] }] });
 
@@ -31,6 +31,10 @@ export class DaddyPanel implements Component {
 
 	setWorkflow(wf: Workflow): void {
 		this.wf = wf;
+	}
+
+	setMode(mode: Mode): void {
+		this.mode = mode;
 	}
 
 	handleInput(data: string): void {

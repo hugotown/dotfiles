@@ -7,9 +7,9 @@ import { workflowPath } from "../lib/load-workflow.ts";
 import { getRun, subscribe } from "../lib/store.ts";
 import type { Workflow } from "../types.ts";
 import { toYaml } from "./editor.ts";
-import { DaddyPanel } from "./view.ts";
+import { DaddyPanel, type Mode } from "./view.ts";
 
-export function openPanel(ctx: ExtensionContext): Promise<void> {
+export function openPanel(ctx: ExtensionContext, initial?: { mode?: Mode; workflow?: Workflow }): Promise<void> {
 	const save = async (wf: Workflow): Promise<void> => {
 		const file = workflowPath(ctx.cwd, wf.name);
 		await fs.mkdir(path.dirname(file), { recursive: true });
@@ -24,6 +24,8 @@ export function openPanel(ctx: ExtensionContext): Promise<void> {
 				(wf) => void save(wf),
 			);
 			panel.setRun(getRun());
+			if (initial?.workflow) panel.setWorkflow(initial.workflow);
+			if (initial?.mode) panel.setMode(initial.mode);
 			const unsubscribe = subscribe(() => {
 				panel.setRun(getRun());
 				tui.requestRender();

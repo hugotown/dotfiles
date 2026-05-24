@@ -7,7 +7,8 @@ import { loadWorkflow, workflowPath } from "./load-workflow.ts";
 import { buildState, loadState, resumeState } from "./state-store.ts";
 import { stateFilePath } from "./session-path.ts";
 import { validateWorkflow } from "./validate.ts";
-import type { StateMachine } from "../types.ts";
+import { openPanel } from "../panel/open.ts";
+import type { StateMachine, Workflow } from "../types.ts";
 
 /** Split "<flag> <name> <args> [--daddy-fresh|--daddy-design]" into parts (hello pattern). */
 export function parseInvocation(text: string): { name: string; args: string; fresh: boolean; design: boolean } {
@@ -26,11 +27,20 @@ export async function startRun(_pi: ExtensionAPI, ctx: ExtensionContext, text: s
 	}
 	const wf = await loadWorkflow(ctx.cwd, name).catch(() => null);
 	if (!wf) {
-		ctx.ui.notify(`daddy: ${workflowPath(ctx.cwd, name)} not found. Open the panel to create it.`, "warning");
+		// Missing workflow: open the design panel seeded with this name so saving (s) writes
+		// <name>.yaml. Headless has no panel, so there we can only report it.
+		if (!ctx.hasUI) {
+			ctx.ui.notify(`daddy: ${workflowPath(ctx.cwd, name)} not found.`, "warning");
+			return null;
+		}
+		ctx.ui.notify(`daddy: '${name}' not found — opening the design panel to create it.`, "info");
+		const seed: Workflow = { name, vsm: [{ sipoc: "stage", nodes: [] }] };
+		void openPanel(ctx, { mode: "design", workflow: seed });
 		return null;
 	}
 	if (design) {
-		ctx.ui.notify("daddy: open the panel to edit (design mode wiring lands in Task 26).", "info");
+		// Edit the existing workflow in the design panel.
+		if (ctx.hasUI) void openPanel(ctx, { mode: "design", workflow: wf });
 		return null;
 	}
 	const error = validateWorkflow(wf);
