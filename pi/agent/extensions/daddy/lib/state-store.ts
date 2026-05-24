@@ -1,5 +1,6 @@
 // Build / merge / atomically persist / load / resume the run state machine (design §12).
 import { promises as fs } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { allNodes, findNode } from "./flat-nodes.ts";
 import type { NodeResult, NodeState, StateMachine, Workflow } from "../types.ts";
 
@@ -53,9 +54,11 @@ export function resumeState(state: StateMachine): StateMachine {
 	return state;
 }
 
-/** Atomic write: tmp + rename so a SIGKILL mid-write never truncates the real file. */
+/** Atomic write: unique tmp + rename so a SIGKILL mid-write never truncates the real file,
+ * and concurrent persists within a wave never collide on a shared tmp path (each wins or
+ * loses the rename atomically; the last rename leaves a valid, complete state). */
 export async function persistState(file: string, state: StateMachine): Promise<void> {
-	const tmp = `${file}.tmp`;
+	const tmp = `${file}.${process.pid}.${randomUUID()}.tmp`;
 	await fs.writeFile(tmp, JSON.stringify(state, null, 2), "utf-8");
 	await fs.rename(tmp, file);
 }

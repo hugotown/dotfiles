@@ -59,6 +59,10 @@ export async function continueRun(pi: ExtensionAPI, ctx: ExtensionContext, state
 					try {
 						const result = await runSelfContained(pi, ctx, node, state);
 						mergeNodeResult(state, node.id, result);
+					} catch (err) {
+						// A thrown executor must never wedge the node as `running` or escape as an
+						// unhandled rejection — record it as a failed result (uniform contract).
+						mergeNodeResult(state, node.id, { status: "failed", output: err instanceof Error ? err.message : String(err) });
 					} finally {
 						semaphore.release();
 					}
