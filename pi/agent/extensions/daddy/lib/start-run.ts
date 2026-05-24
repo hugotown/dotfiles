@@ -1,0 +1,49 @@
+// Parse the --daddy-workflow input, load+validate, resolve the state machine (resume unless
+// --daddy-fresh), and guard against a concurrent run on the same file. Returns null when it
+// handled the case itself (error notify, no name → picker, --daddy-design → editor).
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { FLAG_DESIGN, FLAG_FRESH, FLAG_WORKFLOW } from "../constants.ts";
+import { loadWorkflow, workflowPath } from "./load-workflow.ts";
+import { buildState, loadState, resumeState } from "./state-store.ts";
+import { stateFilePath } from "./session-path.ts";
+import { validateWorkflow } from "./validate.ts";
+import type { StateMachine } from "../types.ts";
+
+/** Split "<flag> <name> <args> [--daddy-fresh|--daddy-design]" into parts (hello pattern). */
+export function parseInvocation(text: string): { name: string; args: string; fresh: boolean; design: boolean } {
+	const fresh = text.includes(FLAG_FRESH);
+	const design = text.includes(FLAG_DESIGN);
+	const rest = text.split(FLAG_WORKFLOW).join("").split(FLAG_FRESH).join("").split(FLAG_DESIGN).join("").trim();
+	const [name, ...argWords] = rest.split(/\s+/);
+	return { name: name ?? "", args: argWords.join(" "), fresh, design };
+}
+
+export async function startRun(_pi: ExtensionAPI, ctx: ExtensionContext, text: string): Promise<{ state: StateMachine; file: string } | null> {
+	const { name, args, fresh, design } = parseInvocation(text);
+	if (!name) {
+		ctx.ui.notify("daddy: no workflow name. Open the panel (double-press ←) to pick or create one.", "info");
+		return null;
+	}
+	const wf = await loadWorkflow(ctx.cwd, name).catch(() => null);
+	if (!wf) {
+		ctx.ui.notify(`daddy: ${workflowPath(ctx.cwd, name)} not found. Open the panel to create it.`, "warning");
+		return null;
+	}
+	if (design) {
+		ctx.ui.notify("daddy: open the panel to edit (design mode wiring lands in Task 26).", "info");
+		return null;
+	}
+	const error = validateWorkflow(wf);
+	if (error) {
+		ctx.ui.notify(`daddy: invalid workflow (${error.kind}).`, "error");
+		return null;
+	}
+	const file = stateFilePath(ctx, name);
+	const prior = fresh ? null : await loadState(file);
+	if (prior && prior.vsm.some((c) => c.nodes.some((n) => n.status === "running")) && Date.now() - Date.parse(prior.heartbeat) < 60_000) {
+		ctx.ui.notify("daddy: a run for this workflow looks active in this cwd. Refusing to start a second.", "error");
+		return null;
+	}
+	const state = prior ? resumeState(prior) : buildState(wf, args, process.pid);
+	return { state, file };
+}
