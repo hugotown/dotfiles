@@ -1,15 +1,17 @@
 // Open the panel as a centered overlay; re-render on store changes; resolve on close.
-// Design-mode saves write the workflow YAML to .pi/daddy/workflows/<name>.yaml.
+// Colors + keymap come from the loaded AppConfig. Design-mode saves write the workflow YAML
+// to .pi/daddy/workflows/<name>.yaml.
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { AppConfig } from "../lib/config.ts";
 import { workflowPath } from "../lib/load-workflow.ts";
 import { getRun, subscribe } from "../lib/store.ts";
 import type { Workflow } from "../types.ts";
 import { toYaml } from "./editor.ts";
 import { DaddyPanel, type Mode } from "./view.ts";
 
-export function openPanel(ctx: ExtensionContext, initial?: { mode?: Mode; workflow?: Workflow }): Promise<void> {
+export function openPanel(ctx: ExtensionContext, config: AppConfig, initial?: { mode?: Mode; workflow?: Workflow }): Promise<void> {
 	const save = async (wf: Workflow): Promise<void> => {
 		const file = workflowPath(ctx.cwd, wf.name);
 		await fs.mkdir(path.dirname(file), { recursive: true });
@@ -19,6 +21,8 @@ export function openPanel(ctx: ExtensionContext, initial?: { mode?: Mode; workfl
 	return ctx.ui.custom<void>(
 		(tui, _theme, _keys, done) => {
 			const panel = new DaddyPanel(
+				config.theme,
+				config.keymap,
 				() => done(),
 				() => tui.requestRender(),
 				(wf) => void save(wf),

@@ -1,5 +1,6 @@
 // daddy entry. In a child (DADDY_NODE=1) it registers ONLY append_node and installs no
 // input handler (prevents recursion). Otherwise it registers the flags and the driver.
+import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
 	ASK_MARKER,
@@ -11,6 +12,7 @@ import {
 	FLAG_WORKFLOW,
 } from "./constants.ts";
 import { registerAppendTool } from "./lib/append-tool.ts";
+import { loadConfig } from "./lib/config.ts";
 import { captureDefaults, type SavedDefaults } from "./lib/delegate-ask.ts";
 import { continueRun } from "./lib/driver.ts";
 import { findNode } from "./lib/flat-nodes.ts";
@@ -43,11 +45,13 @@ export default function daddy(pi: ExtensionAPI): void {
 		pi.registerFlag(token.slice(2), { description: desc, type: "string" });
 	}
 
+	const config = loadConfig(fileURLToPath(new URL("./config.yml", import.meta.url)));
+
 	let installed = false;
 	const ensureTrigger = (ctx: ExtensionContext): void => {
 		if (installed || !ctx.hasUI) return;
 		installed = true;
-		installTrigger(ctx);
+		installTrigger(ctx, config);
 	};
 	pi.on("session_start", (_event, ctx) => {
 		for (const token of [FLAG_WORKFLOW, FLAG_FRESH, FLAG_DESIGN]) {
@@ -61,7 +65,7 @@ export default function daddy(pi: ExtensionAPI): void {
 		if (event.source === "extension") return { action: "continue" }; // never self-trigger
 		// Intercept a run (--daddy-workflow) OR a design entry (--daddy-design, standalone or modifier).
 		if (!event.text.includes(FLAG_WORKFLOW) && !event.text.includes(FLAG_DESIGN)) return { action: "continue" };
-		const started = await startRun(pi, ctx, event.text);
+		const started = await startRun(pi, ctx, event.text, config);
 		if (!started) return { action: "handled" }; // notified inside (error, picker, or design)
 		state = started.state;
 		stateFile = started.file;

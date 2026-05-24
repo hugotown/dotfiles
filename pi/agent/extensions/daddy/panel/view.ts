@@ -1,17 +1,26 @@
-// DaddyPanel: master-detail overlay. Run mode shows the live status tree; design mode
-// shows the editable VSM>SIPOC>node tree. Tab toggles modes. Design editing uses the pure,
-// tested editor ops (add/delete) and saves via the onSave callback (open.ts writes the YAML).
-// NOTE: inline multi-field node editing is intentionally minimal for v1 — `a` appends a
-// placeholder bash node you then edit in YAML; richer in-panel forms are future work.
+// DaddyPanel: opaque master-detail overlay. A title bar + an always-visible help line show
+// the current mode and the keys available right now; the body is run-mode (live status tree)
+// or design-mode (editable VSM>SIPOC>node tree). Tab toggles modes. Colors come from the
+// resolved theme; navigation/editing keys from the keymap (both loaded from config.yml).
+// NOTE: design editing is minimal v1 — `a` appends a placeholder bash node you then edit in
+// YAML; `d` deletes the selected node; `s` saves. Field-level forms are future work.
 import { type Component, type KeyId, matchesKey } from "@earendil-works/pi-tui";
+import type { KeymapConfig } from "../lib/keymap.ts";
+import type { ThemeColors } from "../lib/theme.ts";
 import type { StateMachine, Workflow } from "../types.ts";
 import { addNode, removeNode } from "./editor.ts";
-import { renderDesign } from "./design-render.ts";
-import { renderRun } from "./run-render.ts";
+import { nodeIdAtRow, renderDesignBody } from "./design-render.ts";
+import { bg, bold, fg, pad } from "./palette.ts";
+import { renderRunBody } from "./run-render.ts";
 
 export type Mode = "run" | "design";
 
 const newWorkflow = (): Workflow => ({ name: "untitled", vsm: [{ sipoc: "design", nodes: [] }] });
+
+const HELP: Record<Mode, string> = {
+	run: "  ↑/↓ move    Tab → design    q close",
+	design: "  ↑/↓ move    a add node    d delete    s save    Tab → run    q close",
+};
 
 export class DaddyPanel implements Component {
 	private run: StateMachine | null = null;
@@ -20,6 +29,8 @@ export class DaddyPanel implements Component {
 	private selected = 0;
 
 	constructor(
+		private readonly theme: ThemeColors,
+		private readonly keymap: KeymapConfig,
 		private readonly onClose: () => void,
 		private readonly onChange: () => void,
 		private readonly onSave?: (wf: Workflow) => void,
@@ -37,35 +48,40 @@ export class DaddyPanel implements Component {
 		this.mode = mode;
 	}
 
+	private hits(data: string, ids: string[]): boolean {
+		return ids.some((id) => matchesKey(data, id as KeyId));
+	}
+
 	handleInput(data: string): void {
-		if (matchesKey(data, "escape" as KeyId) || matchesKey(data, "q" as KeyId)) return this.onClose();
-		if (matchesKey(data, "tab" as KeyId)) {
+		const { up, down, close, mode, add, delete: del, save } = this.keymap.nav;
+		if (this.hits(data, close)) return this.onClose();
+		if (this.hits(data, mode)) {
 			this.mode = this.mode === "run" ? "design" : "run";
 			this.selected = 0;
 			return this.onChange();
 		}
-		if (matchesKey(data, "down" as KeyId) || matchesKey(data, "j" as KeyId)) this.selected++;
-		else if (matchesKey(data, "up" as KeyId) || matchesKey(data, "k" as KeyId)) this.selected = Math.max(0, this.selected - 1);
-		else if (this.mode === "design" && this.handleDesignEdit(data)) {
+		if (this.hits(data, up)) this.selected = Math.max(0, this.selected - 1);
+		else if (this.hits(data, down)) this.selected++;
+		else if (this.mode === "design" && this.handleDesignEdit(data, add, del, save)) {
 			/* edit applied */
 		} else return;
 		this.onChange();
 	}
 
 	/** Design-mode editing keys → pure editor ops. Returns true when an edit was applied. */
-	private handleDesignEdit(data: string): boolean {
-		if (matchesKey(data, "a" as KeyId)) {
+	private handleDesignEdit(data: string, add: string[], del: string[], save: string[]): boolean {
+		if (this.hits(data, add)) {
 			const count = this.wf.vsm.flatMap((c) => c.nodes).length;
 			const sipoc = this.wf.vsm[0]?.sipoc ?? "design";
 			this.wf = addNode(this.wf, sipoc, { id: `n${count + 1}`, action: "bash", aiAssisted: false, depends_on: [], command: "" });
 			return true;
 		}
-		if (matchesKey(data, "d" as KeyId) || matchesKey(data, "x" as KeyId)) {
-			const node = this.wf.vsm.flatMap((c) => c.nodes)[Math.max(0, this.selected - 1)];
-			if (node) this.wf = removeNode(this.wf, node.id);
+		if (this.hits(data, del)) {
+			const id = nodeIdAtRow(this.wf, this.selected);
+			if (id) this.wf = removeNode(this.wf, id);
 			return true;
 		}
-		if (matchesKey(data, "s" as KeyId)) {
+		if (this.hits(data, save)) {
 			this.onSave?.(this.wf);
 			return true;
 		}
@@ -75,6 +91,27 @@ export class DaddyPanel implements Component {
 	invalidate(): void {}
 
 	render(width: number): string[] {
-		return this.mode === "run" ? renderRun(this.run, this.selected, width) : renderDesign(this.wf, this.selected, width);
+		const t = this.theme;
+		const height = Math.max(8, Math.floor((process.stdout.rows ?? 24) * 0.7));
+		const bodyHeight = Math.max(1, height - 2);
+		const title =
+			this.mode === "run"
+				? ` daddy · run · ${this.run?.workflow ?? "—"} (${this.okCount()}/${this.total()})`
+				: ` daddy · design · ${this.wf.name}`;
+		const titleBar = bg(t.selectedBg, bold(fg(t.blue, pad(title, width))));
+		const helpBar = bg(t.panelBg, fg(t.dim, pad(HELP[this.mode], width)));
+		const body =
+			this.mode === "run"
+				? renderRunBody(this.run, this.selected, t, width, bodyHeight)
+				: renderDesignBody(this.wf, this.selected, t, width, bodyHeight);
+		return [titleBar, helpBar, ...body];
+	}
+
+	private total(): number {
+		return this.run ? this.run.vsm.reduce((n, c) => n + c.nodes.length, 0) : 0;
+	}
+
+	private okCount(): number {
+		return this.run ? this.run.vsm.reduce((n, c) => n + c.nodes.filter((x) => x.status === "ok").length, 0) : 0;
 	}
 }
