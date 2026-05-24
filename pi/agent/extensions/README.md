@@ -56,11 +56,29 @@ extensions/brainstorm-workflow/
 
 ### Flag registration
 
-Extensions that respond to `--xxx` tokens must:
+Extensions that respond to `--xxx` tokens MUST:
 
 1. Register the flag: `pi.registerFlag("name", { description, type })`
-2. Announce for autocomplete: `pi.events.emit("flag:registered", { token: "--name", description })`
+2. **Announce it on the bus, inside a `session_start` handler:**
+   ```ts
+   pi.on("session_start", () => {
+     pi.events.emit("flag:registered", { token: "--name", description });
+   });
+   ```
+   REQUIRED, not optional.
 3. Handle their own input: `pi.on("input", ...)` returning `{ action: "handled" }`
+
+**Why step 2 is mandatory:** pi exposes no API to enumerate flags, and `getFlag` only
+reads the calling extension's own flags. The `flag:registered` event is the ONLY way other
+extensions can discover your flag. Consumers today: `flag-autocomplete` (Tab-completion) and
+`subagent` (warns the parent when a delegated agent's prompt contains a flag that will be
+intercepted before its model runs). A flag that skips step 2 is invisible to both.
+
+**Why `session_start` and not load time:** the event bus is a plain emitter with no replay
+(`core/event-bus.js`), and extensions load sequentially. Emitting at load reaches only the
+consumers that already loaded — a consumer loading later (alphabetical order: `subagent`
+loads after `hello`) misses it. `session_start` fires once every extension is loaded and
+subscribed, so the announcement is order-independent.
 
 ### Testing
 

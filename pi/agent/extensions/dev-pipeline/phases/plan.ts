@@ -37,7 +37,7 @@ export async function runResearch(
 	}
 
 	const patterns = extractList(decision, "PATTERNS");
-	const libraries = extractList(decision, "LIBRARIES");
+	const searches = extractList(decision, "SEARCHES");
 	const sections: string[] = [];
 
 	// rg: always
@@ -57,13 +57,34 @@ export async function runResearch(
 		// graphify query wiring is UNVERIFIED (project-local CLI). Intentionally a no-op until the
 		// project's graphify query command is confirmed; then run it here and append to `sections`.
 	}
-	// ctx7: for named libraries
-	for (const lib of libraries) {
-		const out = await safe(pi, "npx", ["ctx7@latest", "library", lib]);
-		sections.push(`### ctx7 ${lib}\n${(out || "(no docs)").slice(0, 1500)}`);
+	// NB: per-library ctx7/ddg deep research now happens in the LIBRARY_RESEARCH phase (clean
+	// context per library), so it is intentionally NOT run here.
+	// ddg: best-practice web research. Proxy credentials come from the env (SOPS); skip if absent.
+	const proxy = ddgProxy();
+	if (proxy) {
+		for (const q of searches) {
+			const out = await safe(pi, "ddg", [
+				"--query", q,
+				"--proxy", proxy,
+				"--user-agent", "chrome",
+				"--backend", "lite",
+				"--limit", "10",
+				"--format",
+			]);
+			sections.push(`### ddg "${q}"\n${(out || "(no results)").slice(0, 2000)}`);
+		}
+	} else if (searches.length) {
+		sections.push(`### ddg\n(skipped: proxy credentials DI_LOGIN/DI_SEC/DI_HOST/DI_PORT not set in env)`);
 	}
 
 	return sections.join("\n\n") || "(no research results)";
+}
+
+/** Build the DuckDuckGo proxy URL from the SOPS-loaded env, or null if any credential is missing. */
+function ddgProxy(): string | null {
+	const { DI_LOGIN, DI_SEC, DI_HOST, DI_PORT } = process.env;
+	if (!DI_LOGIN || !DI_SEC || !DI_HOST || !DI_PORT) return null;
+	return `http://${DI_LOGIN}:${DI_SEC}@${DI_HOST}:${DI_PORT}`;
 }
 
 export async function startPlanAuthor(
@@ -71,10 +92,11 @@ export async function startPlanAuthor(
 	ctx: ExtensionContext,
 	s: PipelineState,
 	researchResults: string,
+	libraryNotes: string,
 ): Promise<void> {
 	ctx.ui.setStatus("dev-pipeline", "✍️ plan author");
 	if (!(await applyPhaseConfig(pi, ctx, "PLAN_AUTHOR"))) return;
-	drivePhase(pi, planAuthorPrompt(s, specPathFor(s), researchResults, planPathFor(s)));
+	drivePhase(pi, planAuthorPrompt(s, specPathFor(s), researchResults, libraryNotes, planPathFor(s)));
 }
 
 export async function startPlanReview(pi: ExtensionAPI, ctx: ExtensionContext, s: PipelineState): Promise<void> {

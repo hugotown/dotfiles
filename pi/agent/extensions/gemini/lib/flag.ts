@@ -16,7 +16,12 @@ export interface FlagSpec {
 export function registerFlag(pi: ExtensionAPI, spec: FlagSpec): void {
   const flag = `--${spec.token}`;
   pi.registerFlag(spec.token, { description: spec.description, type: "string" });
-  pi.events.emit("flag:registered", { token: flag, description: spec.description });
+  // Announce on session_start (not at load): the bus has no replay, so emitting at
+  // load misses consumers that load later (e.g. subagent). By session_start every
+  // extension is subscribed. See extensions/README.md "Flag registration".
+  pi.on("session_start", () => {
+    pi.events.emit("flag:registered", { token: flag, description: spec.description });
+  });
 
   pi.on("input", async (event, ctx) => {
     if (!event.text.includes(flag)) return { action: "continue" };

@@ -10,7 +10,6 @@ test("createInitialState begins IDLE with the activity", () => {
 	expect(s.phase).toBe("IDLE");
 	expect(s.activity).toBe("add dark mode");
 	expect(s.questionRound).toBe(0);
-	expect(s.gateAttempts).toBe(0);
 });
 
 test("START moves IDLE -> GATHERING_CONTEXT", () => {
@@ -46,35 +45,48 @@ test("brainstorm round increments and PROCEED advances to SPEC", () => {
 	expect(s.slug).toBe("dark-mode");
 });
 
-test("spec write -> self review -> gate -> approve advances to PLAN_RESEARCH", () => {
+test("spec write -> self review advances straight to PLAN_RESEARCH (no human gate)", () => {
 	let s = bringTo(start(), "SPEC");
 	s = transition(s, { type: "SPEC_WRITTEN", specPath: "/f/d.md" });
 	expect(s.phase).toBe("SPEC_SELF_REVIEW");
 	expect(s.specPath).toBe("/f/d.md");
 	s = transition(s, { type: "REVIEWED" });
-	expect(s.phase).toBe("SPEC_GATE");
-	s = transition(s, { type: "APPROVED" });
 	expect(s.phase).toBe("PLAN_RESEARCH");
 });
 
-test("spec gate reject bumps attempts and returns to SPEC", () => {
-	let s = bringTo(start(), "SPEC_GATE");
-	s = transition(s, { type: "REJECT", feedback: "too vague" });
-	expect(s.phase).toBe("SPEC");
-	expect(s.gateAttempts).toBe(1);
-});
-
-test("plan flow research -> author -> review -> gate -> approve -> IMPLEMENT", () => {
+test("plan flow research -> library research -> author -> review -> IMPLEMENT (no human gate)", () => {
 	let s = bringTo(start(), "PLAN_RESEARCH");
-	s = transition(s, { type: "RESEARCH_DECIDED" });
+	s = transition(s, { type: "RESEARCH_DECIDED", libraries: [{ name: "next", version: "16", topic: "proxy.ts", status: "pending", confidence: null }] });
+	expect(s.phase).toBe("LIBRARY_RESEARCH");
+	expect(s.libraries.length).toBe(1);
+	expect(s.currentLibraryIndex).toBe(0);
+	s = transition(s, { type: "ALL_LIBRARIES_DONE" });
 	expect(s.phase).toBe("PLAN_AUTHOR");
 	s = transition(s, { type: "PLAN_WRITTEN", planPath: "/f/p.md", tasks: [{ id: 1, title: "t1", status: "pending" }] });
 	expect(s.phase).toBe("PLAN_SELF_REVIEW");
 	expect(s.tasks.length).toBe(1);
 	s = transition(s, { type: "REVIEWED" });
-	expect(s.phase).toBe("PLAN_GATE");
-	s = transition(s, { type: "APPROVED" });
 	expect(s.phase).toBe("IMPLEMENT");
+	expect(s.currentTaskIndex).toBe(0);
+});
+
+test("library research: low confidence retries the same library; high confidence advances it", () => {
+	let s = bringTo(start(), "PLAN_RESEARCH");
+	s = transition(s, { type: "RESEARCH_DECIDED", libraries: [
+		{ name: "a", version: "1", topic: "x", status: "pending", confidence: null },
+		{ name: "b", version: "2", topic: "y", status: "pending", confidence: null },
+	] });
+	expect(s.phase).toBe("LIBRARY_RESEARCH");
+	// retry keeps the same index, bumps attempts
+	s = transition(s, { type: "LIBRARY_RETRY" });
+	expect(s.currentLibraryIndex).toBe(0);
+	expect(s.libraryAttempts).toBe(1);
+	// high confidence marks done, advances index, resets attempts
+	s = transition(s, { type: "LIBRARY_DONE", confidence: "high" });
+	expect(s.libraries[0].status).toBe("done");
+	expect(s.libraries[0].confidence).toBe("high");
+	expect(s.currentLibraryIndex).toBe(1);
+	expect(s.libraryAttempts).toBe(0);
 });
 
 test("implement task done advances index; ALL_TASKS_DONE -> REVIEW", () => {
@@ -123,12 +135,11 @@ function bringTo(s: PipelineState, target: PipelineState["phase"]): PipelineStat
 		{ ev: { type: "CONTEXT_READY", compressedContext: "c", artifactFolder: "/f" }, reach: "BRAINSTORM" },
 		{ ev: { type: "PROCEED", decisions: "d", slug: "s" }, reach: "SPEC" },
 		{ ev: { type: "SPEC_WRITTEN", specPath: "/f/d.md" }, reach: "SPEC_SELF_REVIEW" },
-		{ ev: { type: "REVIEWED" }, reach: "SPEC_GATE" },
-		{ ev: { type: "APPROVED" }, reach: "PLAN_RESEARCH" },
-		{ ev: { type: "RESEARCH_DECIDED" }, reach: "PLAN_AUTHOR" },
+		{ ev: { type: "REVIEWED" }, reach: "PLAN_RESEARCH" },
+		{ ev: { type: "RESEARCH_DECIDED", libraries: [] }, reach: "LIBRARY_RESEARCH" },
+		{ ev: { type: "ALL_LIBRARIES_DONE" }, reach: "PLAN_AUTHOR" },
 		{ ev: { type: "PLAN_WRITTEN", planPath: "/f/p.md", tasks: [{ id: 1, title: "t", status: "pending" }] }, reach: "PLAN_SELF_REVIEW" },
-		{ ev: { type: "REVIEWED" }, reach: "PLAN_GATE" },
-		{ ev: { type: "APPROVED" }, reach: "IMPLEMENT" },
+		{ ev: { type: "REVIEWED" }, reach: "IMPLEMENT" },
 		{ ev: { type: "ALL_TASKS_DONE" }, reach: "REVIEW" },
 	];
 	let cur = s;

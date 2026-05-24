@@ -4,11 +4,10 @@ export type Phase =
 	| "BRAINSTORM"
 	| "SPEC"
 	| "SPEC_SELF_REVIEW"
-	| "SPEC_GATE"
 	| "PLAN_RESEARCH"
+	| "LIBRARY_RESEARCH"
 	| "PLAN_AUTHOR"
 	| "PLAN_SELF_REVIEW"
-	| "PLAN_GATE"
 	| "IMPLEMENT"
 	| "REVIEW"
 	| "NOTES"
@@ -21,6 +20,15 @@ export interface Task {
 	status: "pending" | "done" | "blocked";
 }
 
+/** One external library to deep-research before planning, in its own clean-context turn. */
+export interface LibraryRef {
+	name: string;
+	version: string; // detected from the manifest, or "unknown"
+	topic: string; // what the plan needs to implement with it
+	status: "pending" | "done";
+	confidence: "high" | "medium" | "low" | null;
+}
+
 export interface PipelineState {
 	phase: Phase;
 	activity: string;
@@ -31,14 +39,15 @@ export interface PipelineState {
 	questionRound: number;
 	specPath: string | null;
 	planPath: string | null;
+	libraries: LibraryRef[];
+	currentLibraryIndex: number;
+	libraryAttempts: number;
 	tasks: Task[];
 	currentTaskIndex: number;
 	reviewVerdict: "APPROVED" | "CHANGES_REQUIRED" | null;
 	notesPath: string | null;
 	originalModel: { provider: string; id: string } | null;
 	allToolNames: string[];
-	gateAttempts: number;
-	gateFeedback: string;
 }
 
 export type PipelineEvent =
@@ -48,9 +57,10 @@ export type PipelineEvent =
 	| { type: "PROCEED"; decisions: string; slug: string }
 	| { type: "SPEC_WRITTEN"; specPath: string }
 	| { type: "REVIEWED" }
-	| { type: "APPROVED" }
-	| { type: "REJECT"; feedback: string }
-	| { type: "RESEARCH_DECIDED" }
+	| { type: "RESEARCH_DECIDED"; libraries: LibraryRef[] }
+	| { type: "LIBRARY_DONE"; confidence: "high" | "medium" | "low" }
+	| { type: "LIBRARY_RETRY" }
+	| { type: "ALL_LIBRARIES_DONE" }
 	| { type: "PLAN_WRITTEN"; planPath: string; tasks: Task[] }
 	| { type: "TASK_DONE" }
 	| { type: "ALL_TASKS_DONE" }
@@ -70,14 +80,15 @@ export function createInitialState(activity: string): PipelineState {
 		questionRound: 0,
 		specPath: null,
 		planPath: null,
+		libraries: [],
+		currentLibraryIndex: 0,
+		libraryAttempts: 0,
 		tasks: [],
 		currentTaskIndex: 0,
 		reviewVerdict: null,
 		notesPath: null,
 		originalModel: null,
 		allToolNames: [],
-		gateAttempts: 0,
-		gateFeedback: "",
 	};
 }
 
@@ -118,16 +129,29 @@ export function transition(state: PipelineState, event: PipelineEvent): Pipeline
 			return state;
 
 		case "SPEC_SELF_REVIEW":
-			if (event.type === "REVIEWED") return { ...state, phase: "SPEC_GATE" };
-			return state;
-
-		case "SPEC_GATE":
-			if (event.type === "APPROVED") return { ...state, phase: "PLAN_RESEARCH", gateFeedback: "" };
-			if (event.type === "REJECT") return { ...state, phase: "SPEC", gateAttempts: state.gateAttempts + 1, gateFeedback: event.feedback };
+			if (event.type === "REVIEWED") return { ...state, phase: "PLAN_RESEARCH" };
 			return state;
 
 		case "PLAN_RESEARCH":
-			if (event.type === "RESEARCH_DECIDED") return { ...state, phase: "PLAN_AUTHOR" };
+			if (event.type === "RESEARCH_DECIDED")
+				return {
+					...state,
+					phase: "LIBRARY_RESEARCH",
+					libraries: event.libraries,
+					currentLibraryIndex: 0,
+					libraryAttempts: 0,
+				};
+			return state;
+
+		case "LIBRARY_RESEARCH":
+			if (event.type === "LIBRARY_DONE") {
+				const libraries = state.libraries.map((l, i) =>
+					i === state.currentLibraryIndex ? { ...l, status: "done" as const, confidence: event.confidence } : l,
+				);
+				return { ...state, libraries, currentLibraryIndex: state.currentLibraryIndex + 1, libraryAttempts: 0 };
+			}
+			if (event.type === "LIBRARY_RETRY") return { ...state, libraryAttempts: state.libraryAttempts + 1 };
+			if (event.type === "ALL_LIBRARIES_DONE") return { ...state, phase: "PLAN_AUTHOR" };
 			return state;
 
 		case "PLAN_AUTHOR":
@@ -136,13 +160,7 @@ export function transition(state: PipelineState, event: PipelineEvent): Pipeline
 			return state;
 
 		case "PLAN_SELF_REVIEW":
-			if (event.type === "REVIEWED") return { ...state, phase: "PLAN_GATE" };
-			return state;
-
-		case "PLAN_GATE":
-			if (event.type === "APPROVED") return { ...state, phase: "IMPLEMENT", currentTaskIndex: 0, gateFeedback: "" };
-			if (event.type === "REJECT")
-				return { ...state, phase: "PLAN_AUTHOR", gateAttempts: state.gateAttempts + 1, gateFeedback: event.feedback };
+			if (event.type === "REVIEWED") return { ...state, phase: "IMPLEMENT", currentTaskIndex: 0 };
 			return state;
 
 		case "IMPLEMENT":

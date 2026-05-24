@@ -12,7 +12,6 @@ import {
 import { gatherContext } from "./context/gather.ts";
 import { compressContext } from "./context/compress.ts";
 import { artifactFolderFor } from "./lib/paths.ts";
-import { approvalGate, type GateResult, MAX_GATE_ATTEMPTS } from "./ui/approval-gate.ts";
 import { onBrainstormEnd, startBrainstorm } from "./phases/brainstorm.ts";
 import { onSpecEnd, specPathFor, startSpec, startSpecReview } from "./phases/spec.ts";
 import {
@@ -24,6 +23,13 @@ import {
 	startPlanResearch,
 	startPlanReview,
 } from "./phases/plan.ts";
+import {
+	gatherLibraryNotes,
+	librariesFromResearch,
+	MAX_LIBRARY_ATTEMPTS,
+	parseConfidence,
+	startLibraryResearch,
+} from "./phases/library.ts";
 import { startCurrentTask, verifyTask } from "./phases/implement.ts";
 import { parseVerdict, startReview } from "./phases/review.ts";
 import { notesFileValid, startNotes } from "./phases/notes.ts";
@@ -100,7 +106,26 @@ export default function devPipeline(pi: ExtensionAPI): void {
 				break;
 			}
 			case "PLAN_RESEARCH": {
-				await advance(pi, ctx, { type: "RESEARCH_DECIDED" });
+				const libraries = await librariesFromResearch(pi, state);
+				await advance(pi, ctx, { type: "RESEARCH_DECIDED", libraries });
+				break;
+			}
+			case "LIBRARY_RESEARCH": {
+				const confidence = parseConfidence(lastText);
+				if (confidence === "high") {
+					await advance(pi, ctx, { type: "LIBRARY_DONE", confidence });
+					break;
+				}
+				if (state.libraryAttempts + 1 >= MAX_LIBRARY_ATTEMPTS) {
+					const name = state.libraries[state.currentLibraryIndex]?.name ?? "(unknown)";
+					ctx.ui.notify(
+						`Library '${name}' stayed at '${confidence}' confidence after ${MAX_LIBRARY_ATTEMPTS} attempts — proceeding.`,
+						"warning",
+					);
+					await advance(pi, ctx, { type: "LIBRARY_DONE", confidence });
+					break;
+				}
+				await advance(pi, ctx, { type: "LIBRARY_RETRY" });
 				break;
 			}
 			case "PLAN_AUTHOR": {
@@ -202,23 +227,25 @@ export default function devPipeline(pi: ExtensionAPI): void {
 			case "SPEC_SELF_REVIEW":
 				await startSpecReview(api, ctx, state);
 				break;
-			case "SPEC_GATE":
-				await runGate(api, ctx, "spec", specPathFor(state));
-				break;
 			case "PLAN_RESEARCH":
 				await startPlanResearch(api, ctx, state);
 				break;
+			case "LIBRARY_RESEARCH":
+				if (state.currentLibraryIndex >= state.libraries.length) {
+					await advance(api, ctx, { type: "ALL_LIBRARIES_DONE" });
+				} else {
+					await startLibraryResearch(api, ctx, state);
+				}
+				break;
 			case "PLAN_AUTHOR": {
-				// Deterministic research runs BEFORE the author prompt (FR-18).
+				// Deterministic base research + per-library notes run BEFORE the author prompt (FR-18).
 				const results = await runResearch(api, state, probes);
-				await startPlanAuthor(api, ctx, state, results);
+				const libraryNotes = await gatherLibraryNotes(api, state);
+				await startPlanAuthor(api, ctx, state, results, libraryNotes);
 				break;
 			}
 			case "PLAN_SELF_REVIEW":
 				await startPlanReview(api, ctx, state);
-				break;
-			case "PLAN_GATE":
-				await runGate(api, ctx, "plan", planPathFor(state));
 				break;
 			case "IMPLEMENT":
 				if (state.currentTaskIndex >= state.tasks.length) {
@@ -248,23 +275,6 @@ export default function devPipeline(pi: ExtensionAPI): void {
 				await restoreDefaults(api, ctx, state);
 				ctx.ui.setStatus("dev-pipeline", undefined);
 				break;
-		}
-	}
-
-	async function runGate(api: ExtensionAPI, ctx: ExtensionContext, what: "spec" | "plan", path: string): Promise<void> {
-		if (!state) return;
-		const result: GateResult = await approvalGate(ctx, what, path);
-		if (result.kind === "approved") {
-			await advance(api, ctx, { type: "APPROVED" });
-		} else if (result.kind === "cancelled") {
-			await advance(api, ctx, { type: "RESET" });
-		} else {
-			if (state.gateAttempts + 1 >= MAX_GATE_ATTEMPTS) {
-				ctx.ui.notify(`Max ${what} revision attempts reached — halting.`, "warning");
-				await advance(api, ctx, { type: "RESET" });
-				return;
-			}
-			await advance(api, ctx, { type: "REJECT", feedback: result.feedback });
 		}
 	}
 }
