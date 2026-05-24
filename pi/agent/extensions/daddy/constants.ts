@@ -3,6 +3,12 @@
 /** Set in the child pi spawned for an llm node; flips index.ts into child mode. */
 export const DADDY_NODE_ENV = "DADDY_NODE";
 
+/** Child env: the node id the child must produce output for (append_node validation). */
+export const DADDY_NODE_ID_ENV = "DADDY_NODE_ID";
+
+/** Child env: the node's output_schema as JSON (empty string when none). */
+export const DADDY_NODE_SCHEMA_ENV = "DADDY_NODE_SCHEMA";
+
 /** Main execution flag and its namespaced modifiers (design §12.3). */
 export const FLAG_WORKFLOW = "--daddy-workflow";
 export const FLAG_FRESH = "--daddy-fresh";
