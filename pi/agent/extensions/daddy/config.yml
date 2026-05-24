@@ -1,0 +1,20 @@
+# daddy panel config. Edit and restart pi to apply.
+keymap:
+  # Double-press this key (when the editor is EMPTY) to open the panel.
+  trigger:
+    key: left
+    windowMs: 300
+  nav:
+    up: [up, k]
+    down: [down, j]
+    left: [left, h]
+    right: [right, l]
+    enter: [enter]
+    add: [a]
+    delete: [d, x]
+    connect: [c]
+    inject: [i]   # insert $dep.output into an llm node's prompt
+    save: [s]
+    mode: [tab]   # switch design <-> run
+    close: [escape, q]
+# theme: omit to use Tokyo Night defaults (see lib for the palette).
