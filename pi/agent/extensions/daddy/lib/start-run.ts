@@ -21,8 +21,25 @@ export function parseInvocation(text: string): { name: string; args: string; fre
 
 export async function startRun(_pi: ExtensionAPI, ctx: ExtensionContext, text: string): Promise<{ state: StateMachine; file: string } | null> {
 	const { name, args, fresh, design } = parseInvocation(text);
+
+	// Design entry (standalone --daddy-design, or as a modifier with a name). Opens the panel
+	// in design mode: loads the workflow if it exists, else seeds an empty one with that name.
+	// With no name, prompt for one so the saved file gets a real name (not "untitled").
+	if (design) {
+		if (!ctx.hasUI) {
+			ctx.ui.notify("daddy: design mode needs an interactive UI.", "warning");
+			return null;
+		}
+		const wfName = name || ((await ctx.ui.input("daddy: workflow name to design", "untitled"))?.trim() ?? "") || "untitled";
+		const existing = await loadWorkflow(ctx.cwd, wfName).catch(() => null);
+		const seed: Workflow = existing ?? { name: wfName, vsm: [{ sipoc: "stage", nodes: [] }] };
+		ctx.ui.notify(`daddy: opening design panel for '${wfName}'.`, "info");
+		void openPanel(ctx, { mode: "design", workflow: seed });
+		return null;
+	}
+
 	if (!name) {
-		ctx.ui.notify("daddy: no workflow name. Open the panel (double-press ←) to pick or create one.", "info");
+		ctx.ui.notify("daddy: no workflow name. Use --daddy-design to create one in the panel.", "info");
 		return null;
 	}
 	const wf = await loadWorkflow(ctx.cwd, name).catch(() => null);
@@ -36,11 +53,6 @@ export async function startRun(_pi: ExtensionAPI, ctx: ExtensionContext, text: s
 		ctx.ui.notify(`daddy: '${name}' not found — opening the design panel to create it.`, "info");
 		const seed: Workflow = { name, vsm: [{ sipoc: "stage", nodes: [] }] };
 		void openPanel(ctx, { mode: "design", workflow: seed });
-		return null;
-	}
-	if (design) {
-		// Edit the existing workflow in the design panel.
-		if (ctx.hasUI) void openPanel(ctx, { mode: "design", workflow: wf });
 		return null;
 	}
 	const error = validateWorkflow(wf);

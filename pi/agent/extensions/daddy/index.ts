@@ -59,7 +59,8 @@ export default function daddy(pi: ExtensionAPI): void {
 
 	pi.on("input", async (event, ctx) => {
 		if (event.source === "extension") return { action: "continue" }; // never self-trigger
-		if (!event.text.includes(FLAG_WORKFLOW)) return { action: "continue" };
+		// Intercept a run (--daddy-workflow) OR a design entry (--daddy-design, standalone or modifier).
+		if (!event.text.includes(FLAG_WORKFLOW) && !event.text.includes(FLAG_DESIGN)) return { action: "continue" };
 		const started = await startRun(pi, ctx, event.text);
 		if (!started) return { action: "handled" }; // notified inside (error, picker, or design)
 		state = started.state;
