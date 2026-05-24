@@ -1,0 +1,9 @@
+name: smoke
+description: Deterministic-only smoke workflow (Task 27 — no model needed).
+vsm:
+  - sipoc: build
+    nodes:
+      - { id: greet, action: flag, aiAssisted: false, flag: "--hello", args: "tester", depends_on: [] }
+      - { id: test, action: bash, aiAssisted: false, command: "echo build-ok", depends_on: [greet] }
+      - { id: confirm, action: ask, aiAssisted: false, depends_on: [test],
+          questions: [ { id: go, type: select, label: "Proceed?", options: ["yes","no"], default: "yes" } ] }

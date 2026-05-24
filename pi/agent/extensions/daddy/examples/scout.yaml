@@ -1,0 +1,19 @@
+name: scout
+# Task 28 — llm node + append_node structured-output gate.
+# Adjust provider/model to one available in your pi config if these patterns don't match.
+vsm:
+  - sipoc: discovery
+    nodes:
+      - id: find
+        action: llm
+        aiAssisted: true
+        provider: github-copilot
+        model: claude-sonnet-4.6
+        variant: low
+        instructions: "You are a scout. Report only file:line ranges."
+        prompt: "List two source files in this repo. CONTEXT: $ARGUMENTS"
+        output_schema:
+          type: object
+          properties: { ranges: { type: array, items: { type: string } } }
+          required: [ranges]
+        depends_on: []
