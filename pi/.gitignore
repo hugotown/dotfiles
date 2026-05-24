@@ -5,4 +5,6 @@ agent/sessions
 # Dependencies
 node_modules/
 bun.lock
-pi/gemini-output/
+
+# Gemini extension runtime artifacts (generated wherever a tool runs)
+gemini-output/

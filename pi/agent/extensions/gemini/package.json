@@ -1,5 +1,5 @@
 {
-  "name": "pi-tool-gemini-generate-image",
+  "name": "pi-tool-gemini",
   "private": true,
   "version": "0.1.0",
   "type": "module",
