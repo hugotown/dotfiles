@@ -23,6 +23,16 @@ export function connect(wf: Workflow, nodeId: string, dependency: string): Workf
 	return next;
 }
 
+/** Replace the node with matching id in place (preserving its position), by old or new id. */
+export function updateNode(wf: Workflow, id: string, node: WorkflowNode): Workflow {
+	const next = clone(wf);
+	for (const c of next.vsm) {
+		const idx = c.nodes.findIndex((n) => n.id === id);
+		if (idx !== -1) c.nodes[idx] = node;
+	}
+	return next;
+}
+
 export function removeNode(wf: Workflow, nodeId: string): Workflow {
 	const next = clone(wf);
 	for (const c of next.vsm) {

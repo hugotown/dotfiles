@@ -20,10 +20,16 @@ export function openPanel(ctx: ExtensionContext, config: AppConfig, initial?: { 
 	};
 	return ctx.ui.custom<void>(
 		(tui, _theme, _keys, done) => {
+			// Force a full-clear redraw on close: ctx.ui hides the overlay with a THROTTLED
+			// render, so without this the closed panel can linger on screen (looks like it
+			// didn't exit). Same workaround gemini's form uses.
 			const panel = new DaddyPanel(
 				config.theme,
 				config.keymap,
-				() => done(),
+				() => {
+					done();
+					tui.requestRender(true);
+				},
 				() => tui.requestRender(),
 				(wf) => void save(wf),
 			);
