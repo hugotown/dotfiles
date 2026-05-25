@@ -32,6 +32,7 @@ export class DaddyPanel implements Component {
 	private list: WorkflowEntry[] = [];
 	private fromList = false; // entered design by opening a workflow from the list (← goes back)
 	private heightFrac = 0.7; // body height as a fraction of terminal rows (matches the overlay)
+	private rowsFn: () => number = () => process.stdout.rows ?? 24; // reliable rows via tui.terminal
 	private selected = 0;
 	private form: NodeForm | null = null;
 	private editingId: string | null = null;
@@ -62,6 +63,11 @@ export class DaddyPanel implements Component {
 
 	setHeightFrac(frac: number): void {
 		this.heightFrac = frac;
+	}
+
+	/** Provide the real terminal row count (tui.terminal.rows) — more reliable than stdout. */
+	setRowsFn(fn: () => number): void {
+		this.rowsFn = fn;
 	}
 
 	private hits(data: string, ids: string[]): boolean {
@@ -155,7 +161,7 @@ export class DaddyPanel implements Component {
 		const t = this.theme;
 		// List mode lives in a 60%×60% centered overlay (20% margin all sides), so its body is
 		// shorter; run/design use the larger 85% overlay.
-		const rows = process.stdout.rows ?? 24;
+		const rows = this.rowsFn();
 		const height = Math.max(8, Math.floor(rows * this.heightFrac));
 		const bodyHeight = Math.max(1, height - 2);
 		const title =

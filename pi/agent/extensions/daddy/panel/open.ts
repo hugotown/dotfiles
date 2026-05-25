@@ -63,6 +63,7 @@ export function openPanel(ctx: ExtensionContext, config: AppConfig, initial?: Pa
 				(wf) => void save(wf),
 			);
 			panel.setHeightFrac(frac);
+			panel.setRowsFn(() => tui.terminal?.rows || process.stdout.rows || 24);
 			panel.setRun(getRun());
 			if (initial?.workflows) panel.setList(initial.workflows);
 			if (initial?.workflow) panel.setWorkflow(initial.workflow);
