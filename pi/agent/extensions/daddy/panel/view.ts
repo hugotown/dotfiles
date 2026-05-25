@@ -22,7 +22,7 @@ const newWorkflow = (): Workflow => ({ name: "untitled", vsm: [{ sipoc: "design"
 const HELP: Record<Mode, string> = {
 	run: "  ↑/↓ move    Tab → design    q close",
 	design: "  ↑/↓ move    a add    enter edit    d delete    s save    Tab → run    q close",
-	list: "  ↑/↓ j/k move    l/enter open    h/q close",
+	list: "  ↑/↓ j/k move    l/enter open    q close",
 };
 
 export class DaddyPanel implements Component {
@@ -30,7 +30,8 @@ export class DaddyPanel implements Component {
 	private mode: Mode = "run";
 	private wf: Workflow = newWorkflow();
 	private list: WorkflowEntry[] = [];
-	private listMargin = 20; // percent per side for the list overlay (kept in sync with config)
+	private fromList = false; // entered design by opening a workflow from the list (← goes back)
+	private heightFrac = 0.7; // body height as a fraction of terminal rows (matches the overlay)
 	private selected = 0;
 	private form: NodeForm | null = null;
 	private editingId: string | null = null;
@@ -59,8 +60,8 @@ export class DaddyPanel implements Component {
 		this.list = items;
 	}
 
-	setListMargin(pct: number): void {
-		this.listMargin = pct;
+	setHeightFrac(frac: number): void {
+		this.heightFrac = frac;
 	}
 
 	private hits(data: string, ids: string[]): boolean {
@@ -72,6 +73,12 @@ export class DaddyPanel implements Component {
 		const { up, down, close, mode, add, delete: del, save } = this.keymap.nav;
 		if (this.hits(data, close)) return this.onClose();
 		if (this.mode === "list") return this.handleListKey(data, up, down);
+		// Back to the workflows list (only when we got here by opening one from the list).
+		if (this.mode === "design" && this.fromList && this.hits(data, ["left", "h"])) {
+			this.mode = "list";
+			this.selected = 0;
+			return this.onChange();
+		}
 		if (this.hits(data, mode)) {
 			this.mode = this.mode === "run" ? "design" : "run";
 			this.selected = 0;
@@ -85,9 +92,8 @@ export class DaddyPanel implements Component {
 		this.onChange();
 	}
 
-	/** List mode: navigate workflows; l/enter opens the hovered one in design; h/left goes back. */
+	/** List mode: navigate workflows; l/enter/→ opens the hovered one in design (q/esc closes). */
 	private handleListKey(data: string, up: string[], down: string[]): void {
-		if (this.hits(data, ["left", "h"])) return this.onClose();
 		if (this.hits(data, up)) this.selected = Math.max(0, this.selected - 1);
 		else if (this.hits(data, down)) this.selected = Math.min(Math.max(0, this.list.length - 1), this.selected + 1);
 		else if (this.hits(data, ["enter", "return", "right", "l"])) {
@@ -95,6 +101,7 @@ export class DaddyPanel implements Component {
 			if (sel?.wf) {
 				this.wf = sel.wf;
 				this.mode = "design";
+				this.fromList = true;
 				this.selected = 0;
 			}
 		} else return;
@@ -149,8 +156,7 @@ export class DaddyPanel implements Component {
 		// List mode lives in a 60%×60% centered overlay (20% margin all sides), so its body is
 		// shorter; run/design use the larger 85% overlay.
 		const rows = process.stdout.rows ?? 24;
-		const listFrac = Math.max(0.2, (100 - 2 * this.listMargin) / 100);
-		const height = Math.max(8, Math.floor(rows * (this.mode === "list" ? listFrac : 0.7)));
+		const height = Math.max(8, Math.floor(rows * this.heightFrac));
 		const bodyHeight = Math.max(1, height - 2);
 		const title =
 			this.mode === "run"
@@ -158,8 +164,9 @@ export class DaddyPanel implements Component {
 				: this.mode === "design"
 					? ` daddy · design · ${this.wf.name}`
 					: ` daddy · workflows (${this.list.length})`;
+		const helpText = this.mode === "design" && this.fromList ? `  ←/h list${HELP.design.replace(/^ +/, "    ")}` : HELP[this.mode];
 		const titleBar = bg(t.selectedBg, bold(fg(t.blue, pad(title, width))));
-		const helpBar = bg(t.panelBg, fg(t.dim, pad(HELP[this.mode], width)));
+		const helpBar = bg(t.panelBg, fg(t.dim, pad(helpText, width)));
 		const body =
 			this.mode === "run"
 				? renderRunBody(this.run, this.selected, t, width, bodyHeight)

@@ -28,16 +28,24 @@ export function openPanel(ctx: ExtensionContext, config: AppConfig, initial?: Pa
 		ctx.ui.notify(`daddy: saved ${file}`, "info");
 	};
 	const m = config.panel.listMargin;
+	const isList = initial?.mode === "list";
 	const span = `${Math.max(10, 100 - 2 * m)}%` as SizeValue;
-	const overlayOptions =
-		initial?.mode === "list"
-			? { width: span, maxHeight: span, minWidth: config.panel.minWidth, anchor: "center" as const }
-			: {
-					width: config.panel.width as SizeValue,
-					minWidth: config.panel.minWidth,
-					maxHeight: config.panel.maxHeight as SizeValue,
-					anchor: "center" as const,
-				};
+	const listFrac = Math.max(0.2, (100 - 2 * m) / 100);
+	const defaultFrac =
+		typeof config.panel.maxHeight === "string" && config.panel.maxHeight.endsWith("%")
+			? Math.max(0.2, Number.parseFloat(config.panel.maxHeight) / 100)
+			: 0.85;
+	// Body-height fraction MUST match the overlay's maxHeight so the content fills it exactly
+	// (otherwise margins look bigger than configured). Both derive from the same numbers here.
+	const frac = isList ? listFrac : defaultFrac;
+	const overlayOptions = isList
+		? { width: span, maxHeight: span, minWidth: config.panel.minWidth, anchor: "center" as const }
+		: {
+				width: config.panel.width as SizeValue,
+				minWidth: config.panel.minWidth,
+				maxHeight: config.panel.maxHeight as SizeValue,
+				anchor: "center" as const,
+			};
 
 	return ctx.ui.custom<void>(
 		(tui, _theme, _keys, done) => {
@@ -54,7 +62,7 @@ export function openPanel(ctx: ExtensionContext, config: AppConfig, initial?: Pa
 				() => tui.requestRender(),
 				(wf) => void save(wf),
 			);
-			panel.setListMargin(m);
+			panel.setHeightFrac(frac);
 			panel.setRun(getRun());
 			if (initial?.workflows) panel.setList(initial.workflows);
 			if (initial?.workflow) panel.setWorkflow(initial.workflow);
