@@ -20,7 +20,7 @@ export interface AppConfig {
 	panel: PanelConfig;
 }
 
-const DEFAULT_PANEL: PanelConfig = { width: "85%", minWidth: 48, maxHeight: "85%", listMargin: 20 };
+const DEFAULT_PANEL: PanelConfig = { width: "85%", minWidth: 48, maxHeight: "85%", listMargin: 10 };
 
 function mergePanel(raw: Partial<PanelConfig> | undefined): PanelConfig {
 	return { ...DEFAULT_PANEL, ...(raw ?? {}) };
