@@ -9,24 +9,28 @@ import type { ThemeColors } from "../lib/theme.ts";
 import type { StateMachine, Workflow, WorkflowNode } from "../types.ts";
 import { renderDesignBody, nodeIdAtRow } from "./design-render.ts";
 import { addNode, removeNode, updateNode } from "./editor.ts";
+import { renderListBody, type WorkflowEntry } from "./list-render.ts";
 import { freshValues, nodeToValues } from "./node-fields.ts";
 import { NodeForm } from "./node-form.ts";
 import { bg, bold, fg, pad } from "./palette.ts";
 import { renderRunBody } from "./run-render.ts";
 
-export type Mode = "run" | "design";
+export type Mode = "run" | "design" | "list";
 
 const newWorkflow = (): Workflow => ({ name: "untitled", vsm: [{ sipoc: "design", nodes: [] }] });
 
 const HELP: Record<Mode, string> = {
 	run: "  ↑/↓ move    Tab → design    q close",
 	design: "  ↑/↓ move    a add    enter edit    d delete    s save    Tab → run    q close",
+	list: "  ↑/↓ j/k move    l/enter open    h/q close",
 };
 
 export class DaddyPanel implements Component {
 	private run: StateMachine | null = null;
 	private mode: Mode = "run";
 	private wf: Workflow = newWorkflow();
+	private list: WorkflowEntry[] = [];
+	private listMargin = 20; // percent per side for the list overlay (kept in sync with config)
 	private selected = 0;
 	private form: NodeForm | null = null;
 	private editingId: string | null = null;
@@ -51,6 +55,14 @@ export class DaddyPanel implements Component {
 		this.mode = mode;
 	}
 
+	setList(items: WorkflowEntry[]): void {
+		this.list = items;
+	}
+
+	setListMargin(pct: number): void {
+		this.listMargin = pct;
+	}
+
 	private hits(data: string, ids: string[]): boolean {
 		return ids.some((id) => matchesKey(data, id as KeyId));
 	}
@@ -59,6 +71,7 @@ export class DaddyPanel implements Component {
 		if (this.form) return this.form.handleInput(data); // the form drives itself (own onChange/onDone)
 		const { up, down, close, mode, add, delete: del, save } = this.keymap.nav;
 		if (this.hits(data, close)) return this.onClose();
+		if (this.mode === "list") return this.handleListKey(data, up, down);
 		if (this.hits(data, mode)) {
 			this.mode = this.mode === "run" ? "design" : "run";
 			this.selected = 0;
@@ -68,6 +81,22 @@ export class DaddyPanel implements Component {
 		else if (this.hits(data, down)) this.selected++;
 		else if (this.mode === "design" && this.handleDesignKey(data, add, del, save)) {
 			/* edit applied / form opened */
+		} else return;
+		this.onChange();
+	}
+
+	/** List mode: navigate workflows; l/enter opens the hovered one in design; h/left goes back. */
+	private handleListKey(data: string, up: string[], down: string[]): void {
+		if (this.hits(data, ["left", "h"])) return this.onClose();
+		if (this.hits(data, up)) this.selected = Math.max(0, this.selected - 1);
+		else if (this.hits(data, down)) this.selected = Math.min(Math.max(0, this.list.length - 1), this.selected + 1);
+		else if (this.hits(data, ["enter", "return", "right", "l"])) {
+			const sel = this.list[this.selected];
+			if (sel?.wf) {
+				this.wf = sel.wf;
+				this.mode = "design";
+				this.selected = 0;
+			}
 		} else return;
 		this.onChange();
 	}
@@ -117,18 +146,26 @@ export class DaddyPanel implements Component {
 	render(width: number): string[] {
 		if (this.form) return this.form.render(width);
 		const t = this.theme;
-		const height = Math.max(8, Math.floor((process.stdout.rows ?? 24) * 0.7));
+		// List mode lives in a 60%×60% centered overlay (20% margin all sides), so its body is
+		// shorter; run/design use the larger 85% overlay.
+		const rows = process.stdout.rows ?? 24;
+		const listFrac = Math.max(0.2, (100 - 2 * this.listMargin) / 100);
+		const height = Math.max(8, Math.floor(rows * (this.mode === "list" ? listFrac : 0.7)));
 		const bodyHeight = Math.max(1, height - 2);
 		const title =
 			this.mode === "run"
 				? ` daddy · run · ${this.run?.workflow ?? "—"} (${this.okCount()}/${this.total()})`
-				: ` daddy · design · ${this.wf.name}`;
+				: this.mode === "design"
+					? ` daddy · design · ${this.wf.name}`
+					: ` daddy · workflows (${this.list.length})`;
 		const titleBar = bg(t.selectedBg, bold(fg(t.blue, pad(title, width))));
 		const helpBar = bg(t.panelBg, fg(t.dim, pad(HELP[this.mode], width)));
 		const body =
 			this.mode === "run"
 				? renderRunBody(this.run, this.selected, t, width, bodyHeight)
-				: renderDesignBody(this.wf, this.selected, t, width, bodyHeight);
+				: this.mode === "design"
+					? renderDesignBody(this.wf, this.selected, t, width, bodyHeight)
+					: renderListBody(this.list, this.selected, t, width, bodyHeight);
 		return [titleBar, helpBar, ...body];
 	}
 

@@ -1,20 +1,44 @@
 # daddy panel config. Edit and restart pi to apply.
+# Key ids follow pi's format (see docs/keybindings.md): up, down, left, right, enter,
+# escape, tab, space, letters a-z, and modifiers like ctrl+x, shift+tab. Any key in a
+# list triggers that action.
+
 keymap:
-  # Double-press this key (when the editor is EMPTY) to open the panel.
+  # Double-press this key (when the editor is EMPTY and a run is active) to open the
+  # run panel. windowMs is the max gap between the two presses.
   trigger:
     key: left
     windowMs: 300
+  # In-panel navigation + design-mode editing.
   nav:
-    up: [up, k]
-    down: [down, j]
-    left: [left, h]
-    right: [right, l]
-    enter: [enter]
-    add: [a]
-    delete: [d, x]
-    connect: [c]
-    inject: [i]   # insert $dep.output into an llm node's prompt
-    save: [s]
-    mode: [tab]   # switch design <-> run
-    close: [escape, q]
-# theme: omit to use Tokyo Night defaults (see lib for the palette).
+    up: [up, k] # previous item / field
+    down: [down, j] # next item / field
+    mode: [tab] # toggle run <-> design
+    add: [a] # design: add a node (opens the node form)
+    delete: [d, x] # design: delete the selected node
+    save: [s] # design: write the workflow YAML
+    close: [escape, q] # close the panel
+
+# Overlay sizing. width/maxHeight accept absolute columns/rows (a number) or a percentage
+# string of the terminal (e.g. "85%"). minWidth is a floor in columns so the panel stays
+# usable on narrow terminals. listMargin is the percent of the terminal left blank on EACH
+# side for the --daddy-list overlay (so it spans the central (100 - 2*listMargin)% square,
+# centered) — e.g. 20 → the list panel occupies the central 60% × 60%.
+panel:
+  width: "85%"
+  minWidth: 48
+  maxHeight: "85%"
+  listMargin: 20
+
+# Panel colors. Omit `theme` (or any single value) to use the Tokyo Night defaults.
+# Uncomment to override:
+# theme:
+#   panelBg: "#16161e" # solid panel background
+#   selectedBg: "#292e42" # selected row / title bar
+#   fg: "#c0caf5" # default text / selected value
+#   muted: "#565f89" # unselected values
+#   dim: "#737aa2" # field labels / separators / help line
+#   blue: "#7aa2f7" # titles
+#   green: "#9ece6a" # Save button / ok status
+#   red: "#f7768e" # Cancel button / failed status
+#   yellow: "#e0af68" # running status

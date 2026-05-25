@@ -2,8 +2,8 @@
 // --daddy-fresh), and guard against a concurrent run on the same file. Returns null when it
 // handled the case itself (error notify, no name → picker, --daddy-design → editor).
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { FLAG_DESIGN, FLAG_FRESH, FLAG_WORKFLOW } from "../constants.ts";
-import { loadWorkflow, workflowPath } from "./load-workflow.ts";
+import { FLAG_DESIGN, FLAG_FRESH, FLAG_LIST, FLAG_WORKFLOW } from "../constants.ts";
+import { listWorkflows, loadWorkflow, workflowPath } from "./load-workflow.ts";
 import { buildState, loadState, resumeState } from "./state-store.ts";
 import { stateFilePath } from "./session-path.ts";
 import { validateWorkflow } from "./validate.ts";
@@ -21,6 +21,20 @@ export function parseInvocation(text: string): { name: string; args: string; fre
 }
 
 export async function startRun(_pi: ExtensionAPI, ctx: ExtensionContext, text: string, config: AppConfig): Promise<{ state: StateMachine; file: string } | null> {
+	// Standalone --daddy-list: open the panel listing every workflow in this project, each with
+	// its node tree preview. Pre-load them all (sync render reads from this) before opening.
+	if (text.includes(FLAG_LIST)) {
+		if (!ctx.hasUI) {
+			ctx.ui.notify("daddy: --daddy-list needs an interactive UI.", "warning");
+			return null;
+		}
+		const names = await listWorkflows(ctx.cwd);
+		const workflows = await Promise.all(names.map(async (n) => ({ name: n, wf: await loadWorkflow(ctx.cwd, n).catch(() => null) })));
+		ctx.ui.notify(`daddy: ${names.length} workflow(s) in this project.`, "info");
+		void openPanel(ctx, config, { mode: "list", workflows });
+		return null;
+	}
+
 	const { name, args, fresh, design } = parseInvocation(text);
 
 	// Design entry (standalone --daddy-design, or as a modifier with a name). Opens the panel

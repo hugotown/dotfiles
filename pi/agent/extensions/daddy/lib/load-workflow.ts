@@ -21,6 +21,16 @@ export function workflowPath(cwd: string, name: string): string {
 	return path.join(cwd, WORKFLOW_DIR, `${name}.yaml`);
 }
 
+/** Names (without .yaml) of every workflow file in the project's workflow dir, sorted. */
+export async function listWorkflows(cwd: string): Promise<string[]> {
+	try {
+		const entries = await fs.readdir(path.join(cwd, WORKFLOW_DIR));
+		return entries.filter((f) => f.endsWith(".yaml")).map((f) => f.slice(0, -".yaml".length)).sort();
+	} catch {
+		return [];
+	}
+}
+
 export async function loadWorkflow(cwd: string, name: string): Promise<Workflow> {
 	const text = await fs.readFile(workflowPath(cwd, name), "utf-8");
 	return normalizeWorkflow(parse(text) as Record<string, unknown>);

@@ -13,6 +13,7 @@ export const DADDY_NODE_SCHEMA_ENV = "DADDY_NODE_SCHEMA";
 export const FLAG_WORKFLOW = "--daddy-workflow";
 export const FLAG_FRESH = "--daddy-fresh";
 export const FLAG_DESIGN = "--daddy-design";
+export const FLAG_LIST = "--daddy-list";
 
 /** Max parallel self-contained nodes within a wave. */
 export const WAVE_CONCURRENCY = 4;

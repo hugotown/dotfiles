@@ -9,6 +9,7 @@ import {
 	DADDY_NODE_SCHEMA_ENV,
 	FLAG_DESIGN,
 	FLAG_FRESH,
+	FLAG_LIST,
 	FLAG_WORKFLOW,
 } from "./constants.ts";
 import { registerAppendTool } from "./lib/append-tool.ts";
@@ -40,7 +41,8 @@ export default function daddy(pi: ExtensionAPI): void {
 	for (const [token, desc] of [
 		[FLAG_WORKFLOW, "Execute a daddy workflow (auto-resume). Modifiers: --daddy-fresh, --daddy-design"],
 		[FLAG_FRESH, "Run the workflow from scratch, discarding prior state"],
-		[FLAG_DESIGN, "Open the panel editing the workflow"],
+		[FLAG_DESIGN, "Open the panel editing the workflow (prompts for a name if none given)"],
+		[FLAG_LIST, "Open the panel listing every workflow in this project, with a node-tree preview"],
 	] as const) {
 		pi.registerFlag(token.slice(2), { description: desc, type: "string" });
 	}
@@ -54,7 +56,7 @@ export default function daddy(pi: ExtensionAPI): void {
 		installTrigger(ctx, config);
 	};
 	pi.on("session_start", (_event, ctx) => {
-		for (const token of [FLAG_WORKFLOW, FLAG_FRESH, FLAG_DESIGN]) {
+		for (const token of [FLAG_WORKFLOW, FLAG_FRESH, FLAG_DESIGN, FLAG_LIST]) {
 			pi.events.emit("flag:registered", { token, description: "daddy" });
 		}
 		ensureTrigger(ctx);
@@ -63,8 +65,9 @@ export default function daddy(pi: ExtensionAPI): void {
 
 	pi.on("input", async (event, ctx) => {
 		if (event.source === "extension") return { action: "continue" }; // never self-trigger
-		// Intercept a run (--daddy-workflow) OR a design entry (--daddy-design, standalone or modifier).
-		if (!event.text.includes(FLAG_WORKFLOW) && !event.text.includes(FLAG_DESIGN)) return { action: "continue" };
+		// Intercept a run (--daddy-workflow), a design entry (--daddy-design), or the list (--daddy-list).
+		if (!event.text.includes(FLAG_WORKFLOW) && !event.text.includes(FLAG_DESIGN) && !event.text.includes(FLAG_LIST))
+			return { action: "continue" };
 		const started = await startRun(pi, ctx, event.text, config);
 		if (!started) return { action: "handled" }; // notified inside (error, picker, or design)
 		state = started.state;
