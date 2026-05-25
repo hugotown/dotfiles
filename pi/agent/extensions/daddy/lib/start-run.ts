@@ -8,6 +8,7 @@ import { buildState, loadState, resumeState } from "./state-store.ts";
 import { stateFilePath } from "./session-path.ts";
 import { validateWorkflow } from "./validate.ts";
 import { openPanel } from "../panel/open.ts";
+import type { WorkflowEntry } from "../panel/list-render.ts";
 import type { AppConfig } from "./config.ts";
 import type { StateMachine, Workflow } from "../types.ts";
 
@@ -20,6 +21,18 @@ export function parseInvocation(text: string): { name: string; args: string; fre
 	return { name: name ?? "", args: argWords.join(" "), fresh, design };
 }
 
+/** Load every workflow in the project (invalid ones become { wf: null }). */
+async function loadAll(cwd: string): Promise<WorkflowEntry[]> {
+	const names = await listWorkflows(cwd);
+	return Promise.all(names.map(async (n) => ({ name: n, wf: await loadWorkflow(cwd, n).catch(() => null) })));
+}
+
+/** Ensure `name` is present in the list (seed an empty workflow if it is new). */
+function withSeed(all: WorkflowEntry[], name: string): WorkflowEntry[] {
+	if (all.some((w) => w.name === name)) return all;
+	return [...all, { name, wf: { name, vsm: [{ sipoc: "stage", nodes: [] }] } }];
+}
+
 export async function startRun(_pi: ExtensionAPI, ctx: ExtensionContext, text: string, config: AppConfig): Promise<{ state: StateMachine; file: string } | null> {
 	// Standalone --daddy-list: open the panel listing every workflow in this project, each with
 	// its node tree preview. Pre-load them all (sync render reads from this) before opening.
@@ -28,28 +41,25 @@ export async function startRun(_pi: ExtensionAPI, ctx: ExtensionContext, text: s
 			ctx.ui.notify("daddy: --daddy-list needs an interactive UI.", "warning");
 			return null;
 		}
-		const names = await listWorkflows(ctx.cwd);
-		const workflows = await Promise.all(names.map(async (n) => ({ name: n, wf: await loadWorkflow(ctx.cwd, n).catch(() => null) })));
-		ctx.ui.notify(`daddy: ${names.length} workflow(s) in this project.`, "info");
-		void openPanel(ctx, config, { mode: "list", workflows });
+		const workflows = await loadAll(ctx.cwd);
+		ctx.ui.notify(`daddy: ${workflows.length} workflow(s) in this project.`, "info");
+		void openPanel(ctx, config, { mode: "list", workflows, focus: 0 });
 		return null;
 	}
 
 	const { name, args, fresh, design } = parseInvocation(text);
 
-	// Design entry (standalone --daddy-design, or as a modifier with a name). Opens the panel
-	// in design mode: loads the workflow if it exists, else seeds an empty one with that name.
-	// With no name, prompt for one so the saved file gets a real name (not "untitled").
+	// Design entry (standalone --daddy-design, or a modifier with a name). Opens the Finder-style
+	// browser with the FULL workflow list (so it never disappears), focused on the nodes column of
+	// the chosen workflow (seeded empty if new). No name → prompt for one.
 	if (design) {
 		if (!ctx.hasUI) {
 			ctx.ui.notify("daddy: design mode needs an interactive UI.", "warning");
 			return null;
 		}
 		const wfName = name || ((await ctx.ui.input("daddy: workflow name to design", "untitled"))?.trim() ?? "") || "untitled";
-		const existing = await loadWorkflow(ctx.cwd, wfName).catch(() => null);
-		const seed: Workflow = existing ?? { name: wfName, vsm: [{ sipoc: "stage", nodes: [] }] };
-		ctx.ui.notify(`daddy: opening design panel for '${wfName}'.`, "info");
-		void openPanel(ctx, config, { mode: "design", workflow: seed });
+		const workflows = withSeed(await loadAll(ctx.cwd), wfName);
+		void openPanel(ctx, config, { mode: "design", workflows, selectName: wfName, focus: 1 });
 		return null;
 	}
 
@@ -59,15 +69,14 @@ export async function startRun(_pi: ExtensionAPI, ctx: ExtensionContext, text: s
 	}
 	const wf = await loadWorkflow(ctx.cwd, name).catch(() => null);
 	if (!wf) {
-		// Missing workflow: open the design panel seeded with this name so saving (s) writes
-		// <name>.yaml. Headless has no panel, so there we can only report it.
+		// Missing workflow: open the browser with the list + a seeded entry for this name, focused
+		// on its (empty) nodes column. Saving with `s` writes <name>.yaml. Headless can't show it.
 		if (!ctx.hasUI) {
 			ctx.ui.notify(`daddy: ${workflowPath(ctx.cwd, name)} not found.`, "warning");
 			return null;
 		}
-		ctx.ui.notify(`daddy: '${name}' not found — opening the design panel to create it.`, "info");
-		const seed: Workflow = { name, vsm: [{ sipoc: "stage", nodes: [] }] };
-		void openPanel(ctx, config, { mode: "design", workflow: seed });
+		ctx.ui.notify(`daddy: '${name}' not found — opening the browser to create it.`, "info");
+		void openPanel(ctx, config, { mode: "design", workflows: withSeed(await loadAll(ctx.cwd), name), selectName: name, focus: 1 });
 		return null;
 	}
 	const error = validateWorkflow(wf);
