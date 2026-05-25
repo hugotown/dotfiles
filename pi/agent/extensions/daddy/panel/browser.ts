@@ -198,16 +198,19 @@ export class WorkflowBrowser implements Component {
 		const height = Math.max(8, Math.floor(this.rowsFn() * this.heightFrac));
 		const bodyH = Math.max(1, height - 2);
 		const gapW = 3;
-		const colW = Math.max(8, Math.floor((width - 2 * gapW) / 3));
+		// Narrow workflows + nodes columns; give the rest to editing (where prompts/commands live).
+		const c0w = Math.max(12, Math.min(22, Math.floor(width * 0.16)));
+		const c1w = Math.max(14, Math.min(28, Math.floor(width * 0.22)));
+		const c2w = Math.max(20, width - 2 * gapW - c0w - c1w);
 		const gap = bg(t.panelBg, fg(t.dim, " │ "));
 
 		const wfNames = this.workflows.map((w) => w.name + (w.wf ? "" : " ⚠"));
 		const nodeLabels = this.nodes().map((n) => `${n.id} [${n.action}${n.aiAssisted ? "·AI" : ""}]`);
-		const fieldRows = this.fieldList().map((f, i) => this.fieldRow(f, i, colW));
+		const fieldRows = this.fieldList().map((f, i) => this.fieldRow(f, i, c2w));
 
-		const c0 = this.column("WORKFLOWS", wfNames, this.selWf, this.focus === 0, t, colW, bodyH);
-		const c1 = this.column("NODES", nodeLabels, this.selNode, this.focus === 1, t, colW, bodyH);
-		const c2 = this.column(this.curNode()?.id ?? "NODE", fieldRows, this.selField, this.focus === 2, t, colW, bodyH);
+		const c0 = this.column("WORKFLOWS", wfNames, this.selWf, this.focus === 0, t, c0w, bodyH);
+		const c1 = this.column("NODES", nodeLabels, this.selNode, this.focus === 1, t, c1w, bodyH);
+		const c2 = this.column(this.curNode()?.id ?? "NODE", fieldRows, this.selField, this.focus === 2, t, c2w, bodyH);
 
 		const rows: string[] = [];
 		for (let i = 0; i < bodyH; i++) rows.push((c0[i] ?? "") + gap + (c1[i] ?? "") + gap + (c2[i] ?? ""));
