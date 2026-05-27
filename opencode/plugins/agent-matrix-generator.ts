@@ -1,3 +1,34 @@
+/* ══════════════════════════════════════════════════════════════════════════
+ *
+ *                    ⚠  W O R K   I N   P R O G R E S S  ⚠
+ *                    ─────────────────────────────────────
+ *                          PLUGIN  CURRENTLY  DISABLED
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * This plugin is intentionally inert. The exported `AgentMatrixGenerator`
+ * function short-circuits with `return {}` before doing any work, so:
+ *
+ *   - NO detached `bun` child process is spawned at opencode startup.
+ *   - NO HTTP fetch to https://models.dev/api.json is performed.
+ *   - NO `opencode models <provider>` shell-out happens.
+ *   - The `agent: { ... }` block inside ~/.config/opencode/opencode.json
+ *     is NEVER rewritten by this plugin while disabled. Whatever agents
+ *     are currently in that file remain frozen as-is.
+ *
+ * The full implementation (role profiles, capability matching, regenerator,
+ * fetchers) is preserved unchanged below for when work resumes.
+ *
+ * ──────────────────────────────────────────────────────────────────────────
+ *  HOW TO RE-ENABLE
+ * ──────────────────────────────────────────────────────────────────────────
+ *  Inside `AgentMatrixGenerator` (search for the marker `WIP-DISABLE`),
+ *  flip the `DISABLED` flag to `false` (or delete the early-return block).
+ *  Then quit and restart opencode.
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ */
+
 import type { Plugin } from "@opencode-ai/plugin"
 import { spawn, spawnSync } from "node:child_process"
 import { appendFileSync, mkdirSync, openSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
@@ -122,6 +153,13 @@ if (isRegenerator) {
 }
 
 const AgentMatrixGenerator: Plugin = async () => {
+  // ── WIP-DISABLE ───────────────────────────────────────────────────────
+  // Plugin paused. See the WORK IN PROGRESS banner at the top of this file
+  // for the full rationale. Set DISABLED to `false` to resume regeneration.
+  const DISABLED: boolean = true
+  if (DISABLED) return {}
+  // ──────────────────────────────────────────────────────────────────────
+
   if (process.env.OPENCODE_PROCESS_ROLE === "worker") return {}
 
   try {
