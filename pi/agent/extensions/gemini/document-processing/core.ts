@@ -2,6 +2,7 @@
 import { createPartFromUri, createUserContent } from "@google/genai";
 import { readFileSync } from "node:fs";
 import { extname } from "node:path";
+import { buildTextGenConfig } from "../lib/config";
 import { getClient } from "../lib/client";
 import { outputPath, saveText } from "../lib/output";
 
@@ -16,7 +17,15 @@ function mimeForDoc(path: string): string {
   return DOC_MIME[extname(path).toLowerCase()] ?? "application/pdf";
 }
 
-export interface DocInput { file: string; prompt: string; model: string; json: boolean; }
+export interface DocInput {
+  file: string;
+  prompt: string;
+  model: string;
+  json: boolean;
+  schema?: string;
+  systemInstruction?: string;
+  thinkingBudget?: string | number;
+}
 export interface DocResult { text: string; path: string; }
 
 /** Build `contents`: inline for small files, File API upload for large ones. */
@@ -33,10 +42,16 @@ async function buildContents(ai: ReturnType<typeof getClient>, file: string, pro
 export async function processDocument(input: DocInput, cwd: string): Promise<DocResult> {
   const ai = getClient();
   const contents = await buildContents(ai, input.file, input.prompt);
+  const config = buildTextGenConfig({
+    json: input.json,
+    schema: input.schema,
+    systemInstruction: input.systemInstruction,
+    thinkingBudget: input.thinkingBudget,
+  });
   const response = await ai.models.generateContent({
     model: input.model,
     contents,
-    ...(input.json ? { config: { responseMimeType: "application/json" } } : {}),
+    ...(Object.keys(config).length ? { config } : {}),
   });
   const text = response.text ?? "";
   if (!text.trim()) throw new Error("Empty response from Gemini for this document.");

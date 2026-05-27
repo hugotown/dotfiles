@@ -16,10 +16,16 @@ export function registerUnderstandingTool(pi: ExtensionAPI) {
       prompt: Type.String({ description: "What to do: 'caption', 'transcribe all text', 'detect objects', etc." }),
       model: Type.Optional(StringEnum(TEXT_MODELS, { default: TEXT_MODELS[0] })),
       json: Type.Optional(Type.Boolean({ description: "Return structured JSON (detection/extraction). Use gemini-2.5-pro for hard cases.", default: false })),
+      schema: Type.Optional(Type.String({ description: "Raw JSON Schema string constraining the JSON output (only used when json=true)." })),
+      systemInstruction: Type.Optional(Type.String({ description: "System instruction steering tone/role/format." })),
+      thinkingBudget: Type.Optional(Type.Integer({ description: "Reasoning budget in tokens (0 = off, -1 = automatic). Gemini 2.5 models." })),
     }),
     async execute(_id, p, _signal, _onUpdate, ctx) {
       const result = await analyzeImage(
-        { image: p.image, prompt: p.prompt, model: p.model ?? TEXT_MODELS[0], json: p.json ?? false },
+        {
+          image: p.image, prompt: p.prompt, model: p.model ?? TEXT_MODELS[0], json: p.json ?? false,
+          schema: p.schema, systemInstruction: p.systemInstruction, thinkingBudget: p.thinkingBudget,
+        },
         ctx.cwd,
       );
       return {

@@ -1,66 +1,63 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { DynamicBorder, getSettingsListTheme } from "@earendil-works/pi-coding-agent";
-import { Container, Input, SettingsList, Text, type SettingItem } from "@earendil-works/pi-tui";
+import { showForm, type FormField, type FormValues } from "../lib/form";
 import { ASPECT_RATIOS, IMAGE_MODELS, IMAGE_SIZES } from "../lib/models";
 import { defaultForm, type ImageForm } from "./types";
 
-function textInput(): NonNullable<SettingItem["submenu"]> {
-  return (currentValue, done) => {
-    const input = new Input();
-    input.setValue(currentValue);
-    input.focused = true;
-    input.onSubmit = (value) => done(value);
-    input.onEscape = () => done();
-    return input;
+/** Subflag key → form field id (for `--gemini-generate-image "x" --size 4k …`). */
+export const IMAGE_ALIASES: Record<string, string> = {
+  model: "model",
+  aspect: "aspectRatio", "aspect-ratio": "aspectRatio",
+  size: "imageSize", "image-size": "imageSize",
+  temp: "temperature", temperature: "temperature",
+  seed: "seed",
+};
+
+const FIELDS: FormField[] = [
+  { id: "prompt", label: "Prompt", kind: "text" },
+  { id: "model", label: "Model", kind: "enum", values: [...IMAGE_MODELS] },
+  { id: "aspectRatio", label: "Aspect ratio", kind: "enum", values: [...ASPECT_RATIOS] },
+  { id: "imageSize", label: "Image size", kind: "enum", values: [...IMAGE_SIZES] },
+  {
+    id: "temperature", label: "Temperature (0-2)", kind: "number",
+    coerce: (raw) => { const n = Number(raw); return Number.isFinite(n) && n >= 0 && n <= 2 ? String(n) : null; },
+  },
+  {
+    id: "seed", label: "Seed (int or 'null')", kind: "number",
+    coerce: (raw) => { const t = raw.trim(); if (!t || t === "null") return "null"; return Number.isInteger(Number(t)) ? t : null; },
+  },
+];
+
+function defaults(prompt: string): FormValues {
+  const f = defaultForm(prompt);
+  return {
+    prompt: f.prompt, model: f.model, aspectRatio: f.aspectRatio,
+    imageSize: f.imageSize, temperature: String(f.temperature), seed: "null",
   };
 }
 
-export async function showImageForm(ctx: ExtensionContext, initialPrompt: string): Promise<ImageForm | null> {
-  return ctx.ui.custom<ImageForm | null>((tui, theme, _kb, done) => {
-    const state = defaultForm(initialPrompt);
-    const tempItem: SettingItem = { id: "temperature", label: "Temperature", currentValue: "1", submenu: textInput() };
-    const seedItem: SettingItem = { id: "seed", label: "Seed", currentValue: "null", submenu: textInput() };
+/** Normalize loose subflag values (e.g. `--size 4k` → "4K") onto the defaults. */
+export function initialFrom(prompt: string, overrides: FormValues): FormValues {
+  const state = { ...defaults(prompt), ...overrides };
+  if (state.imageSize) {
+    const up = state.imageSize.toUpperCase();
+    state.imageSize = (IMAGE_SIZES as readonly string[]).includes(up) ? up : defaults(prompt).imageSize;
+  }
+  return state;
+}
 
-    const items: SettingItem[] = [
-      { id: "__generate", label: "▶ Generate image", currentValue: "press enter", values: ["press enter"] },
-      { id: "prompt", label: "Prompt", currentValue: state.prompt, submenu: textInput() },
-      { id: "model", label: "Model", currentValue: state.model, values: [...IMAGE_MODELS] },
-      { id: "aspectRatio", label: "Aspect ratio", currentValue: state.aspectRatio, values: [...ASPECT_RATIOS] },
-      { id: "imageSize", label: "Image size", currentValue: state.imageSize, values: [...IMAGE_SIZES] },
-      tempItem, seedItem,
-      { id: "__cancel", label: "✗ Cancel", currentValue: "esc", values: ["esc"] },
-    ];
+function toImageForm(v: FormValues): ImageForm {
+  const seed = v.seed === "null" || !v.seed ? null : Number(v.seed);
+  return {
+    prompt: v.prompt.trim(),
+    model: v.model,
+    aspectRatio: v.aspectRatio,
+    imageSize: v.imageSize,
+    temperature: Number(v.temperature),
+    seed: Number.isInteger(seed as number) ? (seed as number) : null,
+  };
+}
 
-    const list = new SettingsList(items, items.length, getSettingsListTheme(), (id, value) => {
-      if (id === "__generate") return done({ ...state });
-      if (id === "__cancel") return done(null);
-      if (id === "prompt") state.prompt = value.trim();
-      else if (id === "model") state.model = value;
-      else if (id === "aspectRatio") state.aspectRatio = value;
-      else if (id === "imageSize") state.imageSize = value;
-      else if (id === "temperature") {
-        const n = Number(value);
-        if (Number.isFinite(n) && n >= 0 && n <= 2) state.temperature = n;
-        tempItem.currentValue = state.temperature.toString();
-      } else if (id === "seed") {
-        const t = value.trim();
-        state.seed = !t || t === "null" ? null : (Number.isInteger(Number(t)) ? Number(t) : state.seed);
-        seedItem.currentValue = state.seed === null ? "null" : state.seed.toString();
-      }
-      tui.requestRender();
-    }, () => done(null));
-
-    const container = new Container();
-    container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
-    container.addChild(new Text(theme.fg("accent", theme.bold("Generate image with Gemini"))));
-    container.addChild(new Text(theme.fg("dim", "↑↓ navigate • enter activate • esc cancel")));
-    container.addChild(list);
-    container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
-
-    return {
-      render(width: number) { return container.render(width); },
-      invalidate() { container.invalidate(); },
-      handleInput(data: string) { list.handleInput(data); tui.requestRender(); },
-    };
-  });
+export async function showImageForm(ctx: ExtensionContext, initial: FormValues): Promise<ImageForm | null> {
+  const values = await showForm(ctx, "Generate image with Gemini", FIELDS, initial, "▶ Generate image");
+  return values ? toImageForm(values) : null;
 }

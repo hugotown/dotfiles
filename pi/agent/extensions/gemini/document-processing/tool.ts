@@ -16,10 +16,16 @@ export function registerDocumentTool(pi: ExtensionAPI) {
       prompt: Type.String({ description: "Instruction: 'summarize in 5 bullets', 'extract line items as JSON', etc." }),
       model: Type.Optional(StringEnum(TEXT_MODELS, { default: TEXT_MODELS[0] })),
       json: Type.Optional(Type.Boolean({ description: "Return structured JSON. Prefer gemini-2.5-pro for strict schemas.", default: false })),
+      schema: Type.Optional(Type.String({ description: "Raw JSON Schema string constraining the JSON output (only used when json=true)." })),
+      systemInstruction: Type.Optional(Type.String({ description: "System instruction steering tone/role/format." })),
+      thinkingBudget: Type.Optional(Type.Integer({ description: "Reasoning budget in tokens (0 = off, -1 = automatic). Gemini 2.5 models." })),
     }),
     async execute(_id, p, _signal, _onUpdate, ctx) {
       const result = await processDocument(
-        { file: p.file, prompt: p.prompt, model: p.model ?? TEXT_MODELS[0], json: p.json ?? false },
+        {
+          file: p.file, prompt: p.prompt, model: p.model ?? TEXT_MODELS[0], json: p.json ?? false,
+          schema: p.schema, systemInstruction: p.systemInstruction, thinkingBudget: p.thinkingBudget,
+        },
         ctx.cwd,
       );
       return {

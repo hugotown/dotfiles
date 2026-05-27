@@ -16,8 +16,9 @@ export const RESEARCH_AGENTS = [
   "deep-research-max-preview-04-2026",
 ] as const;
 
+// Aspect ratios accepted by ImageConfig (generateContent) per the @google/genai docs.
 export const ASPECT_RATIOS = [
-  "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9",
+  "1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9",
 ] as const;
 
 export const IMAGE_SIZES = ["1K", "2K", "4K"] as const;

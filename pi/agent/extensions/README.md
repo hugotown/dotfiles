@@ -80,6 +80,29 @@ consumers that already loaded — a consumer loading later (alphabetical order: 
 loads after `hello`) misses it. `session_start` fires once every extension is loaded and
 subscribed, so the announcement is order-independent.
 
+### Flag panel trigger (gemini)
+
+The `gemini` extension turns its `--gemini-*` flags into an interactive form: press the
+trigger key (default **TAB**) while the editor text ENDS WITH a complete gemini flag and a
+pre-filled overlay panel opens (fields + Accept/Cancel buttons). Accept runs the tool;
+Cancel dismisses. When the text is not a complete gemini flag, the key passes through so
+normal flag/file autocompletion still works.
+
+Mechanism (all self-contained in `gemini/`, no cross-extension imports):
+
+1. `lib/flag.ts` keeps an in-package `flagHandlers` map (`--gemini-x` → handler), filled by
+   `registerFlag` alongside the usual `flag:registered` announcement.
+2. `panel/trigger.ts` installs one `ctx.ui.onTerminalInput` watcher (wired once on
+   `session_start` / `before_agent_start`, like `subagent`). On the trigger key it reads
+   `ctx.ui.getEditorText()`, matches the trailing flag, clears the editor, and calls that
+   handler — which opens `panel/form-panel.ts` via `showForm` (`ctx.ui.custom` overlay).
+3. `config.yml` (loaded by `lib/settings.ts`) configures the trigger key, in-panel
+   navigation keys, panel size (`panel:` — width/minWidth/maxHeight), and panel colors —
+   same convention as `subagent/config.yml`.
+
+This is intentionally NOT generic: it is gemini's own surface, so the registry and trigger
+live inside the `gemini` package rather than in the shared `flag-autocomplete` provider.
+
 ### Testing
 
 - Use `bun test` for unit tests.

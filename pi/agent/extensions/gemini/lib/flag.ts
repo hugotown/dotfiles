@@ -13,8 +13,16 @@ export interface FlagSpec {
   handle: (prompt: string, ctx: ExtensionContext) => Promise<void>;
 }
 
+/**
+ * In-package map `--gemini-<x>` → its handler. Populated by registerFlag and read by
+ * the TAB trigger (panel/trigger.ts) to open the right form when the editor text ends
+ * with a flag. This is an intra-package share, NOT a cross-extension import.
+ */
+export const flagHandlers = new Map<string, FlagSpec["handle"]>();
+
 export function registerFlag(pi: ExtensionAPI, spec: FlagSpec): void {
   const flag = `--${spec.token}`;
+  flagHandlers.set(flag, spec.handle);
   pi.registerFlag(spec.token, { description: spec.description, type: "string" });
   // Announce on session_start (not at load): the bus has no replay, so emitting at
   // load misses consumers that load later (e.g. subagent). By session_start every
