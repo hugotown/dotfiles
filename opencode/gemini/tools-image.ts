@@ -2,6 +2,11 @@ import { tool } from "@opencode-ai/plugin";
 import { generateImage } from "genai-core/image-generation/core";
 import { IMAGE_MODELS, ASPECT_RATIOS, IMAGE_SIZES, TEXT_MODELS } from "genai-core/models";
 import { analyzeImage } from "genai-core/image-understanding/core";
+import { spawn } from "node:child_process";
+
+function openFile(path: string) {
+  if (process.platform === "darwin") spawn("open", [path], { detached: true, stdio: "ignore" }).unref();
+}
 
 export const imageGenerationTool = tool({
   description: "Generate an image with Gemini Imagen. Returns the local file path.",
@@ -22,6 +27,7 @@ export const imageGenerationTool = tool({
       temperature: args.temperature ?? 1,
       seed: args.seed ?? null,
     }, ctx.directory);
+    openFile(details.path);
     return { output: `Image saved to ${details.path}`, metadata: { path: details.path } };
   },
 });
