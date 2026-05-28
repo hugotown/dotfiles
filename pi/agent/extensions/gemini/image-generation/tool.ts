@@ -37,7 +37,7 @@ export function registerImageTool(pi: ExtensionAPI) {
         temperature: p.temperature ?? 1,
         seed: p.seed ?? null,
       }, ctx.cwd);
-      openExternally(pi, details.path).catch(() => {});
+      openExternally(details.path);
       return {
         content: [{ type: "text" as const, text: `Generated image saved to ${details.path}` }],
         details,

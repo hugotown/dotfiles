@@ -27,7 +27,7 @@ export function registerImageFlag(pi: ExtensionAPI) {
       ctx.ui.notify(`Generating with ${form.model} (${form.aspectRatio}, ${form.imageSize})…`, "info");
       const details = await generateImage(form, ctx.cwd);
       sendText(pi, `Generated image: ${details.path}`, `Image · ${details.model} · ${details.aspectRatio} · ${details.imageSize}`);
-      openExternally(pi, details.path).catch(() => {});
+      openExternally(details.path);
     },
   });
 }
