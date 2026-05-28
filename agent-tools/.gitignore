@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Bun / npm lock files generated inside nested packages
+# (genai-core tracks its own bun.lock, so exclude at this level only)
+# bun.lock is intentionally committed inside each package — don't ignore it here
+
+# Build output (if a package ever adds a compile step)
+dist/
+build/
+*.js.map
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*_secret*
+*_credentials*
+service-account*.json
+gcp-key*.json
+
+# OS junk
+.DS_Store
+
+# Editor
+.idea/
+*.swp
+*.swo
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Temporary files
+*.tmp
+*.log
