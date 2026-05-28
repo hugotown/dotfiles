@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerFlag } from "../lib/flag";
 import { sendText } from "../lib/message";
-import { buildStatus } from "./status";
+import { buildStatus } from "genai-core/common/status";
 
 /** `--gemini-common` — verify Gemini setup and connectivity. */
 export function registerCommonFlag(pi: ExtensionAPI) {

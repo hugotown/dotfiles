@@ -2,9 +2,9 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerFlag } from "../lib/flag";
 import { showForm, type FormField } from "../lib/form";
 import { sendText } from "../lib/message";
-import { TEXT_MODELS } from "../lib/models";
+import { TEXT_MODELS } from "genai-core/models";
 import { applyAliases, parseSubflags } from "../lib/parse";
-import { groundedSearch } from "./core";
+import { groundedSearch } from "genai-core/google-search/core";
 
 const FIELDS: FormField[] = [
   { id: "query", label: "Query", kind: "text" },

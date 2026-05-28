@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerFlag } from "../lib/flag";
 import { sendText } from "../lib/message";
-import { buildSdkReport } from "./sdk";
+import { buildSdkReport } from "genai-core/libraries/sdk";
 
 /** `--gemini-libraries` — show installed SDK version + migration guidance. */
 export function registerLibrariesFlag(pi: ExtensionAPI) {

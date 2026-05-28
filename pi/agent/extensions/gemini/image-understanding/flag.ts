@@ -2,9 +2,9 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { showForm, type FormField } from "../lib/form";
 import { registerFlag } from "../lib/flag";
 import { sendText } from "../lib/message";
-import { TEXT_MODELS } from "../lib/models";
+import { TEXT_MODELS } from "genai-core/models";
 import { applyAliases, parseSubflags } from "../lib/parse";
-import { analyzeImage } from "./core";
+import { analyzeImage } from "genai-core/image-understanding/core";
 
 const IMAGE_REF = /(https?:\/\/\S+|\S+\.(?:png|jpe?g|webp|heic|heif))/i;
 

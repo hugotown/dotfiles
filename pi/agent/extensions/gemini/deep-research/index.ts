@@ -1,9 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { registerResearchFlag } from "./flag";
-import { registerResearchTool } from "./tool";
+import { registerDeepResearchTools } from "./tool";
 
-/** gemini-deep-research: tool + flag (both run in the background). */
+/** gemini-deep-research: async start + poll pattern. */
 export function registerDeepResearch(pi: ExtensionAPI) {
-  registerResearchTool(pi);
-  registerResearchFlag(pi);
+  registerDeepResearchTools(pi);
 }

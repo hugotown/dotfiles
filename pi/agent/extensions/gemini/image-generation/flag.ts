@@ -2,9 +2,9 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerFlag } from "../lib/flag";
 import { applyAliases, parseSubflags } from "../lib/parse";
 import { openExternally } from "../lib/open";
-import { generateImage } from "./core";
+import { generateImage } from "genai-core/image-generation/core";
 import { IMAGE_ALIASES, initialFrom, showImageForm } from "./form";
-import { IMAGE_MESSAGE_TYPE, type GeneratedImageDetails } from "./types";
+import { sendText } from "../lib/message";
 
 /**
  * `--gemini-generate-image [prompt] [--model … --aspect 9:16 --size 4k --temp … --seed …]`
@@ -26,12 +26,7 @@ export function registerImageFlag(pi: ExtensionAPI) {
 
       ctx.ui.notify(`Generating with ${form.model} (${form.aspectRatio}, ${form.imageSize})…`, "info");
       const details = await generateImage(form, ctx.cwd);
-      pi.sendMessage<GeneratedImageDetails>({
-        customType: IMAGE_MESSAGE_TYPE,
-        content: `Generated image: ${details.path}`,
-        display: true,
-        details,
-      });
+      sendText(pi, `Generated image: ${details.path}`, `Image · ${details.model} · ${details.aspectRatio} · ${details.imageSize}`);
       openExternally(pi, details.path).catch(() => {});
     },
   });

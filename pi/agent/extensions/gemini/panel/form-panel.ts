@@ -62,17 +62,14 @@ export class FormPanel implements Component {
 
   private startEdit(field: FormField): void {
     const input = new Input();
-    input.setValue(this.values[field.id] ?? "");
-    input.focused = true;
+    input.setValue(this.values[field.id] ?? ""); input.focused = true;
     input.onSubmit = (raw) => {
       const v = field.coerce ? field.coerce(raw) : raw;
       if (v !== null) this.values[field.id] = v;
-      this.editing = null;
-      this.onChange();
+      this.editing = null; this.onChange();
     };
     input.onEscape = () => { this.editing = null; this.onChange(); };
-    this.editing = input;
-    this.onChange();
+    this.editing = input; this.onChange();
   }
 
   invalidate(): void {}
@@ -80,15 +77,9 @@ export class FormPanel implements Component {
   render(width: number): string[] {
     const targetHeight = Math.max(8, Math.floor(this.rowsFn() * this.heightFrac));
     return renderForm({
-      title: this.title,
-      fields: this.fields,
-      values: this.values,
-      sel: this.sel,
-      runLabel: this.runLabel,
-      editing: this.editing,
-      theme: this.theme,
-      width,
-      targetHeight,
+      title: this.title, fields: this.fields, values: this.values,
+      sel: this.sel, runLabel: this.runLabel, editing: this.editing,
+      theme: this.theme, width, targetHeight,
     });
   }
 }

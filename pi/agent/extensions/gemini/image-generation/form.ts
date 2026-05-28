@@ -1,7 +1,7 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { showForm, type FormField, type FormValues } from "../lib/form";
-import { ASPECT_RATIOS, IMAGE_MODELS, IMAGE_SIZES } from "../lib/models";
-import { defaultForm, type ImageForm } from "./types";
+import { ASPECT_RATIOS, IMAGE_MODELS, IMAGE_SIZES } from "genai-core/models";
+import { defaultForm, type ImageForm } from "genai-core/image-generation/types";
 
 /** Subflag key → form field id (for `--gemini-generate-image "x" --size 4k …`). */
 export const IMAGE_ALIASES: Record<string, string> = {
