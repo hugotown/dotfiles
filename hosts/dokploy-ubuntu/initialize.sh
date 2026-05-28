@@ -82,6 +82,11 @@ export PATH="$HOME/.local/bin:$PATH"
 echo "Installing mise tools (runtimes + postinstall hooks)..."
 mise install -y
 
+# agent-tools: install @google/genai for genai-core (shared tool logic)
+echo "Installing agent-tools dependencies..."
+(cd "$HOME/.config/agent-tools/genai-core" && mise exec -- bun install)
+echo "✓ genai-core ready"
+
 # pnpm global settings — disable lifecycle scripts by default (supply chain hardening)
 # https://pnpm.io/cli/install#--ignore-scripts
 echo "Configuring pnpm global settings..."
