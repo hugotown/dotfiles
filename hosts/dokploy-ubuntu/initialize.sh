@@ -12,10 +12,10 @@ export DEBIAN_FRONTEND=noninteractive
 command -v sudo >/dev/null 2>&1        || { echo "Error: sudo not found" >&2; exit 1; }
 [ -f "$HOME/.config/shell/bootstrap.sh" ] || { echo "Error: dotfiles not cloned — run: git clone https://github.com/hugotown/dotfiles.git ~/.config" >&2; exit 1; }
 
-# ──────────────────────────────────────────────
-# 1. System libraries (apt) — only libs that brew/mise CAN'T provide
+# ══════════════════════════════════════════════════════════════
+# 1. SYSTEM LIBRARIES (apt) — only what brew/mise CAN'T provide
 #    Build deps, Playwright browser deps, SSH
-# ──────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
 echo "Installing system libraries..."
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends \
@@ -32,94 +32,51 @@ sudo apt-get install -y --no-install-recommends \
     oathtool \
     procps file rsync
 
-# ──────────────────────────────────────────────
-# 2. Homebrew — CLI tools, shells, terminal utilities
-#    Installs precompiled bottles, updates with `brew upgrade`
-# ──────────────────────────────────────────────
-echo "Installing Homebrew..."
+# ══════════════════════════════════════════════════════════════
+# 2. STANDALONE INSTALLERS (no dependencies between them)
+#    Just download the base tools — no packages yet.
+# ══════════════════════════════════════════════════════════════
+
+# Homebrew
 if ! command -v brew >/dev/null; then
+    echo "Installing Homebrew..."
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
-
-# Add brew to PATH for this session
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
-echo "Installing brew packages..."
-brew install \
-    zsh bash fish \
-    neovim tmux \
-    bat ripgrep fd fzf jq \
-    curl wget tree btop ncdu \
-    git gh \
-    httpie \
-    duf git-delta hyperfine \
-    gnupg age \
-    poppler unzip zip xz \
-    glow \
-    starship zoxide atuin \
-    lazygit lazydocker \
-    yazi eza zellij \
-    dust procs xh tokei \
-    watchexec just tealdeer \
-    nushell ouch diffnav television \
-    sops duckdb \
-    llvm lld
+# Rust (via rustup)
+if ! command -v rustup >/dev/null; then
+    echo "Installing Rust via rustup..."
+    curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh -s -- -y
+fi
+source "$HOME/.cargo/env"
 
-# gh extensions
-gh extension install dlvhdr/gh-dash 2>/dev/null || true
+# uv (standalone — manages Python)
+if ! command -v uv >/dev/null; then
+    echo "Installing uv (standalone)..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
 
-# ──────────────────────────────────────────────
-# 3. Mise — runtimes and dev tools ONLY
-#    Config lives in ~/.config/mise/config.toml
-#    (node, python, go, rust, bun, pnpm, uv, pipx)
-# ──────────────────────────────────────────────
-echo "Installing mise..."
+# mise (manages node, go, bun, pnpm)
 if ! command -v mise >/dev/null; then
+    echo "Installing mise..."
     curl https://mise.run | sh
 fi
 export PATH="$HOME/.local/bin:$PATH"
 
-echo "Installing mise tools (runtimes + postinstall hooks)..."
-mise install -y
-
-# agent-tools: install @google/genai for genai-core (shared tool logic)
-echo "Installing agent-tools dependencies..."
-(cd "$HOME/.config/agent-tools/genai-core" && mise exec -- bun install)
-echo "✓ genai-core ready"
-
-# pnpm global settings — disable lifecycle scripts by default (supply chain hardening)
-# https://pnpm.io/cli/install#--ignore-scripts
-echo "Configuring pnpm global settings..."
-mise exec -- pnpm config set ignore-scripts true --location=global
-
-# Playwright system deps (after node is available via mise)
-echo "Installing Playwright system deps..."
-sudo "$(mise which npx)" playwright install-deps 2>/dev/null || true
-
-# Python packages (after mise so uv is available)
-echo "Installing Python packages..."
-eval "$(mise activate bash)" 2>/dev/null || true
-uv pip install --system -q google-genai Pillow duckdb streamlit plotly 2>/dev/null || true
-
-# ──────────────────────────────────────────────
-# 4. npm/go global tools
-# ──────────────────────────────────────────────
-# goose
+# Goose
 if ! command -v goose >/dev/null; then
+    echo "Installing Goose CLI..."
     curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash
 fi
 
-# ──────────────────────────────────────────────
-# 5. Google Cloud SDK
-# ──────────────────────────────────────────────
+# Google Cloud SDK
 if [ ! -d "$HOME/google-cloud-sdk" ]; then
     echo "Installing Google Cloud SDK..."
     curl -s https://sdk.cloud.google.com | bash -s -- --disable-prompts
 fi
 
-# ──────────────────────────────────────────────
-# 5b. kubectl + gke-gcloud-auth-plugin (via Google Cloud apt repo)
-# ──────────────────────────────────────────────
+# kubectl + gke-gcloud-auth-plugin (via Google Cloud apt repo)
 if ! command -v kubectl >/dev/null || ! command -v gke-gcloud-auth-plugin >/dev/null; then
     echo "Installing kubectl and gke-gcloud-auth-plugin..."
     if [ ! -f /etc/apt/sources.list.d/google-cloud-sdk.list ]; then
@@ -133,34 +90,136 @@ if ! command -v kubectl >/dev/null || ! command -v gke-gcloud-auth-plugin >/dev/
     sudo -n apt-get install -y kubectl google-cloud-cli-gke-gcloud-auth-plugin
 fi
 
-# ──────────────────────────────────────────────
-# 6. Shell bootstrap (symlinks + cached integrations)
-# ──────────────────────────────────────────────
-echo "Running bootstrap..."
-bash "$HOME/.config/shell/bootstrap.sh"
-
-# ──────────────────────────────────────────────
-# 7. AI coding tools
-# ──────────────────────────────────────────────
+# Claude Code
 if ! command -v claude >/dev/null; then
     echo "Installing Claude Code..."
     curl -fsSL https://claude.ai/install.sh | bash
 fi
 
+# Opencode
 if ! command -v opencode >/dev/null; then
     echo "Installing Opencode..."
     curl -fsSL https://opencode.ai/install | bash
 fi
 
+# Workbooks
 if ! command -v wb >/dev/null; then
     echo "Installing Workbooks..."
     curl -fsSL https://get.workbooks.dev | sh
 fi
 
-# ──────────────────────────────────────────────
-# 8. Link ~/.claude → ~/.config/.claude
-#    After claude install + dotfiles clone (whichever finishes last)
-# ──────────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════
+# 3. RUST ECOSYSTEM (depends on: rustup)
+# ══════════════════════════════════════════════════════════════
+
+echo "Installing cargo CLI tools..."
+cargo install --locked duckduckgo --features rust-binary
+cargo install --locked trunk
+cargo install --locked ast-grep
+
+# ══════════════════════════════════════════════════════════════
+# 4. PYTHON ECOSYSTEM (depends on: uv)
+# ══════════════════════════════════════════════════════════════
+
+echo "Installing Python via uv..."
+uv python install 3.14 --default
+uv python install 3.12
+
+echo "Installing Python CLI tools via uv tool..."
+uv tool install awscli
+uv tool install streamlit
+uv tool install "notebooklm-py[browser]"
+uv tool install pypistats
+uv tool install playwright
+uv tool install httpie
+uv tool install yt-dlp
+
+# Playwright: system deps (Linux) + browser binaries
+echo "Installing Playwright system deps..."
+sudo playwright install-deps 2>/dev/null || true
+playwright install chromium 2>/dev/null || true
+
+# ══════════════════════════════════════════════════════════════
+# 5. MISE ECOSYSTEM (depends on: mise)
+#    Installs node, go, bun, pnpm + their dependents
+# ══════════════════════════════════════════════════════════════
+
+echo "Installing mise tools (node, go, bun, pnpm)..."
+mise install -y
+
+# pi (coding agent — depends on node from mise)
+if ! command -v pi >/dev/null; then
+    echo "Installing pi..."
+    curl -fsSL https://pi.dev/install.sh | sh
+fi
+
+# agent-tools: install @google/genai for genai-core (shared tool logic)
+echo "Installing agent-tools dependencies..."
+(cd "$HOME/.config/agent-tools/genai-core" && mise exec -- bun install)
+echo "✓ genai-core ready"
+
+# pnpm global settings — disable lifecycle scripts by default (supply chain hardening)
+echo "Configuring pnpm global settings..."
+mise exec -- pnpm config set ignore-scripts true --location=global
+
+# ══════════════════════════════════════════════════════════════
+# 6. HOMEBREW PACKAGES (depends on: Homebrew)
+# ══════════════════════════════════════════════════════════════
+
+echo "Installing Homebrew packages..."
+brew install \
+    zsh bash fish \
+    neovim tmux \
+    bat ripgrep fd fzf jq \
+    curl wget tree btop ncdu \
+    git gh \
+    duf git-delta hyperfine \
+    gnupg age \
+    poppler unzip zip xz \
+    glow \
+    starship zoxide atuin \
+    lazygit lazydocker \
+    yazi eza zellij \
+    dust procs xh tokei \
+    watchexec just tealdeer \
+    nushell ouch diffnav television \
+    sops duckdb
+
+# gh extensions
+gh extension install dlvhdr/gh-dash 2>/dev/null || true
+
+# ══════════════════════════════════════════════════════════════
+# 7. CONFIGURATION & LINKING
+# ══════════════════════════════════════════════════════════════
+
+echo "Running shell bootstrap..."
+bash "$HOME/.config/shell/bootstrap.sh"
+
+# Host-specific env vars (written to env.local files, gitignored)
+echo "Configuring host-specific environment..."
+VERTEX_PROJECT="dokploy-prod"
+VERTEX_LOC="global"
+
+cat > "$HOME/.config/shell/env.local.zsh" <<EOF
+# Host-specific environment (not tracked in git)
+export GOOGLE_CLOUD_PROJECT=$VERTEX_PROJECT
+export VERTEX_LOCATION=$VERTEX_LOC
+EOF
+
+cat > "$HOME/.config/shell/env.local.fish" <<EOF
+# Host-specific environment (not tracked in git)
+set -gx GOOGLE_CLOUD_PROJECT $VERTEX_PROJECT
+set -gx VERTEX_LOCATION $VERTEX_LOC
+EOF
+
+cat > "$HOME/.config/shell/env.local.nu" <<EOF
+# Host-specific environment (not tracked in git)
+\$env.GOOGLE_CLOUD_PROJECT = "$VERTEX_PROJECT"
+\$env.VERTEX_LOCATION = "$VERTEX_LOC"
+EOF
+
+# Link ~/.claude → ~/.config/.claude
 CLAUDE_TARGET="$HOME/.config/.claude"
 CLAUDE_LINK="$HOME/.claude"
 mkdir -p "$CLAUDE_TARGET"
@@ -177,10 +236,7 @@ else
     echo "✓ Linked ~/.claude → ~/.config/.claude"
 fi
 
-# ──────────────────────────────────────────────
-# 9. Link ~/.agents → ~/.config/.agents
-#    Claude agents skills directory (mirrors .claude pattern)
-# ──────────────────────────────────────────────
+# Link ~/.agents → ~/.config/.agents
 AGENTS_TARGET="$HOME/.config/.agents"
 AGENTS_LINK="$HOME/.agents"
 mkdir -p "$AGENTS_TARGET"
@@ -197,10 +253,7 @@ else
     echo "✓ Linked ~/.agents → ~/.config/.agents"
 fi
 
-# ──────────────────────────────────────────────
-# 10. graphifyy (uv tool — provides /graphify skill)
-#     Runs AFTER ~/.claude symlink so SKILL.md lands in the dotfiles repo
-# ──────────────────────────────────────────────
+# graphifyy (uv tool — needs ~/.claude symlink in place)
 if ! command -v graphify >/dev/null; then
     echo "Installing graphifyy with office+video extras..."
     uv tool install "graphifyy[office,video]"
@@ -210,4 +263,4 @@ fi
 echo ""
 echo "=== Done ==="
 echo "Open a new terminal. Fish/Nushell/Zsh/Bash are ready."
-echo "To update all tools: brew upgrade && mise upgrade"
+echo "To update all tools: brew upgrade && mise upgrade && uv self update && uv tool upgrade --all"

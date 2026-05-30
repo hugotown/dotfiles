@@ -21,7 +21,7 @@ sudo pacman -S --needed --noconfirm \
     bat ripgrep eza fd fzf jq \
     curl wget tree btop ncdu just lazygit \
     git github-cli \
-    procs xh httpie tealdeer \
+    procs xh tealdeer \
     hyperfine tokei watchexec \
     dust duf git-delta \
     lazydocker pnpm nodejs \
@@ -37,6 +37,11 @@ sudo pacman -S --needed --noconfirm go-yq 2>/dev/null || true
 
 # Initialize rust toolchain
 rustup default stable
+
+echo "Installing cargo CLI tools..."
+cargo install --locked duckduckgo --features rust-binary
+cargo install --locked trunk
+cargo install --locked ast-grep
 
 # AUR packages (require yay/paru)
 if command -v yay >/dev/null 2>&1; then
@@ -85,8 +90,26 @@ fi
 echo "Installing mise..."
 curl https://mise.run | sh
 export PATH="$HOME/.local/bin:$PATH"
-echo "Installing mise tools (runtimes + cargo tools)..."
+
+# uv (standalone — manages Python, replaces pipx)
+if ! command -v uv >/dev/null; then
+    echo "Installing uv (standalone)..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
+# Python via uv (not mise)
+echo "Installing Python via uv..."
+uv python install 3.14 --default
+uv python install 3.12
+
+echo "Installing mise tools (node, go, bun, pnpm)..."
 "$HOME/.local/bin/mise" install -y
+
+# pi (coding agent — depends on node from mise)
+if ! command -v pi >/dev/null; then
+    echo "Installing pi..."
+    curl -fsSL https://pi.dev/install.sh | sh
+fi
 
 # agent-tools: install @google/genai for genai-core (shared tool logic)
 echo "Installing agent-tools dependencies..."
@@ -119,6 +142,7 @@ if ! command -v wb >/dev/null; then
     echo "Installing Workbooks..."
     curl -fsSL https://get.workbooks.dev | sh
 fi
+
 
 # Link ~/.claude → ~/.config/.claude (after claude install + dotfiles clone)
 CLAUDE_TARGET="$HOME/.config/.claude"
@@ -153,6 +177,17 @@ else
     ln -s "$AGENTS_TARGET" "$AGENTS_LINK"
     echo "✓ Linked ~/.agents → ~/.config/.agents"
 fi
+
+# Python CLI tools via uv tool (isolated virtualenvs)
+echo "Installing Python CLI tools via uv tool..."
+uv tool install awscli
+uv tool install streamlit
+uv tool install "notebooklm-py[browser]"
+uv tool install pypistats
+uv tool install playwright
+uv tool install httpie
+uv tool install yt-dlp
+playwright install chromium 2>/dev/null || true
 
 # graphifyy (uv tool — provides /graphify skill; needs ~/.claude symlink in place)
 if ! command -v graphify >/dev/null; then

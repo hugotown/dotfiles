@@ -11,24 +11,119 @@ command -v git >/dev/null 2>&1         || { echo "Error: git not found (install 
 [ -f "$HOME/.local/share/sops/age/keys.txt" ] || { echo "Error: age key not found at ~/.local/share/sops/age/keys.txt" >&2; exit 1; }
 [ -f "$HOME/.config/shell/bootstrap.sh" ]    || { echo "Error: dotfiles not cloned — run: git clone https://github.com/hugotown/dotfiles.git ~/.config" >&2; exit 1; }
 
-echo "install rust"
+# ══════════════════════════════════════════════════════════════
+# 1. STANDALONE INSTALLERS (no dependencies between them)
+#    Just download the base tools — no packages yet.
+# ══════════════════════════════════════════════════════════════
+
+# Homebrew
+if ! command -v brew >/dev/null; then
+    echo "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || eval "$(/usr/local/bin/brew shellenv)" 2>/dev/null
+
+# Rust (via rustup)
+echo "Installing Rust..."
 curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh -s -- -y
 source "$HOME/.cargo/env"
-echo "install android rust compiler"
-rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
-echo "install IOS rust compiler"
-rustup target add aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim
 
+# uv (standalone — manages Python)
+if ! command -v uv >/dev/null; then
+    echo "Installing uv (standalone)..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
+# mise (manages node, go, bun, pnpm)
+echo "Installing mise..."
+curl https://mise.run | sh
+export PATH="$HOME/.local/bin:$PATH"
+
+# Goose
 if ! command -v goose >/dev/null; then
     echo "Installing Goose CLI..."
     curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash
 fi
 
-echo "Installing mise-in-place mise.jdx"
-curl https://mise.run | sh
-export PATH="$HOME/.local/bin:$PATH"
-echo "Installing mise tools (runtimes + cargo tools)..."
+# Google Cloud SDK
+if [ ! -d "$HOME/google-cloud-sdk" ]; then
+    echo "Installing Google Cloud SDK..."
+    curl -s https://sdk.cloud.google.com | bash -s -- --disable-prompts
+fi
+if ! command -v gke-gcloud-auth-plugin >/dev/null; then
+    echo "Installing gke-gcloud-auth-plugin..."
+    "$HOME/google-cloud-sdk/bin/gcloud" components install gke-gcloud-auth-plugin --quiet
+fi
+
+# Claude Code
+if ! command -v claude >/dev/null; then
+    echo "Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+fi
+
+# Opencode
+if ! command -v opencode >/dev/null; then
+    echo "Installing Opencode..."
+    curl -fsSL https://opencode.ai/install | bash
+fi
+
+# Workbooks
+if ! command -v wb >/dev/null; then
+    echo "Installing Workbooks..."
+    curl -fsSL https://get.workbooks.dev | sh
+fi
+
+
+# ══════════════════════════════════════════════════════════════
+# 2. RUST ECOSYSTEM (depends on: rustup)
+# ══════════════════════════════════════════════════════════════
+
+echo "Installing Rust cross-compilation targets..."
+rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+rustup target add aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim
+
+echo "Installing cargo CLI tools..."
+cargo install --locked duckduckgo --features rust-binary
+cargo install --locked trunk
+cargo install --locked ast-grep
+
+# tdf (terminal PDF viewer) - not on crates.io, install from git
+if ! command -v tdf >/dev/null; then
+    echo "Installing tdf (terminal PDF viewer)..."
+    cargo install --git https://github.com/itsjunetime/tdf
+fi
+
+# ══════════════════════════════════════════════════════════════
+# 3. PYTHON ECOSYSTEM (depends on: uv)
+# ══════════════════════════════════════════════════════════════
+
+echo "Installing Python via uv..."
+uv python install 3.14 --default
+uv python install 3.12
+
+echo "Installing Python CLI tools via uv tool..."
+uv tool install awscli
+uv tool install streamlit
+uv tool install "notebooklm-py[browser]"
+uv tool install pypistats
+uv tool install playwright
+uv tool install httpie
+uv tool install yt-dlp
+playwright install chromium 2>/dev/null || true
+
+# ══════════════════════════════════════════════════════════════
+# 4. MISE ECOSYSTEM (depends on: mise)
+#    Installs node, go, bun, pnpm + their dependents
+# ══════════════════════════════════════════════════════════════
+
+echo "Installing mise tools (node, go, bun, pnpm)..."
 "$HOME/.local/bin/mise" install -y
+
+# pi (coding agent — depends on node from mise)
+if ! command -v pi >/dev/null; then
+    echo "Installing pi..."
+    curl -fsSL https://pi.dev/install.sh | sh
+fi
 
 # agent-tools: install @google/genai for genai-core (shared tool logic)
 echo "Installing agent-tools dependencies..."
@@ -36,19 +131,14 @@ echo "Installing agent-tools dependencies..."
 echo "✓ genai-core ready"
 
 # pnpm global settings — disable lifecycle scripts by default (supply chain hardening)
-# https://pnpm.io/cli/install#--ignore-scripts
 echo "Configuring pnpm global settings..."
 "$HOME/.local/bin/mise" exec -- pnpm config set ignore-scripts true --location=global
 
-# 1. Install Homebrew if missing
-if ! command -v brew >/dev/null; then
-  echo "Installing Homebrew..."
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-fi
-# Add Homebrew to PATH for this session (Apple Silicon: /opt/homebrew, Intel: /usr/local)
-eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || eval "$(/usr/local/bin/brew shellenv)" 2>/dev/null
+# ══════════════════════════════════════════════════════════════
+# 5. HOMEBREW PACKAGES (depends on: Homebrew)
+# ══════════════════════════════════════════════════════════════
 
-echo "Installing packages..."
+echo "Installing Homebrew packages..."
 brew install --cask wezterm
 brew install --cask ghostty
 brew install --cask font-jetbrains-mono-nerd-font
@@ -59,39 +149,22 @@ brew install \
   atuin starship sops age oath-toolkit \
   neovim kitty tmux gh \
   bat eza jq yq git-delta dust duf television \
-  procs xh httpie tealdeer \
+  procs xh tealdeer \
   hyperfine tokei watchexec \
   curl wget tree btop ncdu just lazygit lazydocker \
   glow mdcat chafa ouch jless mpv ffmpegthumbnailer pandoc \
   duckdb iperf3 rsync \
   kubernetes-cli \
-  llvm lld \
   dlvhdr/formulae/diffnav
 
 # gh extensions
 gh extension install dlvhdr/gh-dash 2>/dev/null || true
 
-# tdf (terminal PDF viewer) - not in Homebrew, install via cargo
-if ! command -v tdf >/dev/null; then
-    echo "Installing tdf (terminal PDF viewer)..."
-    cargo install --git https://github.com/itsjunetime/tdf
-fi
+# ══════════════════════════════════════════════════════════════
+# 6. CONFIGURATION & LINKING
+# ══════════════════════════════════════════════════════════════
 
-# Google Cloud SDK
-if [ ! -d "$HOME/google-cloud-sdk" ]; then
-    echo "Installing Google Cloud SDK..."
-    curl -s https://sdk.cloud.google.com | bash -s -- --disable-prompts
-fi
-
-# gke-gcloud-auth-plugin (via gcloud components — keeps it in sync with curl-installed SDK)
-if ! command -v gke-gcloud-auth-plugin >/dev/null; then
-    echo "Installing gke-gcloud-auth-plugin..."
-    "$HOME/google-cloud-sdk/bin/gcloud" components install gke-gcloud-auth-plugin --quiet
-fi
-
-echo ""
-
-echo "Running bootstrap..."
+echo "Running shell bootstrap..."
 bash "$HOME/.config/shell/bootstrap.sh"
 
 # Host-specific env vars (written to env.local files, gitignored)
@@ -116,21 +189,6 @@ cat > "$HOME/.config/shell/env.local.nu" <<EOF
 \$env.GOOGLE_CLOUD_PROJECT = "$VERTEX_PROJECT"
 \$env.VERTEX_LOCATION = "$VERTEX_LOC"
 EOF
-
-if ! command -v claude >/dev/null; then
-  echo "Installing Claude Code..."
-  curl -fsSL https://claude.ai/install.sh | bash
-fi
-
-if ! command -v opencode >/dev/null; then
-  echo "Installing Opencode..."
-  curl -fsSL https://opencode.ai/install | bash
-fi
-
-if ! command -v wb >/dev/null; then
-  echo "Installing Workbooks..."
-  curl -fsSL https://get.workbooks.dev | sh
-fi
 
 # Link ~/.claude → ~/.config/.claude (after claude install + dotfiles clone)
 CLAUDE_TARGET="$HOME/.config/.claude"
@@ -173,10 +231,8 @@ if ! command -v graphify >/dev/null; then
     graphify install
 fi
 
-echo "Setting up macOS-specific configs..."
-
 # Nushell on macOS uses ~/Library/Application Support/nushell/ instead of ~/.config/nushell/
-# Create source redirects so it reads the portable config from ~/.config/
+echo "Setting up macOS-specific configs..."
 NU_MACOS="$HOME/Library/Application Support/nushell"
 mkdir -p "$NU_MACOS"
 echo 'source ~/.config/nushell/env.nu' > "$NU_MACOS/env.nu"
