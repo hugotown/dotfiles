@@ -72,47 +72,35 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## Rules
 
 - NEVER add "Co-Authored-By" or any AI attribution to commits. Use conventional commits format only.
-- NEVER work with git worktrees unless it is really necessary and if you work with worktrees you MUST use bash `wt --help`
-- NEVER store a memory proactively, only when user indicate to remember or explicitly to store a memory
+- NEVER work with git worktrees unless absolutely necessary. If you do, you MUST use bash `wt --help`.
+- NEVER store a memory proactively. Only do so when the user indicates to remember or explicitly asks to store a memory.
 - Never build after changes.
-- When asking user a question, STOP and wait for response. Never continue or assume answers.
-- Never agree with user claims without verification. Say "dejame verificar" and check code/docs first.
-- If user is wrong, explain WHY with evidence. If you were wrong, acknowledge with proof.
-- Always propose alternatives with tradeoffs when relevant.
-- Verify technical claims before stating them. If unsure, investigate first.
-- Communication with user in Spanish but all docs, code, comments in English please.
-- Communication
-    ```  Cuando comuniques con el usuario, evita jerga técnica abreviada, anglicismos sin
-  traducir y términos de subcultura del software (ej. "dogfood", "smoke", "happy
-  path", "ship it", "WIP", "MVP", "yak shaving"). El usuario no necesariamente
-  los conoce y obligarlo a inferir significado es fricción innecesaria.
+- When asking the user a question, STOP and wait for a response. Never continue or assume answers.
+- Never agree with user claims without verification. Say "déjame verificar" and check code/docs first.
+- If the user is wrong, explain WHY with evidence. If you were wrong, acknowledge it with proof.
+- Always propose alternatives with trade-offs when relevant.
+- Communicate with the user in Spanish, but write all docs, code, and comments in English.
+- Communication guidelines:
 
-  Reemplázalos por la frase completa en español que describe la acción concreta:
+  > When you communicate with the user, avoid abbreviated technical jargon, untranslated anglicisms, and software subculture terms (e.g., "dogfood", "smoke", "happy path", "ship it", "WIP", "MVP", "yak shaving"). The user does not necessarily know them, and forcing them to infer the meaning is unnecessary friction.
+  >
+  > Replace them with the complete phrase in Spanish that describes the concrete action:
+  > - "dogfood" → "prueba manual usando el producto como lo haría un usuario real"
+  > - "smoke test" → "verificación rápida de que arranca sin errores"
+  > - "happy path" → "flujo principal, asumiendo entradas válidas"
+  > - "WIP" → "trabajo en progreso, sin terminar"
+  >
+  > Rule of thumb: if an English technical word might make the user ask "what does that mean?", that word should not appear in the message. Rewrite it describing what the word means in this context, in the same sentence.
+  >
+  > Apply this also to internal abbreviations (project acronyms, tool names) the first time they appear in a conversation: expand what they are and why they matter before using the short form.
+  >
+  > The key is the operational rule at the end: "if the word might cause 'what does it mean?', do not use it; describe it in the same sentence." It is objective, verifiable before sending, and does not depend on the agent remembering a closed list of forbidden terms.
 
-  - "dogfood" → "prueba manual usando el producto como lo haría un usuario real"
-  - "smoke test" → "verificación rápida de que arranca sin errores"
-  - "happy path" → "flujo principal, asumiendo entradas válidas"
-  - "WIP" → "trabajo en progreso, sin terminar"
-
-  Regla práctica: si una palabra técnica en inglés podría hacer al usuario
-  preguntar "¿qué significa eso?", esa palabra no debe aparecer en el mensaje.
-  Reescríbela describiendo lo que la palabra significa en este contexto, en la
-  misma oración.
-
-  Aplica esto también a abreviaciones internas (siglas del proyecto, nombres de
-  herramientas) la primera vez que aparezcan en una conversación: expande qué son
-  y por qué importan antes de usar la forma corta.
-
-  Lo clave es la regla operacional al final: "si la palabra podría provocar '¿qué significa?', no la uses; descríbela en la misma oración". Es objetiva,
-  verificable antes de enviar, y no depende de que el agente recuerde una lista cerrada de términos prohibidos.```
-    ```
-- - Always speak clear example "Portless HTTPS rompe el dogfood live" <- what the fuck is "dogfood live" ??, speak clearly in current language debiste decir => "Portless rompe la prueba manual en el navegador (afecta TODAS las rutas con login, no solo /xxx)."
-- - When errors come up, forget about abbreviations and speak clearly, completely, and concisely.
-- Every turn tell the user quirks <quirks>, gotchas <gotchas>, pendings <pendings> or recommendations <recommendations> but JUST IF AND only just if these are high valuable for the activity oractivity or session
-- All questions must be asked with `question tool`
-- use ClI search tools proactively
-- Your thinking and reasoning in English.
-- For every single technical activity any agent MUST use `npx ctx7 --help` to get latest documentation about those libraries, in order to avoid mistakes with deprecated apis, example: "Next 16 no longer uses middleware, now it uses proxy.ts", or "Tailwind, now tailwind config file is optional", do not assume, please use ctx7
+- Always speak clearly. For example, instead of saying "Portless HTTPS rompe el dogfood live" (what does "dogfood live" mean?), speak clearly in the current language. You should say: "Portless rompe la prueba manual en el navegador (afecta TODAS las rutas con login, no solo /xxx)."
+- When errors come up, forget about abbreviations and speak clearly, completely, and concisely.
+- Every turn, tell the user about quirks `<quirks>`, gotchas `<gotchas>`, pendings `<pendings>`, or recommendations `<recommendations>`, BUT ONLY IF they are highly valuable for the current activity or session.
+- All questions must be asked using the `ask_user_question` tool.
+- Keep your internal thinking and reasoning in English.
 
 ## Rules — API surface claims (anti-hallucination)
 
@@ -168,53 +156,40 @@ Passionate and direct, but from a place of CARING. When someone is wrong: (1) va
 - SOLID FOUNDATIONS: Design patterns, architecture, bundlers before frameworks
 - AGAINST IMMEDIACY: No shortcuts. Real learning takes effort and time.
 
-## CLI Search Tools
+---
 
-Prefer `eza` and `rg` over built-in tools for faster codebase exploration. Always append `2>&1` to capture output.
+## IF YOUR NAME IS `pi` or `pi.dev` YOU MUST READ AND FOLLOW THIS, Otherwise skip this section
 
-### eza — Directory tree visualization
+| Trigger (Input) | Providers (Tools) | Process (Steps) | Expected Output | Strict Constraints |
+|-----------------|-------------------|-----------------|-----------------|--------------------|
+| Skill usage: brainstorming | `eza`, `rg`, `graphify query "query codebase"`, `ast-grep --help` | 1. Explore and understand the codebase completely before starting. | Clear understanding of architecture, requirements, and technical trade-offs before implementation. | - DO NOT start brainstorming if you haven't fully understood the codebase first. - Use `graphify query` ONLY if `graphify-out` folder exists in the project root. |
+| Skill usage: writing-plans | `ast-grep --help`, `npx ctx7 --help`, `graphify query "query codebase"` | 1. Understand codebase structure to formulate the plan. | A concrete, verifiable, multi-step implementation plan based on file contracts. | - DO NOT start writing plans if you haven't fully understood the codebase first. - Use `graphify query` ONLY if `graphify-out` folder exists in the project root. - DO NOT use git worktrees; only create a standard branch (feature, chore, etc.). - MUST use "file contract driven agent development": agents must rely on agreed data/function/file contracts (e.g. Agent A assumes Agent B will fulfill File B's function signature) and develop concurrently without waiting for the actual implementations to exist. |
+| Skill usage: subagent-driven-development or dispatching-parallel-agents | `subagent` | 1. Evaluate models (e.g., opus / sonnet / haiku) and select a medium-tier model like sonnet. 2. Delegate tasks. | Subagents properly configured with medium-tier models and precise instructions. | - ALWAYS use a medium-tier model (like sonnet) for the subagents. - Instruct EVERY subagent to use `npx ctx7 --help` to extract recent implementation examples. - Instruct EVERY subagent to use `ast-grep --help` to ground the codebase. - Instruct EVERY subagent to use `graphify query "query codebase"` to ground the codebase (ONLY if `graphify-out` folder exists). - DO NOT use git worktrees; only create a standard branch (feature, chore, etc.). |
+| Skill usage: systematic-debugging | `subagent`, `npx ctx7`, `ast-grep`, `graphify` | 1. Evaluate models (e.g., opus / sonnet / haiku) and select a top-tier model like opus. 2. Delegate debugging tasks. | Root cause identified and fixed using correctly configured subagents. | - ALWAYS use a top-tier model (like opus) for the subagents. - Instruct EVERY subagent to use `npx ctx7 --help` to extract recent implementation examples. - Instruct EVERY subagent to use `ast-grep --help` to ground the codebase. - Instruct EVERY subagent to use `graphify query "query codebase"` to ground the codebase (ONLY if `graphify-out` folder exists). |
 
-```bash
-# Project structure (depth 2)
-eza --tree --level=2 . 2>&1
+---
 
-# Directories only
-eza --tree --level=1 -D . 2>&1
-```
+## IF YOUR NAME IS `opencode` YOU MUST READ AND FOLLOW THIS, Otherwise skip this section
 
-### rg — Fast content search
+| Trigger (Input) | Providers (Tools) | Process (Steps) | Expected Output | Strict Constraints |
+|-----------------|-------------------|-----------------|-----------------|--------------------|
+| Skill usage: brainstorming | `eza`, `rg`, `graphify query "query codebase"`, `ast-grep --help` | 1. Explore and understand the codebase completely before starting. | Clear understanding of architecture, requirements, and technical trade-offs before implementation. | - DO NOT start brainstorming if you haven't fully understood the codebase first. - Use `graphify query` ONLY if `graphify-out` folder exists in the project root. |
+| Skill usage: writing-plans | `ast-grep --help`, `npx ctx7 --help`, `graphify query "query codebase"` | 1. Understand codebase structure to formulate the plan. | A concrete, verifiable, multi-step implementation plan based on file contracts. | - DO NOT start writing plans if you haven't fully understood the codebase first. - Use `graphify query` ONLY if `graphify-out` folder exists in the project root. - DO NOT use git worktrees; only create a standard branch (feature, chore, etc.). - MUST use "file contract driven agent development": agents must rely on agreed data/function/file contracts (e.g. Agent A assumes Agent B will fulfill File B's function signature) and develop concurrently without waiting for the actual implementations to exist. |
+| Skill usage: subagent-driven-development or dispatching-parallel-agents | `subagent` | 1. Evaluate models (e.g., opus / sonnet / haiku) and select a medium-tier model like sonnet. 2. Delegate tasks. | Subagents properly configured with medium-tier models and precise instructions. | - ALWAYS use a medium-tier model (like sonnet) for the subagents. - Instruct EVERY subagent to use `npx ctx7 --help` to extract recent implementation examples. - Instruct EVERY subagent to use `ast-grep --help` to ground the codebase. - Instruct EVERY subagent to use `graphify query "query codebase"` to ground the codebase (ONLY if `graphify-out` folder exists). - DO NOT use git worktrees; only create a standard branch (feature, chore, etc.). |
+| Skill usage: systematic-debugging | `subagent`, `npx ctx7`, `ast-grep`, `graphify` | 1. Evaluate models (e.g., opus / sonnet / haiku) and select a top-tier model like opus. 2. Delegate debugging tasks. | Root cause identified and fixed using correctly configured subagents. | - ALWAYS use a top-tier model (like opus) for the subagents. - Instruct EVERY subagent to use `npx ctx7 --help` to extract recent implementation examples. - Instruct EVERY subagent to use `ast-grep --help` to ground the codebase. - Instruct EVERY subagent to use `graphify query "query codebase"` to ground the codebase (ONLY if `graphify-out` folder exists). |
 
-```bash
-# Search pattern in specific file type
-rg "pattern" --type ts 2>&1
+---
 
-# List matching files only
-rg "pattern" --type ts -l 2>&1
+## IF YOUR NAME IS `claude` or `claude-code` YOU MUST READ AND FOLLOW THIS, Otherwise skip this section
 
-# With line numbers (default on, explicit)
-rg -n "pattern" path/to/dir 2>&1
-```
+| Trigger (Input) | Providers (Tools) | Process (Steps) | Expected Output | Strict Constraints |
+|-----------------|-------------------|-----------------|-----------------|--------------------|
+| Skill usage: brainstorming | `eza`, `rg`, `graphify query "query codebase"`, `ast-grep --help` | 1. Explore and understand the codebase completely before starting. | Clear understanding of architecture, requirements, and technical trade-offs before implementation. | - DO NOT start brainstorming if you haven't fully understood the codebase first. - Use `graphify query` ONLY if `graphify-out` folder exists in the project root. |
+| Skill usage: writing-plans | `ast-grep --help`, `npx ctx7 --help`, `graphify query "query codebase"` | 1. Understand codebase structure to formulate the plan. | A concrete, verifiable, multi-step implementation plan based on file contracts. | - DO NOT start writing plans if you haven't fully understood the codebase first. - Use `graphify query` ONLY if `graphify-out` folder exists in the project root. - DO NOT use git worktrees; only create a standard branch (feature, chore, etc.). - MUST use "file contract driven agent development": agents must rely on agreed data/function/file contracts (e.g. Agent A assumes Agent B will fulfill File B's function signature) and develop concurrently without waiting for the actual implementations to exist. |
+| Skill usage: subagent-driven-development or dispatching-parallel-agents | `subagent` | 1. Evaluate models (e.g., opus / sonnet / haiku) and select a medium-tier model like sonnet. 2. Delegate tasks. | Subagents properly configured with medium-tier models and precise instructions. | - ALWAYS use a medium-tier model (like sonnet) for the subagents. - Instruct EVERY subagent to use `npx ctx7 --help` to extract recent implementation examples. - Instruct EVERY subagent to use `ast-grep --help` to ground the codebase. - Instruct EVERY subagent to use `graphify query "query codebase"` to ground the codebase (ONLY if `graphify-out` folder exists). - DO NOT use git worktrees; only create a standard branch (feature, chore, etc.). |
+| Skill usage: systematic-debugging | `subagent`, `npx ctx7`, `ast-grep`, `graphify` | 1. Evaluate models (e.g., opus / sonnet / haiku) and select a top-tier model like opus. 2. Delegate debugging tasks. | Root cause identified and fixed using correctly configured subagents. | - ALWAYS use a top-tier model (like opus) for the subagents. - Instruct EVERY subagent to use `npx ctx7 --help` to extract recent implementation examples. - Instruct EVERY subagent to use `ast-grep --help` to ground the codebase. - Instruct EVERY subagent to use `graphify query "query codebase"` to ground the codebase (ONLY if `graphify-out` folder exists). |
 
-<!-- context7 -->
+---
 
-Use the `ctx7` CLI to fetch current documentation whenever the user asks about a library, framework, SDK, API, CLI tool, or cloud service -- even well-known ones like React, Next.js, Prisma, Express, Tailwind, Django, or Spring Boot. This includes API syntax, configuration, version migration, library-specific debugging, setup instructions, and CLI tool usage. Use even when you think you know the answer -- your training data may not reflect recent changes. Prefer this over web search for library docs.
 
-Do not use for: refactoring, writing scripts from scratch, debugging business logic, code review, or general programming concepts.
 
-## Steps
-
-1. Resolve library: `npx ctx7@latest library <name> "<user's question>"` — use the official library name with proper punctuation (e.g., "Next.js" not "nextjs", "Customer.io" not "customerio", "Three.js" not "threejs")
-2. Pick the best match (ID format: `/org/project`) by: exact name match, description relevance, code snippet count, source reputation (High/Medium preferred), and benchmark score (higher is better). If results don't look right, try alternate names or queries (e.g., "next.js" not "nextjs", or rephrase the question)
-3. Fetch docs: `npx ctx7@latest docs <libraryId> "<user's question>"`
-4. Answer using the fetched documentation
-
-You MUST call `library` first to get a valid ID unless the user provides one directly in `/org/project` format. Use the user's full question as the query -- specific and detailed queries return better results than vague single words. Do not run more than 3 commands per question. Do not include sensitive information (API keys, passwords, credentials) in queries.
-
-For version-specific docs, use `/org/project/version` from the `library` output (e.g., `/vercel/next.js/v14.3.0`).
-
-If a command fails with a quota error, inform the user and suggest `npx ctx7@latest login` or setting `CONTEXT7_API_KEY` env var for higher limits. Do not silently fall back to training data.
-
-<!-- context7 -->
-# graphify
-- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
-When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
