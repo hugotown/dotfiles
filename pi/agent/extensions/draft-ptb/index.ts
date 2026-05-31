@@ -5,6 +5,7 @@ import { persist, restore, filterContext, captureDefaults } from "./orchestrator
 import { registerTools } from "./tools.ts";
 import { handleAgentEnd } from "./handlers.ts";
 import { driveCurrentPhase } from "./drive-phase.ts";
+import { featureFolder } from "./file-ops.ts";
 
 export default function draftPtb(pi: ExtensionAPI): void {
   let state: DraftState | null = null;
@@ -25,7 +26,13 @@ export default function draftPtb(pi: ExtensionAPI): void {
       if (!ctx.hasUI) { ctx.ui.notify("draft-ptb requires an interactive UI.", "error"); return; }
       const idea = args.trim();
       if (!idea) { ctx.ui.notify("Usage: /draft-ptb <describe your idea>", "warning"); return; }
-      state = captureDefaults(pi, ctx, createInitialState(idea));
+      const startedAt = new Date().toISOString();
+      const folder = featureFolder(ctx.cwd, idea, startedAt);
+      state = captureDefaults(pi, ctx, {
+        ...createInitialState(idea),
+        startedAt,
+        featureFolder: folder,
+      });
       await advance(ctx, { type: "START" });
     },
   });
