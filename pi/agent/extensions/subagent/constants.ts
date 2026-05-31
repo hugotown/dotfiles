@@ -18,6 +18,7 @@ export const SUBAGENT_SNIPPET =
 
 /** Pre-requisites the parent must reason through BEFORE calling subagent. */
 export const SUBAGENT_GUIDELINES = [
+	"MUST: Before delegating ANY subagent, first run `cat ~/.config/pi/agent/settings.json` to discover the active providers and models available. Use ONLY models listed there for the `provider` and `model` fields. Do NOT guess or hallucinate model ids.",
 	"Put the TASK (what the agent must do) in `prompt` — it is the user message. Use `instructions` only for behavior/persona/tone/rigid rules, and omit it when the default behavior is fine. Never put the task in `instructions`.",
 	"Before delegating, size each agent: set `variant` from the reasoning demand ('low' = mechanical/lookup, 'medium' = normal, 'high' = genuinely hard reasoning).",
 	"Pick the lightest model that fits: default to a Sonnet-class model and reserve an Opus-class model for deep-reasoning tasks. If the user already named a model, use exactly that and do not substitute it.",
