@@ -50,7 +50,9 @@ export function buildResearchPrompt(state: DraftState, graphifyAvailable: boolea
     `## Guidelines\n` +
     `- Investigate BEFORE filling. Read relevant files, query graphify, run ast-grep on key symbols.\n` +
     `- No placeholders. If a field truly doesn't apply, leave the array empty.\n` +
-    `- Open questions must drive decisions; avoid yes/no-only.\n\n` +
+    `- Open questions must drive decisions; avoid yes/no-only.\n` +
+    `- **YAGNI (You Aren't Gonna Need It):** Do NOT propose abstractions, features, or infrastructure that the idea does not explicitly require. ` +
+    `Every assumption, risk, and scope item must trace to the user's stated need. If in doubt, mark it as a nonGoal.\n\n` +
     `Begin by exploring the codebase, then call draft_ptb_understanding exactly once.`;
 
   return prompt;

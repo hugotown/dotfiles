@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.78.0",
   "defaultProvider": "github-copilot",
-  "defaultModel": "claude-opus-4.6",
+  "defaultModel": "gemini-3.1-pro-preview",
   "defaultThinkingLevel": "high",
   "extensions": [
     "~/.pi/agent/extensions/"

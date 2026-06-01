@@ -57,6 +57,13 @@ export function buildPlanPrompt(state: DraftState): string {
     `- For each E2E journey, emit TWO entries: kind="workbook" and kind="playwright", same journey id.\n` +
     `- For each integration boundary, emit ONE entry: kind="integration", journey=<boundaryId>.\n` +
     `- \`codeContractsUnderTest\` lists fileContract paths the test exercises.\n\n` +
+    `## Design Principles\n` +
+    `- **SOLID:** Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion. ` +
+    `Every file contract must have ONE clear responsibility. If a file does two things, split it.\n` +
+    `- **DRY (Don't Repeat Yourself):** Extract shared logic into its own file contract. ` +
+    `If two tasks need the same helper/type/utility, that belongs in a shared contract or infraTask.\n` +
+    `- **File Size Constraint:** Each file MUST NOT exceed 70 lines of functional code (excluding blank lines and comments). ` +
+    `Maximum 97 lines total (including blanks and comments). If a file would exceed this, decompose it into smaller focused modules.\n\n` +
     `## Granularity\nEach step = ONE action (2-5 min).\n\n` +
     `## FORBIDDEN\n` +
     `- "TBD", "TODO", "implement later"\n` +
