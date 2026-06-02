@@ -22,7 +22,7 @@ config.show_tab_index_in_tab_bar = true
 
 -- Formato personalizado para tabs ultra-minimalistas
 wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_width)
-	local title = tab.active_pane.title
+	local title = (tab.tab_title and #tab.tab_title > 0) and tab.tab_title or tab.active_pane.title
 	-- Truncar título si es muy largo
 	if #title > 15 then
 		title = title:sub(1, 14) .. "…"
@@ -63,7 +63,7 @@ config.colors = {
 
 config.window_decorations = "RESIZE"
 
-config.window_background_opacity = 0.8
+config.window_background_opacity = 0.9
 config.macos_window_background_blur = 10
 
 -- ✅ VERSIÓN CORREGIDA: Maximizar ventana al iniciar
@@ -72,5 +72,19 @@ wezterm.on("gui-startup", function(cmd)
 	local tab, pane, window = mux.spawn_window(cmd or {})
 	window:gui_window():maximize()
 end)
+
+config.keys = {
+	{ key = "LeftArrow", mods = "CMD|ALT", action = wezterm.action.MoveTabRelative(-1) },
+	{ key = "RightArrow", mods = "CMD|ALT", action = wezterm.action.MoveTabRelative(1) },
+	{ key = "LeftArrow", mods = "CMD|SHIFT", action = wezterm.action.MoveTab(0) },
+	{
+		key = "RightArrow",
+		mods = "CMD|SHIFT",
+		action = wezterm.action_callback(function(window, _pane)
+			local tabs = window:mux_window():tabs()
+			window:perform_action(wezterm.action.MoveTab(#tabs - 1), _pane)
+		end),
+	},
+}
 
 return config

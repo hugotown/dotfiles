@@ -1,51 +1,30 @@
-# gitignore
+# ============================================================
+# Root .gitignore
+# ------------------------------------------------------------
+# Strategy:
+#   - Global patterns and fully-ignored top-level folders live here.
+#   - Subfolders own their partial-ignore rules via their own
+#     .gitignore (see "Per-folder .gitignore" map below).
+#   - Folders that don't exist on this machine (Linux-only) keep
+#     their rules here, since git won't read a .gitignore from a
+#     non-existent path.
+# ============================================================
 
+
+# ------------------------------------------------------------
+# Global patterns (any location in the repo)
+# ------------------------------------------------------------
+
+# OS junk
 .DS_Store
 
-# Browsers and web applications
-chromium/
-brave-flags.conf
-
-# GitHub CLI - contains sensitive authentication data
-gh/
-
-# Google Cloud SDK - OAuth tokens, refresh tokens, ADC, service account keys
-gcloud/
-
-# Claude Code - conversation history, sessions, transcripts (only settings.json is tracked)
-claude/*
-!claude/settings.json
-
-# Claude agents - ignore all by default, allowlist what should be tracked
-agents/*
-!agents/skills/
-!agents/.skill-lock.json
-
-# Flutter SDK - machine-specific cache/state
-flutter/
-
-# Go configuration and telemetry
-go/
-
-# IBus input method - contains runtime state
-ibus/
-
-# direnv - contains runtime state
-direnv/
-
-# wofi - contains configuration files that may be user-specific
-wofi/
-
-# Sensitive files
-pulse/cookie
-qalculate/qalc.history
-fcitx/dbus/
-fcitx5/conf/cached_layouts
-
-# Temporary and cache files
+# Logs, caches, temp files, backups
 *.log
 *.cache
 *.tmp
+*.backup
+
+# Sensitive content (filenames containing these tokens)
 *token*
 *session*
 *history*
@@ -54,38 +33,99 @@ fcitx5/conf/cached_layouts
 
 # Auto-generated files that shouldn't be tracked
 WARP.md
-CLAUDE,nd
+CLAUDE.md
 
-# Environment variables - machine specific configuration
-environment.d/
-shell/env.local.*
+# Nix build outputs
+result
+result-*
 
-# Browser data (VERY SENSITIVE - contains passwords, cookies, history)
+# direnv-generated state (hidden file at any level)
+.direnv
+
+# Misc tool state
+configstore/
+
+
+# ------------------------------------------------------------
+# Fully-ignored top-level folders
+# (no internal .gitignore: git does not descend into ignored folders)
+# ------------------------------------------------------------
+
+# Browser data (VERY SENSITIVE: passwords, cookies, history)
 chromium/
 brave-flags.conf
 chromium-flags.conf
 
-# System configuration files (machine-specific)
-dconf/user
+# GitHub CLI - sensitive authentication data
+gh/
+
+# Google Cloud SDK - OAuth tokens, ADC, service account keys
+gcloud/
+
+# Flutter SDK - machine-specific cache/state
+flutter/
+
+# Go configuration and telemetry
+go/
+
+# IBus input method - runtime state
+ibus/
+
+# direnv - runtime state
+direnv/
+
+# wofi - user-specific config
+wofi/
+
+# Machine-specific environment variables
+environment.d/
+
+# System configuration (machine-specific)
 user-dirs.dirs
 user-dirs.locale
 
-# System services with hardcoded paths
+
+# ------------------------------------------------------------
+# Linux-only partial ignores
+# (these folders are not present on macOS; rules kept here
+#  because there is no local folder to host a .gitignore in)
+# ------------------------------------------------------------
+
+# Claude Code - conversation history, sessions, transcripts
+claude/*
+!claude/settings.json
+
+# PulseAudio
+pulse/cookie
+
+# Qalculate
+qalculate/qalc.history
+
+# Fcitx / Fcitx5 input methods
+fcitx/dbus/
+fcitx5/conf/cached_layouts
+
+# dconf user config
+dconf/user
+
+# systemd user services with hardcoded paths
 systemd/user/timers.target.wants/
 systemd/user/tray.target
 
-# Archivos de backup de home-manager
-*.backup
 
-# Ignore build outputs from performing a nix-build or `nix build` command
-result
-result-*
-
-# Ignore automatically generated direnv output
-.direnv
-configstore/
-
-# TPM plugins (third-party, installed at runtime)
-tmux/plugins/
-tmux/resurrect/
-
+# ------------------------------------------------------------
+# Per-folder .gitignore map (rules live in the subfolder)
+# ------------------------------------------------------------
+#   agents/                  → agents/.gitignore
+#   shell/                   → shell/.gitignore
+#   tmux/                    → tmux/.gitignore
+#   hammerspoon/             → hammerspoon/.gitignore
+#   karabiner/               → karabiner/.gitignore
+#   opencode/                → opencode/.gitignore
+#   nvim/                    → nvim/.gitignore
+#   .opencode/               → .opencode/.gitignore
+#   local-dev-infra/         → local-dev-infra/.gitignore
+#   agent-session-analyzer/  → agent-session-analyzer/.gitignore
+#   nixos/                   → nixos/.gitignore
+# Local Pi runtime state
+.atl/
