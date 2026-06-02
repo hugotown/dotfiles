@@ -26,3 +26,7 @@ function add-secret
     end
     ~/.config/shell/scripts/add-secret $argv[1] $argv[2]; and set -gx $argv[1] $argv[2]
 end
+
+
+# Added by Antigravity CLI installer
+set -gx PATH "/Users/hugoruiz/.local/bin" $PATH
