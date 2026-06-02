@@ -3,9 +3,7 @@
   "defaultProvider": "github-copilot",
   "defaultModel": "claude-opus-4.6",
   "defaultThinkingLevel": "high",
-  "extensions": [
-    "~/.pi/agent/extensions/"
-  ],
+  "extensions": ["~/.pi/agent/extensions/"],
   "enabledModels": [
     "opencode-go/deepseek-v4-flash",
     "opencode-go/deepseek-v4-pro",
@@ -53,8 +51,7 @@
     "google/gemini-3.5-flash",
     "google-vertex/gemini-3.1-pro-preview"
   ],
-  "packages": [
-    "npm:gentle-pi"
-  ],
+  "packages": [],
   "hideThinkingBlock": false
 }
+

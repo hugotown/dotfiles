@@ -8,3 +8,5 @@ bun.lock
 
 # Gemini extension runtime artifacts (generated wherever a tool runs)
 gemini-output/
+# Local Pi runtime state
+.atl/
