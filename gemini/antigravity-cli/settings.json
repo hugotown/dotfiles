@@ -1,0 +1,16 @@
+{
+  "colorScheme": "dark",
+  "model": "Claude Opus 4.6 (Thinking)",
+  "permissions": {
+    "allow": [
+      "command(agy)",
+      "command(dig)",
+      "command(head)",
+      "command(tail)"
+    ]
+  },
+  "trustedWorkspaces": [
+    "/Users/hugoruiz/.config",
+    "/Users/hugoruiz/work/Developer/hugoruiz/meet-digital-services/promocionales"
+  ]
+}

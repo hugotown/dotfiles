@@ -1,0 +1,3 @@
+# TPM plugins and resurrect state (installed/generated at runtime)
+plugins/
+resurrect/

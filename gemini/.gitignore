@@ -1,0 +1,18 @@
+# Gemini CLI - only track configuration files
+# Ignore everything by default
+*
+
+# Track this gitignore
+!.gitignore
+
+# Track config folder and its config files
+!config/
+config/*
+!config/config.json
+!config/mcp_config.json
+
+# Track antigravity-cli settings
+!antigravity-cli/
+antigravity-cli/*
+!antigravity-cli/settings.json
+!antigravity-cli/keybindings.json
