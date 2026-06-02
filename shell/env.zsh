@@ -25,10 +25,11 @@ if command -v sops >/dev/null 2>&1 && [ -f "$HOME/.local/share/sops/age/keys.txt
     for _f in "$HOME/.config/secrets"/*.yaml; do
         [ -f "$_f" ] || continue
         while IFS= read -r _line; do
-            case "$_line" in
+            _trimmed="${_line#"${_line%%[![:space:]]*}"}"
+            case "$_trimmed" in
                 [A-Z]*:\ *)
-                    _key="${_line%%: *}"
-                    _val="${_line#*: }"
+                    _key="${_trimmed%%: *}"
+                    _val="${_trimmed#*: }"
                     export "${_key}=${_val}"
                     ;;
             esac

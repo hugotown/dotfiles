@@ -1,0 +1,2 @@
+# Machine-specific env overrides (per-host secrets / paths)
+env.local.*

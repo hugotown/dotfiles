@@ -16,6 +16,19 @@ command -v mise >/dev/null && eval "$(mise activate zsh)"
 alias cldy="claude --dangerously-skip-permissions"
 export PATH="$HOME/.opencode/bin:$PATH"
 
+# Analyzer wrappers - Trigger Phase 2 normalizer when agent exits
+pi() {
+    command pi "$@"
+    # Run in background, discard output, explicitly use project path via XDG_CONFIG_HOME
+    (cd "${XDG_CONFIG_HOME:-$HOME/.config}/agent-session-analyzer" && python3 -m normalizer pi --all &>/dev/null &)
+}
+
+opencode() {
+    command opencode "$@"
+    # Run in background, discard output, explicitly use project path via XDG_CONFIG_HOME
+    (cd "${XDG_CONFIG_HOME:-$HOME/.config}/agent-session-analyzer" && python3 -m normalizer opencode --all &>/dev/null &)
+}
+
 add-secret() {
     [ "$#" -lt 2 ] && { echo "Usage: add-secret VAR_NAME value" >&2; return 1; }
     ~/.config/shell/scripts/add-secret "$1" "$2" && export "$1=$2"
@@ -33,5 +46,10 @@ if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)
 [ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ] && . "$HOME/google-cloud-sdk/completion.zsh.inc"
 
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+export GOOGLE_CLOUD_PROJECT="alom-6dc47"
+export GOOGLE_CLOUD_LOCATION="global"
+export VERTEX_LOCATION="global"
 
-export GEMINI_API_KEY="AIzaSyBhbQzOoBabkJiHNa0cgppI6jR-akAp3ZY"
+
+# Added by Antigravity CLI installer
+export PATH="/Users/hugoruiz/.local/bin:$PATH"

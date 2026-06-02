@@ -1,2 +1,6 @@
 # Login shell: source bashrc
 [ -f ~/.bashrc ] && source ~/.bashrc
+
+
+# Added by Antigravity CLI installer
+export PATH="/Users/hugoruiz/.local/bin:$PATH"

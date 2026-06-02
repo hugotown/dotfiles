@@ -37,3 +37,13 @@ end
 
 # Host-specific overrides (not tracked in git)
 test -f ~/.config/shell/env.local.fish; and source ~/.config/shell/env.local.fish
+
+# Analyzer wrappers - Trigger Phase 2 normalizer when agent exits
+function pi
+    command pi $argv
+end
+
+function opencode
+    command opencode $argv
+end
+
