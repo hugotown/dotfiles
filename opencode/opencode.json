@@ -3,7 +3,7 @@
   "plugin": [
     "superpowers@git+https://github.com/obra/superpowers.git"
   ],
-  "model": "opencode-go/mimo-v2.5",
+  "model": "github-copilot/claude-opus-4.6",
   "provider": {},
   "agent": {}
 }
