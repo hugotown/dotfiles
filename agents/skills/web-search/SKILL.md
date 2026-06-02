@@ -5,6 +5,32 @@ description: USE FOR web search. Three modes based on task type and credentials.
 
 # Web Search
 
+## IMPORTANT: No Native Tools
+
+Do NOT use `webfetch`, `web_search`, or any built-in/native tool for internet searches. All web searches MUST go through the methods described in this skill (`ddg` CLI, Brave API via `curl`, or Brave frontend scrape via `curl`). Native search tools bypass the proxy and lack the security guarantees defined here.
+
+---
+
+## Get Current Date First
+
+Before performing any web search, obtain the current date from the operating system to contextualize time-sensitive queries (e.g., "latest", "this week", freshness filters). Run:
+
+```bash
+date "+%Y-%m-%d" # macOS or Linux
+```
+
+Use this date to inform freshness parameters and to evaluate the recency of search results.
+
+---
+
+## Proxy and User-Agent Requirements
+
+**All requests (ddg and curl) MUST go through the DataImpulse proxy.** Never make direct requests without the proxy — they will be blocked or rate-limited.
+
+For **curl requests** (Brave API and Brave frontend scrape), always include a real browser User-Agent header (`-A "Mozilla/5.0 ..."`). The default `curl` UA gets blocked. The ddg CLI handles this via `--user-agent chrome`.
+
+---
+
 ## Which Tool to Use
 
 Selection depends on **(a)** whether the task is *deep research* (broad, multi-source investigation where higher result quality and more data justify extra cost), and **(b)** whether `BRAVE_SEARCH_API_KEY` is set.
