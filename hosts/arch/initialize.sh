@@ -187,7 +187,7 @@ uv tool install pypistats
 uv tool install playwright
 uv tool install httpie
 uv tool install yt-dlp
-playwright install chromium 2>/dev/null || true
+playwright install chromium firefox webkit 2>/dev/null || true
 
 # graphifyy (uv tool — provides /graphify skill; needs ~/.claude symlink in place)
 if ! command -v graphify >/dev/null; then

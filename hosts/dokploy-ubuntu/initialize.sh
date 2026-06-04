@@ -138,7 +138,7 @@ uv tool install yt-dlp
 # Playwright: system deps (Linux) + browser binaries
 echo "Installing Playwright system deps..."
 sudo playwright install-deps 2>/dev/null || true
-playwright install chromium 2>/dev/null || true
+playwright install chromium firefox webkit 2>/dev/null || true
 
 # ══════════════════════════════════════════════════════════════
 # 5. MISE ECOSYSTEM (depends on: mise)
