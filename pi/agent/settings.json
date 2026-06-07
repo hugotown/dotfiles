@@ -1,11 +1,9 @@
 {
   "lastChangelogVersion": "0.78.1",
   "defaultProvider": "opencode-go",
-  "defaultModel": "mimo-v2.5-pro",
+  "defaultModel": "minimax-m3",
   "defaultThinkingLevel": "high",
-  "extensions": [
-    "~/.pi/agent/extensions/"
-  ],
+  "extensions": ["~/.pi/agent/extensions/"],
   "enabledModels": [
     "opencode-go/deepseek-v4-flash",
     "opencode-go/deepseek-v4-pro",
@@ -34,3 +32,4 @@
   "packages": [],
   "hideThinkingBlock": false
 }
+

@@ -11,5 +11,8 @@
     "@earendil-works/pi-coding-agent": "0.75.4",
     "@earendil-works/pi-tui": "0.75.4",
     "genai-core": "file:../../../../agent-tools/genai-core"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
   }
 }
