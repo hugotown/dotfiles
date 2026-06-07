@@ -3,9 +3,9 @@ import type { CatalogData, ModelMeta } from "./types";
 import { readCatalog } from "./catalog/store";
 import { isStale, refreshCatalog } from "./catalog/refresh";
 import { resolveModel } from "./resolve/cascade";
-import { buildWidgetFactory } from "./render/widget";
+import { buildStatusText } from "./render/status";
 
-const WIDGET_KEY = "model-meta";
+const STATUS_KEY = "model-meta";
 
 export default function (pi: ExtensionAPI) {
   let catalog: CatalogData | null = null;
@@ -34,7 +34,7 @@ export default function (pi: ExtensionAPI) {
   async function renderForCurrentModel(ctx: ExtensionContext): Promise<void> {
     const model = ctx.model;
     if (!model) {
-      ctx.ui.setWidget(WIDGET_KEY, undefined);
+      ctx.ui.setStatus(STATUS_KEY, undefined);
       lastRenderedKey = null;
       return;
     }
@@ -57,8 +57,7 @@ export default function (pi: ExtensionAPI) {
       });
     }
 
-    // Card now uses emoji in header; PNG logo pipeline kept on disk but unused.
-    ctx.ui.setWidget(WIDGET_KEY, buildWidgetFactory(meta, null), { placement: "belowEditor" });
+    ctx.ui.setStatus(STATUS_KEY, buildStatusText(meta));
     lastRenderedKey = key;
   }
 
@@ -71,6 +70,6 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
-    ctx.ui.setWidget(WIDGET_KEY, undefined);
+    ctx.ui.setStatus(STATUS_KEY, undefined);
   });
 }
