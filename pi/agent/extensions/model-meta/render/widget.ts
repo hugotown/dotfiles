@@ -6,19 +6,27 @@ import { providerEmoji } from "./icons";
 
 export type WidgetFactory = (tui: TUI, theme: Theme) => Component & { dispose?(): void };
 
+// Wider separator between semantic groups (capabilities | identity | cost/limits).
+// Single "·" keeps items within a group; "  ·  " visually breaks groups apart.
+const GROUP_SEP = "  ·  ";
+const ITEM_SEP = " · ";
+
 function buildInfoLine(meta: ModelMeta): string {
   if (!meta.ok || !meta.model) return "";
   const m = meta.model;
-  // Capabilities first: pair each icon with its label (icon label · icon label · …)
+  // Group 1: capabilities — pair each icon with its label (icon label · icon label · …)
   const icons = activeIcons(m);
   const labels = activeLabels(m);
-  const capabilities = icons.map((ic, i) => `${ic} ${labels[i] ?? ""}`.trim()).join(" · ");
+  const capabilities = icons.map((ic, i) => `${ic} ${labels[i] ?? ""}`.trim()).join(ITEM_SEP);
+  // Group 2: identity (just the model name)
+  const identity = m.name;
+  // Group 3: cost + limits + knowledge — "ctx X · out Y" is explicit; "in/out" prices are paired
   const price = `${formatPrice(m.cost?.input)}/${formatPrice(m.cost?.output)}`;
-  const ctx = `ctx ${formatTokenLimit(m.limit?.context)}/${formatTokenLimit(m.limit?.output)}`;
+  const ctx = `ctx ${formatTokenLimit(m.limit?.context)} · out ${formatTokenLimit(m.limit?.output)}`;
   const knowledge = formatKnowledge(m);
-  const parts = [capabilities, m.name, price, ctx];
-  if (knowledge) parts.push(knowledge);
-  return parts.filter(Boolean).join(" · ");
+  const costGroup = [price, ctx, knowledge].filter(Boolean).join(ITEM_SEP);
+
+  return [capabilities, identity, costGroup].filter(Boolean).join(GROUP_SEP);
 }
 
 export function buildWidgetFactory(meta: ModelMeta, logoPngBase64: string | null): WidgetFactory {

@@ -23,14 +23,16 @@ function hasVideo(m: CatalogModel): boolean {
   return Array.isArray(m.modalities?.input) && (m.modalities!.input as string[]).includes("video");
 }
 
+// Order is intentional and stable: input modalities first (text → image → pdf → video),
+// then behavioral capabilities (reasoning → tools). `tools` is last because it is
+// transversal to modalities and benefits from being the rightmost anchor in the line.
+// activeLabels() must mirror this order so icons and labels align by index.
 export function activeIcons(model: CatalogModel): string[] {
   const out: string[] = [];
-  // Input modalities first (text always present per design decision)
-  out.push(CAPABILITY_ICONS.text);
+  out.push(CAPABILITY_ICONS.text); // text always present per design decision
   if (hasImage(model)) out.push(CAPABILITY_ICONS.image);
   if (hasPdf(model)) out.push(CAPABILITY_ICONS.pdf);
   if (hasVideo(model)) out.push(CAPABILITY_ICONS.video);
-  // Behavioral capabilities
   if (model.reasoning) out.push(CAPABILITY_ICONS.reasoning);
   if (model.tool_call) out.push(CAPABILITY_ICONS.tools);
   return out;
