@@ -45,6 +45,8 @@ export interface AgentResult {
 	interceptedBy?: string;
 	/** Registered flag tokens found in this agent's prompt/context (heads-up, may be intercepted). */
 	flagsInPrompt?: string[];
+	/** Live streaming output of each running tool, keyed by toolCallId. Mutated as deltas arrive. */
+	toolOutputs: Map<string, string>;
 	usage: UsageStats;
 }
 
@@ -65,6 +67,7 @@ export function emptyResult(spec: AgentSpec, status: AgentStatus, task = ""): Ag
 		messages: [],
 		output: "",
 		stderr: "",
+		toolOutputs: new Map(),
 		usage: emptyUsage(),
 	};
 }
