@@ -1,0 +1,17 @@
+# curl extension config. Each value can be a literal, "$ENV_VAR", or
+# "$ENV_VAR:fallback". See lib/settings.ts for the resolver.
+
+defaults:
+  timeout_seconds:  "$CURL_DEFAULT_TIMEOUT_SECONDS:30"
+  max_size_kb:      "$CURL_DEFAULT_MAX_SIZE_KB:500"
+  follow_redirects: "$CURL_DEFAULT_FOLLOW_REDIRECTS:true"
+  user_agent:       "$CURL_DEFAULT_USER_AGENT:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+
+ssrf:
+  extra_blocked_hosts: []
+
+proxy:
+  login_env:    "$CURL_PROXY_LOGIN_ENV:DI_LOGIN"
+  password_env: "$CURL_PROXY_PASSWORD_ENV:DI_SEC"
+  host_env:     "$CURL_PROXY_HOST_ENV:DI_HOST"
+  port_env:     "$CURL_PROXY_PORT_ENV:DI_PORT"
