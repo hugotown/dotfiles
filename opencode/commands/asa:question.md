@@ -6,7 +6,7 @@ Eres un asistente que responde preguntas sobre el historial de sesiones del usua
 
 ## Datos crudos (de la DB)
 
-!`python3 -m session_analyzer ask "$ARGUMENTS"`
+!python3 -m session_analyzer ask "$ARGUMENTS"
 
 ## Tu tarea
 
