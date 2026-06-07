@@ -1,32 +1,24 @@
 import type { Component, TUI } from "@earendil-works/pi-tui";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type { ExtensionContext, ReadonlyFooterDataProvider, Theme } from "@earendil-works/pi-coding-agent";
+import type { ModelMeta } from "../types";
+import { activeIcons, activeLabels, formatKnowledge, formatPrice, formatTokenLimit } from "./format";
+import { providerEmoji } from "./icons";
 
-/**
- * Single-line footer: replaces pi's native 2-line footer (pwd + stats) plus
- * the extension-statuses row. All the same data, collapsed into one row.
- *
- * Layout (left-aligned ··· right-aligned):
- *   <pwd> [(<branch>)] [• <session>]  <model-status>  $<cost>  <ctx%>  <model>
- *
- * pwd, branch, session: left side
- * cost + ctx + model: right side
- * model-status (set by model-meta via setStatus): in the middle, dim
- *
- * Always exactly one terminal row.
- */
+// Fixed card width in cells. Matches the previously-approved design.
+const CARD_WIDTH = 44;
 
-const MODEL_META_STATUS_KEY = "model-meta";
+// Box-drawing characters
+const TL = "┌";
+const TR = "┐";
+const BL = "└";
+const BR = "┘";
+const ML = "├";
+const MR = "┤";
+const H = "─";
+const V = "│";
 
-/** Format a path with ~ for $HOME (mirrors footer.js's formatCwdForFooter). */
-function formatCwd(cwd: string, home: string | undefined): string {
-  if (!home) return cwd;
-  if (cwd === home) return "~";
-  if (cwd.startsWith(`${home}/`)) return `~/${cwd.slice(home.length + 1)}`;
-  return cwd;
-}
-
-/** Compact token formatter (≥1M → "1.2M", ≥1k → "120k"). */
+/** Compact token formatter mirroring pi's native footer (formatTokens in footer.js). */
 function fmtTokens(n: number): string {
   if (n < 1000) return n.toString();
   if (n < 10_000) return `${(n / 1000).toFixed(1)}k`;
@@ -35,89 +27,113 @@ function fmtTokens(n: number): string {
   return `${Math.round(n / 1_000_000)}M`;
 }
 
-/**
- * Build the full single-line footer string for a given width.
- * Reads live values from ctx each call so token/context updates re-render.
- */
-function buildLine(
-  ctx: ExtensionContext,
-  footerData: ReadonlyFooterDataProvider,
-  theme: Theme,
-  width: number,
-): string {
-  // ── LEFT: pwd (+ branch) (+ session)
+/** Format absolute path with ~ for $HOME. */
+function formatCwd(cwd: string, home: string | undefined): string {
+  if (!home) return cwd;
+  if (cwd === home) return "~";
+  if (cwd.startsWith(`${home}/`)) return `~/${cwd.slice(home.length + 1)}`;
+  return cwd;
+}
+
+/** Header row: ┌─ <emoji> <name> ──────┐ */
+function buildHeader(meta: ModelMeta): string {
+  const emoji = providerEmoji(meta.modelsDevProvider ?? meta.piProvider);
+  const name = meta.model?.name ?? meta.piId ?? "no-model";
+  const title = ` ${emoji} ${name} `;
+  const inner = CARD_WIDTH - 2;
+  const trimmedTitle = truncateToWidth(title, inner - 1, "…", false);
+  const remaining = inner - 1 - visibleWidth(trimmedTitle);
+  const trailing = H.repeat(Math.max(0, remaining));
+  return `${TL}${H}${trimmedTitle}${trailing}${TR}`;
+}
+
+/** Mid separator: ├──────┤  */
+function buildMidSeparator(): string {
+  return `${ML}${H.repeat(CARD_WIDTH - 2)}${MR}`;
+}
+
+/** Bottom border: └──────┘ */
+function buildBottomBorder(): string {
+  return `${BL}${H.repeat(CARD_WIDTH - 2)}${BR}`;
+}
+
+/** Content row: │ <text padded to inner width> │ */
+function buildRow(text: string): string {
+  const inner = CARD_WIDTH - 2;
+  const padded = truncateToWidth(` ${text}`, inner, "…", true);
+  return `${V}${padded}${V}`;
+}
+
+/** Four model-info rows (icons, labels, price, limits+knowledge). */
+function buildModelRows(meta: ModelMeta): string[] {
+  if (!meta.ok || !meta.model) {
+    return ["(not found in models.dev)"];
+  }
+  const m = meta.model;
+  return [
+    activeIcons(m).join(" "),
+    activeLabels(m).join(" · "),
+    `${formatPrice(m.cost?.input)} in / ${formatPrice(m.cost?.output)} out per 1M`,
+    (() => {
+      const ctx = `ctx ${formatTokenLimit(m.limit?.context)}`;
+      const out = `out ${formatTokenLimit(m.limit?.output)}`;
+      const k = formatKnowledge(m);
+      return k ? `${ctx} · ${out} · ${k}` : `${ctx} · ${out}`;
+    })(),
+  ];
+}
+
+/** Two session-info rows: pwd(+branch) and ctx%/cost — live from ctx. */
+function buildSessionRows(ctx: ExtensionContext, footerData: ReadonlyFooterDataProvider): string[] {
+  // Row A: pwd (+git branch)
   const home = process.env.HOME ?? process.env.USERPROFILE;
-  let left = formatCwd(ctx.cwd, home);
+  let pwd = formatCwd(ctx.cwd, home);
   const branch = footerData.getGitBranch();
-  if (branch) left += ` (${branch})`;
+  if (branch) pwd += ` (${branch})`;
 
-  // ── MIDDLE: model-meta's status (capabilities + name + price + ctx + knowledge)
-  const middle = footerData.getExtensionStatuses().get(MODEL_META_STATUS_KEY) ?? "";
+  // Row B: ctx% / window  ·  $cost
+  const usage = ctx.getContextUsage();
+  const pct = usage?.percent != null ? usage.percent.toFixed(1) : "?";
+  const window = usage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
+  const ctxPart = `ctx ${pct}%/${fmtTokens(window)}`;
 
-  // ── RIGHT: token stats + context % + model
-  const session = ctx.sessionManager;
   let totalCost = 0;
-  for (const entry of session.getEntries()) {
+  for (const entry of ctx.sessionManager.getEntries()) {
     if (entry.type === "message" && entry.message.role === "assistant") {
       totalCost += entry.message.usage.cost.total;
     }
   }
-  const usage = ctx.getContextUsage();
-  const pct = usage?.percent != null ? usage.percent.toFixed(1) : "?";
-  const window = usage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
-  const ctxStr = `${pct}%/${fmtTokens(window)}`;
-  const modelId = ctx.model?.id ?? "no-model";
-  const costStr = totalCost > 0 ? `$${totalCost.toFixed(3)} ` : "";
-  const right = `${costStr}${ctxStr}  ${modelId}`;
+  const costPart = totalCost > 0 ? `$${totalCost.toFixed(3)}` : "$0";
 
-  // ── Compose: left + (gap with middle dim) + right
-  // Strategy: left and right are mandatory; middle is best-effort dim filler.
-  // Compute padding so right is right-aligned against `width`.
-  const dimMiddle = middle ? theme.fg("dim", middle) : "";
-  const leftW = visibleWidth(left);
-  const middleW = visibleWidth(dimMiddle);
-  const rightW = visibleWidth(right);
-
-  // Minimum gap between sections: 2 spaces
-  const MIN_GAP = 2;
-  const totalNeeded = leftW + (middleW > 0 ? MIN_GAP + middleW : 0) + MIN_GAP + rightW;
-
-  if (totalNeeded <= width) {
-    // Everything fits: pad gap before right so it sticks to the edge
-    const usedBeforeRight = leftW + (middleW > 0 ? MIN_GAP + middleW : 0);
-    const padBeforeRight = width - usedBeforeRight - rightW;
-    const middlePart = middleW > 0 ? `  ${dimMiddle}` : "";
-    return `${left}${middlePart}${" ".repeat(Math.max(MIN_GAP, padBeforeRight))}${right}`;
-  }
-
-  // Doesn't fit: drop middle, try left + right
-  if (leftW + MIN_GAP + rightW <= width) {
-    const pad = width - leftW - rightW;
-    return `${left}${" ".repeat(pad)}${right}`;
-  }
-
-  // Still doesn't fit: truncate left to make room for right
-  const availForLeft = Math.max(1, width - rightW - MIN_GAP);
-  const truncatedLeft = truncateToWidth(left, availForLeft, "…");
-  const pad = Math.max(MIN_GAP, width - visibleWidth(truncatedLeft) - rightW);
-  return `${truncatedLeft}${" ".repeat(pad)}${right}`;
+  return [pwd, `${ctxPart} · ${costPart}`];
 }
 
 /**
- * Factory for ctx.ui.setFooter(). `ctxRef` is a holder updated by the
- * extension on each lifecycle event so the rendered footer always reflects
- * the current session/model.
+ * Footer Component factory. Called once by setFooter; the returned Component's
+ * render() runs every frame. We close over a metaRef holder (updated by the
+ * extension on model_select) and a live ExtensionContext for session stats.
  */
-export function buildFooterFactory(ctxRef: { current: ExtensionContext | null }) {
-  return (_tui: TUI, theme: Theme, footerData: ReadonlyFooterDataProvider): Component => {
+export function buildFooterFactory(
+  ctxRef: { current: ExtensionContext | null },
+  metaRef: { current: ModelMeta | null },
+) {
+  return (_tui: TUI, _theme: Theme, footerData: ReadonlyFooterDataProvider): Component => {
     return {
-      render(width: number): string[] {
+      render(_width: number): string[] {
         const ctx = ctxRef.current;
-        if (!ctx) return [""];
-        return [buildLine(ctx, footerData, theme, width)];
+        const meta = metaRef.current;
+        if (!ctx || !meta) return [];
+
+        const lines: string[] = [];
+        lines.push(buildHeader(meta));
+        for (const row of buildModelRows(meta)) lines.push(buildRow(row));
+        lines.push(buildMidSeparator());
+        for (const row of buildSessionRows(ctx, footerData)) lines.push(buildRow(row));
+        lines.push(buildBottomBorder());
+        return lines;
       },
       invalidate(): void {
-        // No cache to invalidate; render reads live values each call.
+        // No internal cache; render reads ctx/meta refs live each frame.
       },
     };
   };

@@ -3,20 +3,16 @@ import type { CatalogData, ModelMeta } from "./types";
 import { readCatalog } from "./catalog/store";
 import { isStale, refreshCatalog } from "./catalog/refresh";
 import { resolveModel } from "./resolve/cascade";
-import { buildStatusText } from "./render/status";
 import { buildFooterFactory } from "./render/footer";
-
-// Key used both for ctx.ui.setStatus() (which the custom footer reads) and
-// internally to identify the model-meta slot.
-const MODEL_META_STATUS_KEY = "model-meta";
 
 export default function (pi: ExtensionAPI) {
   let catalog: CatalogData | null = null;
-  let lastRenderedKey: string | null = null;
+  let lastResolvedKey: string | null = null;
 
-  // Holder that the footer factory closes over. Each lifecycle event refreshes
-  // it so the footer always renders against the latest ExtensionContext.
+  // Refs shared with the footer factory. Updated outside the render loop so
+  // render() itself stays synchronous and side-effect free.
   const ctxRef: { current: ExtensionContext | null } = { current: null };
+  const metaRef: { current: ModelMeta | null } = { current: null };
   let footerRegistered = false;
 
   async function ensureCatalog(): Promise<CatalogData | null> {
@@ -39,57 +35,64 @@ export default function (pi: ExtensionAPI) {
     }
   }
 
-  async function refreshStatus(ctx: ExtensionContext): Promise<void> {
+  async function refreshMeta(ctx: ExtensionContext): Promise<void> {
     const model = ctx.model;
     if (!model) {
-      ctx.ui.setStatus(MODEL_META_STATUS_KEY, undefined);
-      lastRenderedKey = null;
+      metaRef.current = null;
+      lastResolvedKey = null;
       return;
     }
 
     const key = `${model.provider}|${model.id}`;
-    if (key === lastRenderedKey) return;
+    if (key === lastResolvedKey) return;
 
     const cat = await ensureCatalog();
-    let meta: ModelMeta;
     if (!cat) {
-      meta = { ok: false, piProvider: model.provider, piId: model.id, modelsDevProvider: null, modelsDevId: null, model: null };
-    } else {
-      meta = await resolveModel({
-        catalog: cat,
+      metaRef.current = {
+        ok: false,
         piProvider: model.provider,
         piId: model.id,
-        activeModel: model,
-        authProvider: ctx.modelRegistry,
-        signal: ctx.signal,
-      });
+        modelsDevProvider: null,
+        modelsDevId: null,
+        model: null,
+      };
+      lastResolvedKey = key;
+      return;
     }
 
-    ctx.ui.setStatus(MODEL_META_STATUS_KEY, buildStatusText(meta));
-    lastRenderedKey = key;
+    metaRef.current = await resolveModel({
+      catalog: cat,
+      piProvider: model.provider,
+      piId: model.id,
+      activeModel: model,
+      authProvider: ctx.modelRegistry,
+      signal: ctx.signal,
+    });
+    lastResolvedKey = key;
   }
 
   function ensureFooter(ctx: ExtensionContext): void {
     ctxRef.current = ctx;
     if (footerRegistered) return;
-    ctx.ui.setFooter(buildFooterFactory(ctxRef));
+    ctx.ui.setFooter(buildFooterFactory(ctxRef, metaRef));
     footerRegistered = true;
   }
 
   pi.on("session_start", async (_event, ctx) => {
     ensureFooter(ctx);
-    await refreshStatus(ctx);
+    await refreshMeta(ctx);
   });
 
   pi.on("model_select", async (_event, ctx) => {
     ensureFooter(ctx);
-    await refreshStatus(ctx);
+    await refreshMeta(ctx);
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
-    ctx.ui.setStatus(MODEL_META_STATUS_KEY, undefined);
-    ctx.ui.setFooter(undefined); // restore native footer on shutdown
+    ctx.ui.setFooter(undefined); // restore native footer
     ctxRef.current = null;
+    metaRef.current = null;
+    lastResolvedKey = null;
     footerRegistered = false;
   });
 }
