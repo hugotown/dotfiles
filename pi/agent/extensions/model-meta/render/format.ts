@@ -19,11 +19,18 @@ function hasImage(m: CatalogModel): boolean {
 function hasPdf(m: CatalogModel): boolean {
   return Array.isArray(m.modalities?.input) && (m.modalities!.input as string[]).includes("pdf");
 }
+function hasVideo(m: CatalogModel): boolean {
+  return Array.isArray(m.modalities?.input) && (m.modalities!.input as string[]).includes("video");
+}
 
 export function activeIcons(model: CatalogModel): string[] {
   const out: string[] = [];
+  // Input modalities first (text always present per design decision)
+  out.push(CAPABILITY_ICONS.text);
   if (hasImage(model)) out.push(CAPABILITY_ICONS.image);
   if (hasPdf(model)) out.push(CAPABILITY_ICONS.pdf);
+  if (hasVideo(model)) out.push(CAPABILITY_ICONS.video);
+  // Behavioral capabilities
   if (model.reasoning) out.push(CAPABILITY_ICONS.reasoning);
   if (model.tool_call) out.push(CAPABILITY_ICONS.tools);
   return out;
@@ -31,8 +38,10 @@ export function activeIcons(model: CatalogModel): string[] {
 
 export function activeLabels(model: CatalogModel): string[] {
   const out: string[] = [];
+  out.push("text");
   if (hasImage(model)) out.push("image");
   if (hasPdf(model)) out.push("pdf");
+  if (hasVideo(model)) out.push("video");
   if (model.reasoning) out.push("reasoning");
   if (model.tool_call) out.push("tools");
   return out;

@@ -1,13 +1,17 @@
 export interface CapabilityIcons {
+  text: string;
   image: string;
   pdf: string;
+  video: string;
   reasoning: string;
   tools: string;
 }
 
 export const CAPABILITY_ICONS: CapabilityIcons = {
+  text: "📝",
   image: "🖼️",
   pdf: "📄",
+  video: "🎬",
   reasoning: "🧠",
   tools: "🔧",
 };

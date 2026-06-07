@@ -6,23 +6,19 @@ import { providerEmoji } from "./icons";
 
 export type WidgetFactory = (tui: TUI, theme: Theme) => Component & { dispose?(): void };
 
-function buildLine1(meta: ModelMeta): string {
+function buildInfoLine(meta: ModelMeta): string {
   if (!meta.ok || !meta.model) return "";
   const m = meta.model;
+  // Capabilities first: pair each icon with its label (icon label · icon label · …)
+  const icons = activeIcons(m);
+  const labels = activeLabels(m);
+  const capabilities = icons.map((ic, i) => `${ic} ${labels[i] ?? ""}`.trim()).join(" · ");
   const price = `${formatPrice(m.cost?.input)}/${formatPrice(m.cost?.output)}`;
-  const ctx = `ctx ${formatTokenLimit(m.limit?.context)} / out ${formatTokenLimit(m.limit?.output)}`;
-  return `${m.name} · ${meta.piProvider} · ${price} · ${ctx}`;
-}
-
-function buildLine2(meta: ModelMeta): string {
-  if (!meta.ok || !meta.model) return "";
-  const m = meta.model;
-  const icons = activeIcons(m).join(" ");
-  const labels = activeLabels(m).join(" · ");
+  const ctx = `ctx ${formatTokenLimit(m.limit?.context)}/${formatTokenLimit(m.limit?.output)}`;
   const knowledge = formatKnowledge(m);
-  const parts = [icons, labels].filter(Boolean);
+  const parts = [capabilities, m.name, price, ctx];
   if (knowledge) parts.push(knowledge);
-  return parts.join(" · ");
+  return parts.filter(Boolean).join(" · ");
 }
 
 export function buildWidgetFactory(meta: ModelMeta, logoPngBase64: string | null): WidgetFactory {
@@ -50,9 +46,8 @@ export function buildWidgetFactory(meta: ModelMeta, logoPngBase64: string | null
       container.addChild(new Text(providerEmoji(meta.piProvider)));
     }
 
-    // Line 1, Line 2
-    container.addChild(new Text(buildLine1(meta)));
-    container.addChild(new Text(buildLine2(meta)));
+    // Line 1: capabilities + name + price + ctx + knowledge
+    container.addChild(new Text(buildInfoLine(meta)));
     return container;
   };
 }
