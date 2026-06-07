@@ -143,6 +143,9 @@ brew install --cask wezterm
 brew install --cask ghostty
 brew install --cask font-jetbrains-mono-nerd-font
 
+brew install --cask chromedriver
+brew install geckodriver
+
 brew install \
   ffmpeg sevenzip poppler fd ripgrep fzf zoxide resvg imagemagick yazi \
   fish nushell cocoapods \
@@ -238,6 +241,9 @@ mkdir -p "$NU_MACOS"
 echo 'source ~/.config/nushell/env.nu' > "$NU_MACOS/env.nu"
 echo 'source ~/.config/nushell/config.nu' > "$NU_MACOS/config.nu"
 echo "nushell: macOS config redirected to ~/.config/nushell/"
+
+# Enable Safari's built-in WebDriver (WebKit)
+safaridriver --enable 2>/dev/null || true
 
 touch "$HOME/.hushlogin"
 
