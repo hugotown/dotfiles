@@ -1,4 +1,5 @@
-import { Container, Image, Text, type Component, type TUI } from "@earendil-works/pi-tui";
+import { Container, Text, type Component, type TUI } from "@earendil-works/pi-tui";
+import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui/dist/utils";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { ModelMeta } from "../types";
 import { activeIcons, activeLabels, formatKnowledge, formatPrice, formatTokenLimit } from "./format";
@@ -6,56 +7,90 @@ import { providerEmoji } from "./icons";
 
 export type WidgetFactory = (tui: TUI, theme: Theme) => Component & { dispose?(): void };
 
-// Wider separator between semantic groups (capabilities | identity | cost/limits).
-// Single "·" keeps items within a group; "  ·  " visually breaks groups apart.
-const GROUP_SEP = "  ·  ";
-const ITEM_SEP = " · ";
+// Fixed card width in cells. Wide enough for "knowledge YYYY-MM" + padding,
+// narrow enough to leave the right half of the editor free.
+const CARD_WIDTH = 44;
 
-function buildInfoLine(meta: ModelMeta): string {
-  if (!meta.ok || !meta.model) return "";
-  const m = meta.model;
-  // Group 1: capabilities — pair each icon with its label (icon label · icon label · …)
-  const icons = activeIcons(m);
-  const labels = activeLabels(m);
-  const capabilities = icons.map((ic, i) => `${ic} ${labels[i] ?? ""}`.trim()).join(ITEM_SEP);
-  // Group 2: identity (just the model name)
-  const identity = m.name;
-  // Group 3: cost + limits + knowledge — "ctx X · out Y" is explicit; "in/out" prices are paired
-  const price = `${formatPrice(m.cost?.input)}/${formatPrice(m.cost?.output)}`;
-  const ctx = `ctx ${formatTokenLimit(m.limit?.context)} · out ${formatTokenLimit(m.limit?.output)}`;
-  const knowledge = formatKnowledge(m);
-  const costGroup = [price, ctx, knowledge].filter(Boolean).join(ITEM_SEP);
+// Box-drawing characters
+const TL = "┌";
+const TR = "┐";
+const BL = "└";
+const BR = "┘";
+const H = "─";
+const V = "│";
 
-  return [capabilities, identity, costGroup].filter(Boolean).join(GROUP_SEP);
+/** Render the header row: ┌─ <emoji> <name> ──────┐ */
+function buildHeader(meta: ModelMeta): string {
+  const emoji = providerEmoji(meta.modelsDevProvider ?? meta.piProvider);
+  const name = meta.model?.name ?? meta.piId;
+  const title = ` ${emoji} ${name} `;
+  // Inner width = CARD_WIDTH - 2 (the two corner chars)
+  const inner = CARD_WIDTH - 2;
+  // Reserve 1 leading H + title + fill the rest with H
+  const leading = H;
+  const trimmedTitle = truncateToWidth(title, inner - 1, "…", false);
+  const remaining = inner - 1 - visibleWidth(trimmedTitle);
+  const trailing = H.repeat(Math.max(0, remaining));
+  return `${TL}${leading}${trimmedTitle}${trailing}${TR}`;
 }
 
-export function buildWidgetFactory(meta: ModelMeta, logoPngBase64: string | null): WidgetFactory {
+/** Render a content row: │ <text padded to inner width> │ */
+function buildRow(text: string): string {
+  const inner = CARD_WIDTH - 2; // space between │ and │
+  // 1-cell left padding + text + right padding to fill
+  const padded = truncateToWidth(` ${text}`, inner, "…", true);
+  return `${V}${padded}${V}`;
+}
+
+/** Render the bottom border: └──────────────┘ */
+function buildFooter(): string {
+  return `${BL}${H.repeat(CARD_WIDTH - 2)}${BR}`;
+}
+
+/** Compose all content rows for an OK meta. Each return value is one terminal row. */
+function buildContentRows(meta: ModelMeta): string[] {
+  if (!meta.ok || !meta.model) return [];
+  const m = meta.model;
+  const rows: string[] = [];
+
+  // Row 1: capability icons (emojis only, compact)
+  rows.push(activeIcons(m).join(" "));
+
+  // Row 2: capability labels
+  rows.push(activeLabels(m).join(" · "));
+
+  // Row 3: price (per 1M tokens, explicit)
+  const priceIn = formatPrice(m.cost?.input);
+  const priceOut = formatPrice(m.cost?.output);
+  rows.push(`${priceIn} in / ${priceOut} out per 1M`);
+
+  // Row 4: context + output limits + knowledge cutoff
+  const ctx = `ctx ${formatTokenLimit(m.limit?.context)}`;
+  const out = `out ${formatTokenLimit(m.limit?.output)}`;
+  const knowledge = formatKnowledge(m); // "knowledge YYYY-MM" or ""
+  const meta4 = knowledge ? `${ctx} · ${out} · ${knowledge}` : `${ctx} · ${out}`;
+  rows.push(meta4);
+
+  return rows;
+}
+
+export function buildWidgetFactory(meta: ModelMeta, _logoPngBase64: string | null): WidgetFactory {
   return (_tui, theme) => {
     const container = new Container();
 
     if (!meta.ok) {
-      const line1 = `[?] ${meta.piId} · ${meta.piProvider}`;
-      const line2 = "(model not found in models.dev catalog)";
-      container.addChild(new Text(line1));
-      container.addChild(new Text(theme.fg("dim", line2)));
+      // Degraded card: same shape, dim body
+      container.addChild(new Text(buildHeader(meta)));
+      container.addChild(new Text(theme.fg("dim", buildRow("(not found in models.dev)"))));
+      container.addChild(new Text(buildFooter()));
       return container;
     }
 
-    // Line 0: logo
-    if (logoPngBase64) {
-      const img = new Image(
-        logoPngBase64,
-        "image/png",
-        { fallbackColor: (s: string) => theme.fg("dim", s) },
-        { maxHeightCells: 1, maxWidthCells: 2 },
-      );
-      container.addChild(img);
-    } else {
-      container.addChild(new Text(providerEmoji(meta.piProvider)));
+    container.addChild(new Text(buildHeader(meta)));
+    for (const row of buildContentRows(meta)) {
+      container.addChild(new Text(buildRow(row)));
     }
-
-    // Line 1: capabilities + name + price + ctx + knowledge
-    container.addChild(new Text(buildInfoLine(meta)));
+    container.addChild(new Text(buildFooter()));
     return container;
   };
 }

@@ -1,13 +1,9 @@
-import * as fs from "node:fs";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { CatalogData, ModelMeta } from "./types";
-import { readCatalog, writeCatalog } from "./catalog/store";
+import { readCatalog } from "./catalog/store";
 import { isStale, refreshCatalog } from "./catalog/refresh";
 import { resolveModel } from "./resolve/cascade";
-import { ensureLogoSvg } from "./logo/download";
-import { rasterizeLogo } from "./logo/rasterize";
 import { buildWidgetFactory } from "./render/widget";
-import { logoPngPath } from "./lib/paths";
 
 const WIDGET_KEY = "model-meta";
 
@@ -30,22 +26,6 @@ export default function (pi: ExtensionAPI) {
     try {
       catalog = await refreshCatalog();
       return catalog;
-    } catch {
-      return null;
-    }
-  }
-
-  async function loadLogoBase64(modelsDevProvider: string | null, ctx: ExtensionContext): Promise<string | null> {
-    if (!modelsDevProvider) return null;
-    const pngPath = logoPngPath(modelsDevProvider);
-    if (!fs.existsSync(pngPath)) {
-      const svgPath = await ensureLogoSvg(modelsDevProvider);
-      if (!svgPath) return null;
-      const rasterized = await rasterizeLogo(svgPath, modelsDevProvider, ctx);
-      if (!rasterized) return null;
-    }
-    try {
-      return fs.readFileSync(logoPngPath(modelsDevProvider)).toString("base64");
     } catch {
       return null;
     }
@@ -77,8 +57,8 @@ export default function (pi: ExtensionAPI) {
       });
     }
 
-    const logoBase64 = await loadLogoBase64(meta.modelsDevProvider ?? meta.piProvider, ctx);
-    ctx.ui.setWidget(WIDGET_KEY, buildWidgetFactory(meta, logoBase64), { placement: "belowEditor" });
+    // Card now uses emoji in header; PNG logo pipeline kept on disk but unused.
+    ctx.ui.setWidget(WIDGET_KEY, buildWidgetFactory(meta, null), { placement: "belowEditor" });
     lastRenderedKey = key;
   }
 
