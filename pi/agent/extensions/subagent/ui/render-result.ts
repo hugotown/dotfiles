@@ -11,8 +11,11 @@ function collapsed(theme: Theme, header: string, results: AgentResult[]): Compon
 	for (const r of results) {
 		const note = r.skippedReason ? theme.fg("dim", ` — ${r.skippedReason}`) : "";
 		text += `\n  ${statusIcon(theme, r.status)} ${theme.fg("accent", r.name)}${theme.fg("muted", ` ${modelLabel(r)}`)}${note}`;
-		const preview = r.output.trim().split("\n").slice(0, 2).join("\n");
-		if (preview) text += `\n    ${theme.fg("toolOutput", preview)}`;
+		// Only show output preview when the agent has finished; live streaming is visible in the panel.
+		if (r.status === "ok" || r.status === "failed") {
+			const preview = r.output.trim().split("\n").slice(0, 2).join("\n");
+			if (preview) text += `\n    ${theme.fg("toolOutput", preview)}`;
+		}
 	}
 	return new Text(`${text}\n${theme.fg("muted", "(Ctrl+O to expand)")}`, 0, 0);
 }
@@ -22,8 +25,13 @@ function expandedAgent(container: Container, theme: Theme, r: AgentResult): void
 	container.addChild(new Text(`${statusIcon(theme, r.status)} ${theme.fg("toolTitle", theme.bold(r.name))}${theme.fg("muted", ` ${modelLabel(r)}`)}`, 0, 0));
 	if (r.skippedReason) return container.addChild(new Text(theme.fg("muted", `Skipped: ${r.skippedReason}`), 0, 0));
 	if (r.errorMessage) container.addChild(new Text(theme.fg("error", `Error: ${r.errorMessage}`), 0, 0));
-	if (r.output.trim()) container.addChild(new Markdown(r.output.trim(), 0, 0, getMarkdownTheme()));
-	else if (r.status !== "running") container.addChild(new Text(theme.fg("muted", "(no output)"), 0, 0));
+	// Only show output when the agent has finished; live streaming is visible in the panel.
+	if (r.status === "ok" || r.status === "failed") {
+		if (r.output.trim()) container.addChild(new Markdown(r.output.trim(), 0, 0, getMarkdownTheme()));
+		else container.addChild(new Text(theme.fg("muted", "(no output)"), 0, 0));
+	} else if (r.status === "running") {
+		container.addChild(new Text(theme.fg("muted", "(streaming in panel — press ← to view)"), 0, 0));
+	}
 	const usage = formatUsage(r.usage);
 	if (usage) container.addChild(new Text(theme.fg("dim", usage), 0, 0));
 }
