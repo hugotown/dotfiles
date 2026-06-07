@@ -1,0 +1,5 @@
+# Allowlist: only the static config file is tracked.
+# atuin client writes history and runtime state here — reject everything else.
+*
+!.gitignore
+!config.toml
