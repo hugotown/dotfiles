@@ -4,12 +4,20 @@ import { readCatalog } from "./catalog/store";
 import { isStale, refreshCatalog } from "./catalog/refresh";
 import { resolveModel } from "./resolve/cascade";
 import { buildStatusText } from "./render/status";
+import { buildFooterFactory } from "./render/footer";
 
-const STATUS_KEY = "model-meta";
+// Key used both for ctx.ui.setStatus() (which the custom footer reads) and
+// internally to identify the model-meta slot.
+const MODEL_META_STATUS_KEY = "model-meta";
 
 export default function (pi: ExtensionAPI) {
   let catalog: CatalogData | null = null;
   let lastRenderedKey: string | null = null;
+
+  // Holder that the footer factory closes over. Each lifecycle event refreshes
+  // it so the footer always renders against the latest ExtensionContext.
+  const ctxRef: { current: ExtensionContext | null } = { current: null };
+  let footerRegistered = false;
 
   async function ensureCatalog(): Promise<CatalogData | null> {
     if (catalog) return catalog;
@@ -31,10 +39,10 @@ export default function (pi: ExtensionAPI) {
     }
   }
 
-  async function renderForCurrentModel(ctx: ExtensionContext): Promise<void> {
+  async function refreshStatus(ctx: ExtensionContext): Promise<void> {
     const model = ctx.model;
     if (!model) {
-      ctx.ui.setStatus(STATUS_KEY, undefined);
+      ctx.ui.setStatus(MODEL_META_STATUS_KEY, undefined);
       lastRenderedKey = null;
       return;
     }
@@ -57,19 +65,31 @@ export default function (pi: ExtensionAPI) {
       });
     }
 
-    ctx.ui.setStatus(STATUS_KEY, buildStatusText(meta));
+    ctx.ui.setStatus(MODEL_META_STATUS_KEY, buildStatusText(meta));
     lastRenderedKey = key;
   }
 
+  function ensureFooter(ctx: ExtensionContext): void {
+    ctxRef.current = ctx;
+    if (footerRegistered) return;
+    ctx.ui.setFooter(buildFooterFactory(ctxRef));
+    footerRegistered = true;
+  }
+
   pi.on("session_start", async (_event, ctx) => {
-    await renderForCurrentModel(ctx);
+    ensureFooter(ctx);
+    await refreshStatus(ctx);
   });
 
   pi.on("model_select", async (_event, ctx) => {
-    await renderForCurrentModel(ctx);
+    ensureFooter(ctx);
+    await refreshStatus(ctx);
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
-    ctx.ui.setStatus(STATUS_KEY, undefined);
+    ctx.ui.setStatus(MODEL_META_STATUS_KEY, undefined);
+    ctx.ui.setFooter(undefined); // restore native footer on shutdown
+    ctxRef.current = null;
+    footerRegistered = false;
   });
 }
