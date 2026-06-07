@@ -1,0 +1,79 @@
+# investigate extension config. Each value can be a literal, "$ENV_VAR", or
+# "$ENV_VAR:fallback". See lib/settings.ts for the resolver.
+
+defaults:
+  freshness: "$INVESTIGATE_DEFAULT_FRESHNESS:year"
+
+depths:
+  light:
+    sub_questions:     "$INVESTIGATE_LIGHT_SUB_QUESTIONS:3"
+    curls_per_subpi:   "$INVESTIGATE_LIGHT_CURLS_PER_SUBPI:3"
+    concurrency_limit: "$INVESTIGATE_LIGHT_CONCURRENCY:3"
+    thinking:          "$INVESTIGATE_LIGHT_THINKING:low"
+    subpi_timeout_ms:  "$INVESTIGATE_LIGHT_TIMEOUT_MS:60000"
+    planner:
+      provider: "$INVESTIGATE_LIGHT_PLANNER_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_LIGHT_PLANNER_MODEL:deepseek-v4-flash"
+    investigator:
+      provider: "$INVESTIGATE_LIGHT_INVESTIGATOR_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_LIGHT_INVESTIGATOR_MODEL:deepseek-v4-flash"
+    synthesizer:
+      provider: "$INVESTIGATE_LIGHT_SYNTHESIZER_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_LIGHT_SYNTHESIZER_MODEL:deepseek-v4-flash"
+
+  medium:
+    sub_questions:     "$INVESTIGATE_MEDIUM_SUB_QUESTIONS:5"
+    curls_per_subpi:   "$INVESTIGATE_MEDIUM_CURLS_PER_SUBPI:8"
+    concurrency_limit: "$INVESTIGATE_MEDIUM_CONCURRENCY:4"
+    thinking:          "$INVESTIGATE_MEDIUM_THINKING:medium"
+    subpi_timeout_ms:  "$INVESTIGATE_MEDIUM_TIMEOUT_MS:120000"
+    planner:
+      provider: "$INVESTIGATE_MEDIUM_PLANNER_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_MEDIUM_PLANNER_MODEL:deepseek-v4-flash"
+    investigator:
+      provider: "$INVESTIGATE_MEDIUM_INVESTIGATOR_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_MEDIUM_INVESTIGATOR_MODEL:minimax-m2.5"
+    synthesizer:
+      provider: "$INVESTIGATE_MEDIUM_SYNTHESIZER_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_MEDIUM_SYNTHESIZER_MODEL:kimi-k2.5"
+
+  high:
+    sub_questions:     "$INVESTIGATE_HIGH_SUB_QUESTIONS:8"
+    curls_per_subpi:   "$INVESTIGATE_HIGH_CURLS_PER_SUBPI:15"
+    concurrency_limit: "$INVESTIGATE_HIGH_CONCURRENCY:4"
+    thinking:          "$INVESTIGATE_HIGH_THINKING:medium"
+    subpi_timeout_ms:  "$INVESTIGATE_HIGH_TIMEOUT_MS:180000"
+    planner:
+      provider: "$INVESTIGATE_HIGH_PLANNER_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_HIGH_PLANNER_MODEL:minimax-m2.5"
+    investigator:
+      provider: "$INVESTIGATE_HIGH_INVESTIGATOR_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_HIGH_INVESTIGATOR_MODEL:kimi-k2.5"
+    synthesizer:
+      provider: "$INVESTIGATE_HIGH_SYNTHESIZER_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_HIGH_SYNTHESIZER_MODEL:glm-5.1"
+
+  deep:
+    sub_questions:     "$INVESTIGATE_DEEP_SUB_QUESTIONS:12"
+    curls_per_subpi:   "$INVESTIGATE_DEEP_CURLS_PER_SUBPI:25"
+    concurrency_limit: "$INVESTIGATE_DEEP_CONCURRENCY:4"
+    thinking:          "$INVESTIGATE_DEEP_THINKING:high"
+    subpi_timeout_ms:  "$INVESTIGATE_DEEP_TIMEOUT_MS:300000"
+    planner:
+      provider: "$INVESTIGATE_DEEP_PLANNER_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_DEEP_PLANNER_MODEL:kimi-k2.5"
+    investigator:
+      provider: "$INVESTIGATE_DEEP_INVESTIGATOR_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_DEEP_INVESTIGATOR_MODEL:glm-5.1"
+    synthesizer:
+      provider: "$INVESTIGATE_DEEP_SYNTHESIZER_PROVIDER:opencode-go"
+      model:    "$INVESTIGATE_DEEP_SYNTHESIZER_MODEL:glm-5.1"
+
+limits:
+  max_subpi_text_kb:      "$INVESTIGATE_MAX_SUBPI_TEXT_KB:30"
+  max_synthesizer_tokens: "$INVESTIGATE_MAX_SYNTH_TOKENS:4096"
+  max_planner_tokens:     "$INVESTIGATE_MAX_PLANNER_TOKENS:1024"
+
+bash_guard:
+  enabled:        "$INVESTIGATE_BASH_GUARD_ENABLED:true"
+  block_commands: ["curl", "wget", "httpie", "xh", "aria2c", "nc", "ncat"]
