@@ -10,7 +10,7 @@ export type ModelRef = { provider: string; id: string };
 const READ_ONLY = ["read", "grep", "find", "ls"];
 const READ_ONLY_BASH = ["read", "grep", "find", "ls", "bash"];
 const WRITE_DOCS = ["read", "grep", "find", "ls", "write"];
-// Research phases run CLIs (ctx7, ddg, ast-grep, eza, rg) via bash AND write their findings file.
+// Research phases run CLIs (ddg, ast-grep, eza, rg) via bash AND write their findings file.
 const RESEARCH = ["read", "grep", "find", "ls", "bash", "write"];
 const IMPLEMENT = ["read", "write", "edit", "bash"];
 

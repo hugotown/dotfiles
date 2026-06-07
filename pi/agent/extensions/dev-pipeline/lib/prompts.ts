@@ -110,8 +110,8 @@ export function researchDecisionPrompt(s: PipelineState, specPath: string, resea
 
 /**
  * Deep-research ONE library in a clean context until the model can implement it confidently.
- * Tries Context7 (version + topic aware); falls back to ddg dorking for libraries Context7 lacks
- * (common for Python/Go/Rust). Ends with a self-declared CONFIDENCE the orchestrator reads.
+ * Uses ddg dorking to find version-correct examples on official docs / GitHub / changelogs.
+ * Ends with a self-declared CONFIDENCE the orchestrator reads.
  */
 export function libraryResearchPrompt(lib: LibraryRef, notesPath: string, priorNotes: string, attempt: number): string {
 	return (
@@ -121,12 +121,10 @@ export function libraryResearchPrompt(lib: LibraryRef, notesPath: string, priorN
 			? `Your previous attempt did NOT reach high confidence. Build on these notes and close the gaps:\n${priorNotes}\n\n`
 			: "") +
 		`Procedure:\n` +
-		`1. Run \`npx ctx7@latest --help\` to recall its exact syntax.\n` +
-		`2. Try Context7: \`npx ctx7@latest library "${lib.name}"\` to resolve the library ID, then \`npx ctx7@latest docs <id> "${lib.topic || "usage examples"}"\` — use the ID with the VERSION when available (e.g. /org/project/v${lib.version}) so examples match version ${lib.version}.\n` +
-		`3. If Context7 does NOT have it (common for many Python/Go/Rust libraries), use the ddg CLI with DORKING to find real, version-correct implementation examples (official docs, GitHub code, changelogs). Command:\n` +
+		`1. Use the ddg CLI with DORKING to find real, version-correct implementation examples (official docs, GitHub code, changelogs). Command:\n` +
 		`   ${DDG_RESEARCH_CMD}\n` +
 		`   Useful dorks: \`${lib.name} ${lib.topic} site:github.com\`, \`${lib.name} ${lib.version} example\`, \`"${lib.name}" ${lib.topic} site:docs.rs OR site:pkg.go.dev\`.\n` +
-		`4. You may also run \`ast-grep --help\` then \`ast-grep\` over any locally vendored copy.\n\n` +
+		`2. You may also run \`ast-grep --help\` then \`ast-grep\` over any locally vendored copy.\n\n` +
 		`Keep researching (as many searches as needed) until you genuinely know HOW to implement ${lib.name} for "${lib.topic}". Write concrete, version-correct code examples and the key API surface to "${notesPath}" using the write tool.\n` +
 		NO_USER_INPUT +
 		`End your reply with a final line containing EXACTLY one of: "CONFIDENCE: high", "CONFIDENCE: medium", "CONFIDENCE: low" — your honest confidence that you can now implement this library correctly. Declare "high" ONLY when the notes hold concrete, version-appropriate examples.`

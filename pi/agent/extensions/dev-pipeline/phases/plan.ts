@@ -20,7 +20,7 @@ export async function startPlanResearch(pi: ExtensionAPI, ctx: ExtensionContext,
 
 /**
  * FR-18: run the requested research deterministically. Missing tool → empty section, never error.
- * Reads the research-decision file, executes rg always, ast-grep/graphify/ctx7 conditionally,
+ * Reads the research-decision file, executes rg always, ast-grep/graphify conditionally,
  * and returns a results string to feed the plan author.
  */
 export async function runResearch(
@@ -57,7 +57,7 @@ export async function runResearch(
 		// graphify query wiring is UNVERIFIED (project-local CLI). Intentionally a no-op until the
 		// project's graphify query command is confirmed; then run it here and append to `sections`.
 	}
-	// NB: per-library ctx7/ddg deep research now happens in the LIBRARY_RESEARCH phase (clean
+	// NB: per-library ddg deep research now happens in the LIBRARY_RESEARCH phase (clean
 	// context per library), so it is intentionally NOT run here.
 	// ddg: best-practice web research. Proxy credentials come from the env (SOPS); skip if absent.
 	const proxy = ddgProxy();
