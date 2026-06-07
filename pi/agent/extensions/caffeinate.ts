@@ -4,7 +4,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 export default function (pi: ExtensionAPI) {
   let caffeinateProcess: ChildProcess | null = null;
 
-  pi.on("session_start", async (_event, ctx) => {
+  pi.on("session_start", async (_event, _ctx) => {
     if (caffeinateProcess) return;
 
     caffeinateProcess = spawn("caffeinate", ["-i"], {
@@ -19,8 +19,6 @@ export default function (pi: ExtensionAPI) {
     caffeinateProcess.on("exit", () => {
       caffeinateProcess = null;
     });
-
-    ctx.ui.setStatus("caffeinate", "☕ awake");
   });
 
   pi.on("session_shutdown", async () => {
