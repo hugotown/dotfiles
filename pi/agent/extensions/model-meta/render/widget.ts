@@ -1,5 +1,4 @@
-import { Container, Text, type Component, type TUI } from "@earendil-works/pi-tui";
-import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui/dist/utils";
+import { Container, Text, truncateToWidth, visibleWidth, type Component, type TUI } from "@earendil-works/pi-tui";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { ModelMeta } from "../types";
 import { activeIcons, activeLabels, formatKnowledge, formatPrice, formatTokenLimit } from "./format";
