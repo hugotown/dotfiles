@@ -1,0 +1,12 @@
+# Allowlist: only the configuration surface is tracked.
+# fish writes runtime state (history, etc.) here — reject everything else.
+*
+!.gitignore
+!config.fish
+!fish_variables
+!conf.d/
+!conf.d/**
+!functions/
+!functions/**
+!completions/
+!completions/**
