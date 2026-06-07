@@ -45,6 +45,29 @@ result-*
 # Misc tool state
 configstore/
 
+# Unencrypted credentials / secrets (defensive catch-all)
+.env
+.env.local
+.env.local.*
+.env.development
+.env.development.*
+.env.production
+.env.production.*
+.env.staging
+.env.staging.*
+!.env.example
+!.env.template
+
+# Private keys and certificates
+*.pem
+*.p12
+*.pfx
+*.key
+
+# Cloud service-account credentials
+service-account*.json
+gcp-key*.json
+
 
 # ------------------------------------------------------------
 # Fully-ignored top-level folders
