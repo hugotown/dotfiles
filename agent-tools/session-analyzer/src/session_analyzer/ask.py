@@ -3,15 +3,8 @@
 Pure functions: take a question string, return formatted text. DB access
 lives in this module only; facades in pi/opencode never touch DuckDB.
 """
-import json
 import re
-import sys
-from pathlib import Path
 from typing import Any
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-from session_analyzer import db
 
 _KEYWORD_PATTERNS = [
     r"\bskill\s+([\w\-]+)",
@@ -46,6 +39,8 @@ def _like_clause(col: str, keywords: list[str]) -> tuple[str, list[str]]:
 
 def answer_question(question: str, limit_sessions: int = 10) -> str:
     """Query the DuckDB and return a human-readable answer."""
+    from . import db as _db
+
     keywords = extract_keywords(question)
     where, params = _like_clause("s.curated", keywords)
     sql = f"""
@@ -55,7 +50,7 @@ def answer_question(question: str, limit_sessions: int = 10) -> str:
         ORDER BY s.date DESC
         LIMIT ?
     """
-    conn = db.get_connection()
+    conn = _db.get_connection()
     try:
         rows = conn.execute(sql, [*params, limit_sessions]).fetchall()
     finally:
