@@ -3,5 +3,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export default function curl(_pi: ExtensionAPI): void {
-	// Wiring is added in Task 2.7 once contracts and implementations exist.
+  // Wiring is added in Task 2.7 once contracts and implementations exist.
 }
