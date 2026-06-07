@@ -53,3 +53,4 @@ export VERTEX_LOCATION="global"
 
 # Added by Antigravity CLI installer
 export PATH="/Users/hugoruiz/.local/bin:$PATH"
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
