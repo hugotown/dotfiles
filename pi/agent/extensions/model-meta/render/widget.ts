@@ -73,23 +73,30 @@ function buildContentRows(meta: ModelMeta): string[] {
   return rows;
 }
 
+// pi-tui's Text component defaults to paddingX=1 + paddingY=1, which would
+// shift our manually drawn border and insert blank lines between rows.
+// Pass zero padding so each Text renders as exactly one line, no margins.
+function rawText(s: string): Text {
+  return new Text(s, 0, 0);
+}
+
 export function buildWidgetFactory(meta: ModelMeta, _logoPngBase64: string | null): WidgetFactory {
   return (_tui, theme) => {
     const container = new Container();
 
     if (!meta.ok) {
       // Degraded card: same shape, dim body
-      container.addChild(new Text(buildHeader(meta)));
-      container.addChild(new Text(theme.fg("dim", buildRow("(not found in models.dev)"))));
-      container.addChild(new Text(buildFooter()));
+      container.addChild(rawText(buildHeader(meta)));
+      container.addChild(rawText(theme.fg("dim", buildRow("(not found in models.dev)"))));
+      container.addChild(rawText(buildFooter()));
       return container;
     }
 
-    container.addChild(new Text(buildHeader(meta)));
+    container.addChild(rawText(buildHeader(meta)));
     for (const row of buildContentRows(meta)) {
-      container.addChild(new Text(buildRow(row)));
+      container.addChild(rawText(buildRow(row)));
     }
-    container.addChild(new Text(buildFooter()));
+    container.addChild(rawText(buildFooter()));
     return container;
   };
 }
