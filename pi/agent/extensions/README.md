@@ -2,7 +2,7 @@
 
 ## Stack
 
-- **Runtime:** Bun
+- **Runtime:** Bun `always use bun`
 - **Language:** TypeScript (strict)
 - **Platform:** pi extension API (`@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`)
 
@@ -37,11 +37,13 @@
 ### Structure
 
 Single-file extensions go directly in `extensions/`:
+
 ```
 extensions/flag-autocomplete.ts
 ```
 
 Multi-file extensions use a directory with `index.ts`:
+
 ```
 extensions/brainstorm-workflow/
 ├── index.ts          Entry point (wiring only)
