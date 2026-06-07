@@ -1,0 +1,7 @@
+# Allowlist: only per-host bootstrap scripts and compose files are tracked.
+# Per-host runtime state, secrets, and local overrides are rejected.
+*
+!.gitignore
+!*/
+!*/initialize.sh
+!*/docker-compose.yml
