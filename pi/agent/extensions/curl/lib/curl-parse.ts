@@ -34,16 +34,16 @@ export function parseHeaderBlock(block: string): { status_code: number; status_t
 export function parseCurlStdout(stdout: Buffer): ParsedCurl {
   const text = stdout.toString("binary"); // byte-preserving search
   const metaIdx = text.lastIndexOf(META_TAG);
-  if (metaIdx === -1) throw new Error("curl stdout missing metadata trailer (write-out)");
-  const metaLine = text.slice(metaIdx + META_TAG.length).trim();
-  const [statusStr, finalUrl, timeStr, sizeStr] = metaLine.split("|");
+
+  // Determine the search upper bound for header blocks.
+  const searchBound = metaIdx === -1 ? text.length : metaIdx;
 
   // Find consecutive header blocks (handles redirect chains).
   const headerEnd: number[] = [];
   let cursor = 0;
   while (true) {
     const at = text.indexOf(SEP, cursor);
-    if (at === -1 || at >= metaIdx) break;
+    if (at === -1 || at >= searchBound) break;
     headerEnd.push(at);
     cursor = at + SEP.length;
     // Stop scanning if the next bytes don't start a new HTTP/ status line.
@@ -54,14 +54,30 @@ export function parseCurlStdout(stdout: Buffer): ParsedCurl {
   const headerBlock = text.slice(headerEnd.length === 1 ? 0 : headerEnd[headerEnd.length - 2] + SEP.length, headerEnd[headerEnd.length - 1]);
   const parsed = parseHeaderBlock(headerBlock);
   const bodyStart = headerEnd[headerEnd.length - 1] + SEP.length;
-  const body = Buffer.from(text.slice(bodyStart, metaIdx), "binary");
+  const bodyEnd = metaIdx === -1 ? text.length : metaIdx;
+  const body = Buffer.from(text.slice(bodyStart, bodyEnd), "binary");
 
+  // When trailer is present, parse metadata; otherwise use defaults.
+  if (metaIdx !== -1) {
+    const metaLine = text.slice(metaIdx + META_TAG.length).trim();
+    const [statusStr, finalUrl, timeStr, sizeStr] = metaLine.split("|");
+    return {
+      ...parsed,
+      body,
+      final_url: finalUrl ?? "",
+      response_time_ms: Math.round(parseFloat(timeStr ?? "0") * 1000),
+      size_bytes: parseInt(sizeStr ?? "0", 10),
+      redirected: headerEnd.length > 1,
+    };
+  }
+
+  // No trailer: mid-stream kill scenario. Use defaults for metadata.
   return {
     ...parsed,
     body,
-    final_url: finalUrl ?? "",
-    response_time_ms: Math.round(parseFloat(timeStr ?? "0") * 1000),
-    size_bytes: parseInt(sizeStr ?? "0", 10),
+    final_url: "",
+    response_time_ms: 0,
+    size_bytes: body.byteLength,
     redirected: headerEnd.length > 1,
   };
 }

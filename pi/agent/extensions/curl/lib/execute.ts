@@ -14,18 +14,35 @@ import { buildProxyUrl } from "./proxy.ts";
 import { assertNotPrivate } from "./ssrf-guard.ts";
 import { softTruncate } from "./truncate.ts";
 
-function runCurl(args: string[], signal: AbortSignal | undefined, timeoutSeconds: number): Promise<{ stdout: Buffer; stderr: string; exitCode: number; aborted: boolean }> {
+function runCurl(args: string[], signal: AbortSignal | undefined, timeoutSeconds: number, maxDownloadBytes: number | undefined): Promise<{ stdout: Buffer; stderr: string; exitCode: number; aborted: boolean; truncatedBySize: boolean }> {
   return new Promise((resolve) => {
     const proc = spawn("curl", args, { shell: false, stdio: ["ignore", "pipe", "pipe"] });
     const chunks: Buffer[] = [];
+    let totalBytes = 0;
     let stderr = "";
     let aborted = false;
-    proc.stdout.on("data", (d: Buffer) => chunks.push(d));
+    let truncatedBySize = false;
+    let finished = false;
+
+    proc.stdout.on("data", (d: Buffer) => {
+      if (finished) return;
+      if (maxDownloadBytes !== undefined && totalBytes + d.byteLength > maxDownloadBytes) {
+        // Cap: take only what fits, then kill
+        const remaining = maxDownloadBytes - totalBytes;
+        if (remaining > 0) chunks.push(d.subarray(0, remaining));
+        truncatedBySize = true;
+        finished = true;
+        proc.kill("SIGKILL");
+        return;
+      }
+      chunks.push(d);
+      totalBytes += d.byteLength;
+    });
     proc.stderr.on("data", (d: Buffer) => { stderr += d.toString("utf-8"); });
     proc.on("close", (code) => {
-      resolve({ stdout: Buffer.concat(chunks), stderr, exitCode: code ?? 0, aborted });
+      resolve({ stdout: Buffer.concat(chunks), stderr, exitCode: code ?? 0, aborted, truncatedBySize });
     });
-    proc.on("error", () => resolve({ stdout: Buffer.concat(chunks), stderr, exitCode: 1, aborted }));
+    proc.on("error", () => resolve({ stdout: Buffer.concat(chunks), stderr, exitCode: 1, aborted, truncatedBySize }));
     if (signal) {
       const kill = () => { aborted = true; proc.kill("SIGTERM"); setTimeout(() => !proc.killed && proc.kill("SIGKILL"), 2000); };
       signal.aborted ? kill() : signal.addEventListener("abort", kill, { once: true });
@@ -46,14 +63,14 @@ export async function executeCurl(input: CurlInput, config: CurlConfig, signal?:
 
   const args = buildCurlArgs(input, proxyUrl, config);
   const timeout = input.timeout_seconds ?? config.defaults.timeout_seconds;
-  const { stdout, stderr, exitCode, aborted } = await runCurl(args, signal, timeout);
+  const maxKb = input.max_size_kb ?? config.defaults.max_size_kb;
+  const { stdout, stderr, exitCode, aborted, truncatedBySize } = await runCurl(args, signal, timeout, maxKb * 1024 * 2);
 
   if (aborted) throw new CurlExitError(exitCode, stderr || "aborted");
   if (exitCode === 28) throw new TimeoutError(timeout);
-  if (exitCode !== 0) throw new CurlExitError(exitCode, stderr);
+  if (exitCode !== 0 && !truncatedBySize) throw new CurlExitError(exitCode, stderr);
 
   const parsed = parseCurlStdout(stdout);
-  const maxKb = input.max_size_kb ?? config.defaults.max_size_kb;
   const trunc = softTruncate(parsed.body, maxKb);
 
   let text = trunc.text;
@@ -73,7 +90,7 @@ export async function executeCurl(input: CurlInput, config: CurlConfig, signal?:
       redirected: parsed.redirected,
       response_time_ms: parsed.response_time_ms,
       size_bytes: parsed.size_bytes,
-      truncated: trunc.truncated,
+      truncated: trunc.truncated || truncatedBySize,
       via_proxy: proxyUrl !== null,
     },
   };

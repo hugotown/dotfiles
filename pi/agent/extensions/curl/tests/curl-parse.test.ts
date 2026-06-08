@@ -63,8 +63,46 @@ describe("parseCurlStdout", () => {
     expect(r.redirected).toBe(true);
   });
 
-  test("throws if metadata trailer missing", () => {
-    const stdout = Buffer.from("HTTP/1.1 200 OK\r\n\r\nbody");
-    expect(() => parseCurlStdout(stdout)).toThrow(/metadata trailer/i);
+  test("throws if no header block present", () => {
+    const stdout = Buffer.from("just some text with no HTTP headers");
+    expect(() => parseCurlStdout(stdout)).toThrow(/missing header block/i);
+  });
+
+  test("handles missing __CURL_META__ trailer (mid-stream kill simulation)", () => {
+    // Simulate a response that was killed mid-stream: headers present but no trailer.
+    const stdout = Buffer.from([
+      "HTTP/1.1 200 OK\r\n",
+      "Content-Type: text/html\r\n",
+      "\r\n",
+      "<html><body>partial content",
+    ].join(""));
+    const r = parseCurlStdout(stdout);
+    expect(r.status_code).toBe(200);
+    expect(r.status_text).toBe("OK");
+    expect(r.headers["content-type"]).toBe("text/html");
+    expect(r.body.toString("utf-8")).toBe("<html><body>partial content");
+    expect(r.final_url).toBe("");
+    expect(r.response_time_ms).toBe(0);
+    expect(r.size_bytes).toBe(r.body.byteLength);
+    expect(r.redirected).toBe(false);
+  });
+
+  test("handles missing trailer with redirect chain (mid-stream kill)", () => {
+    // Simulate mid-stream kill after redirect chain.
+    const stdout = Buffer.from([
+      "HTTP/1.1 301 Moved\r\n",
+      "Location: https://final\r\n",
+      "\r\n",
+      "HTTP/1.1 200 OK\r\n",
+      "Content-Length: 100\r\n",
+      "\r\n",
+      "final body content",
+    ].join(""));
+    const r = parseCurlStdout(stdout);
+    expect(r.status_code).toBe(200);
+    expect(r.headers["content-length"]).toBe("100");
+    expect(r.body.toString("utf-8")).toBe("final body content");
+    expect(r.redirected).toBe(true);
+    expect(r.final_url).toBe("");
   });
 });

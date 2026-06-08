@@ -83,6 +83,8 @@ export default function investigate(pi: ExtensionAPI): void {
     promptGuidelines: GUIDELINES,
     parameters: InvestigateParams,
     async execute(_id, params, signal, onUpdate: AgentToolUpdateCallback<{ findings: Finding[] }> | undefined, ctx): Promise<AgentToolResult<{ findings: Finding[] }>> {
+      // Mutable accumulator outside try so findings survive errors after MAP phase.
+      let collectedFindings: Finding[] = [];
       try {
         const input = params as InvestigateInput;
 
@@ -136,6 +138,9 @@ export default function investigate(pi: ExtensionAPI): void {
           }),
         );
 
+        // Persist findings so the catch block can return them if synthesis fails.
+        collectedFindings = findings;
+
         // 5. REDUCE
         onUpdate?.({ content: [{ type: "text", text: "Synthesizing…" }], details: { findings } });
         const report = await synthesize({ pregunta: input.pregunta, findings, cutoffDate, profile, cwd: ctx.cwd, signal });
@@ -143,9 +148,21 @@ export default function investigate(pi: ExtensionAPI): void {
         return { content: [{ type: "text", text: report }], details: { findings } };
       } catch (err) {
         const e = err as Error;
+        let text = `${e.name}: ${e.message}`;
+        if (collectedFindings.length > 0) {
+          const lines = ["", "--- Raw Findings ---"];
+          for (const f of collectedFindings) {
+            lines.push(`**${f.subQuestion}** [${f.status}]`);
+            if (f.text) lines.push(f.text.slice(0, 500) + (f.text.length > 500 ? "…" : ""));
+            else if (f.errorMessage) lines.push(`Error: ${f.errorMessage}`);
+            lines.push("");
+          }
+          lines.push("-----------------------");
+          text += lines.join("\n");
+        }
         return {
-          content: [{ type: "text", text: `${e.name}: ${e.message}` }],
-          details: { findings: [] },
+          content: [{ type: "text", text }],
+          details: { findings: collectedFindings },
         };
       }
     },

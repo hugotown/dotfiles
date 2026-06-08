@@ -15,7 +15,7 @@ function build(input: CurlInput, proxyUrl: string | null = PROXY, config = baseC
 }
 
 describe("buildCurlArgs", () => {
-  test("basic GET with proxy + UA + redirects + timeout + max-filesize", () => {
+  test("basic GET with proxy + UA + redirects + timeout", () => {
     const args = build({ url: "https://example.com" });
     expect(args).toContain("--proxy");
     expect(args).toContain(PROXY);
@@ -26,8 +26,6 @@ describe("buildCurlArgs", () => {
     expect(args).toContain("5");
     expect(args).toContain("--max-time");
     expect(args).toContain("30");
-    expect(args).toContain("--max-filesize");
-    expect(args).toContain(String(500 * 1024 * 2));
     expect(args[args.length - 1]).toBe("https://example.com");
   });
 
@@ -112,10 +110,9 @@ describe("buildCurlArgs", () => {
     expect(args).toContain("-k");
   });
 
-  test("custom timeout and max_size override defaults", () => {
-    const args = build({ url: "https://e.com", timeout_seconds: 60, max_size_kb: 1000 });
+  test("custom timeout overrides default", () => {
+    const args = build({ url: "https://e.com", timeout_seconds: 60 });
     expect(args).toContain("60");
-    expect(args).toContain(String(1000 * 1024 * 2));
   });
 
   test("HEAD uses -I instead of -X HEAD (curl convention)", () => {

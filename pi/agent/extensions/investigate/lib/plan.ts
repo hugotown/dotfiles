@@ -35,17 +35,27 @@ export interface PlanInvocation {
 export async function planSubQuestions(input: PlanInvocation): Promise<string[]> {
   const systemPrompt = buildPlannerSystemPrompt({ pregunta: input.pregunta, n: input.n, cutoffDate: input.cutoffDate });
   const userMessage = buildPlannerUserMessage({ pregunta: input.pregunta, n: input.n, cutoffDate: input.cutoffDate });
-  const result = await spawnPi({
-    role: input.profile.planner,
-    thinking: input.profile.thinking,
-    tools: [], // planner has no tool calling
-    systemPrompt,
-    userMessage,
-    cwd: input.cwd,
-    timeoutMs: input.profile.subpi_timeout_ms,
-    signal: input.signal,
-  });
-  if (result.timedOut) throw new PlannerOutputError("planner sub-pi timed out", result.stderr);
-  if (result.exitCode !== 0) throw new PlannerOutputError(`planner sub-pi exit ${result.exitCode}`, result.stderr);
-  return parsePlannerOutput(result.finalText, input.n);
+  let lastError: PlannerOutputError | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const isLastAttempt = attempt === 1;
+    try {
+      const result = await spawnPi({
+        role: input.profile.planner,
+        thinking: input.profile.thinking,
+        tools: [], // planner has no tool calling
+        systemPrompt,
+        userMessage,
+        cwd: input.cwd,
+        timeoutMs: input.profile.subpi_timeout_ms,
+        signal: input.signal,
+      });
+      if (result.timedOut) throw new PlannerOutputError("planner sub-pi timed out", result.stderr);
+      if (result.exitCode !== 0) throw new PlannerOutputError(`planner sub-pi exit ${result.exitCode}`, result.stderr);
+      return parsePlannerOutput(result.finalText, input.n);
+    } catch (err) {
+      if (isLastAttempt || input.signal?.aborted) throw err;
+      lastError = err instanceof PlannerOutputError ? err : new PlannerOutputError(String(err), "");
+    }
+  }
+  throw lastError!;
 }

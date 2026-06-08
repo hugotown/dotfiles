@@ -21,9 +21,6 @@ export function buildCurlArgs(input: CurlInput, proxyUrl: string | null, config:
   const timeout = input.timeout_seconds ?? config.defaults.timeout_seconds;
   args.push("--max-time", String(timeout));
 
-  const maxKb = input.max_size_kb ?? config.defaults.max_size_kb;
-  args.push("--max-filesize", String(maxKb * 1024 * 2));
-
   if (proxyUrl) args.push("--proxy", proxyUrl);
 
   args.push("-A", config.defaults.user_agent);
