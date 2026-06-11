@@ -40,7 +40,7 @@ export async function driveReview(state: FlowState, _pi: ExtensionAPI, ctx: Exte
   const repoCtx = repoContextBlock(ctx.cwd);
   const sys = system(state.config.skillsDir) + (repoCtx ? `\n\n${repoCtx}` : "") + rulesBlock(pm.rules);
   const res = await runChildPi(
-    { provider: pm.provider, model: pm.model, thinking: pm.thinking, systemPrompt: sys, userTask: task, toolAllowlist: phaseTools("review", pm.tools), cwd: ctx.cwd },
+    { provider: pm.provider, model: pm.model, thinking: pm.thinking, systemPrompt: sys, userTask: task, toolAllowlist: phaseTools("review", pm.tools), cwd: ctx.cwd, timeoutMs: state.config.limits.childTimeoutMs },
     "review",
   );
   record(metricFromSpawn("review", "review", `${pm.provider}/${pm.model}`, res));

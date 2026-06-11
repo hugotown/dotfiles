@@ -44,6 +44,9 @@ describe("buildRepoContext (integration, on this repo)", () => {
 
   test("symbol outline includes a known export when ast-grep is available", () => {
     const { symbols } = buildRepoContext(repoRoot);
-    if (symbols) expect(symbols).toContain("export function buildRepoContext");
+    // Assert on an early, stable export: the outline is alphabetical and capped
+    // (SYMBOLS_CAP), so a symbol from a late-sorting file (e.g. repo-context.ts)
+    // may be truncated out as the codebase grows.
+    if (symbols) expect(symbols).toContain("export function buildLevels");
   });
 });

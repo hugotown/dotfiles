@@ -5,7 +5,7 @@ import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { CheckResult, ChecksResult, Config } from "../types.ts";
-import { detectLint, detectTest, detectTypecheck } from "./detect.ts";
+import type { ResolvedChecks } from "./resolve-checks.ts";
 
 function run(cwd: string, cmd: string): CheckResult {
   try {
@@ -37,11 +37,12 @@ function binAvailable(cwd: string, cmd: string): boolean {
   }
 }
 
-export function runChecks(cwd: string, config: Config): ChecksResult {
+export function runChecks(cwd: string, config: Config, resolved: ResolvedChecks): ChecksResult {
   const results: CheckResult[] = [];
   const failures: string[] = [];
-  // mandatory checks (tests) fail when absent/missing; optional ones (typecheck,
-  // lint) are skipped when the tool is not installed — no false failure, no false green.
+  // mandatory checks (tests) fail when absent/missing; optional ones (build,
+  // typecheck, lint, format) are skipped when the tool is not installed — no
+  // false failure, no false green.
   const consider = (cmd: string, label: string, mandatory: boolean) => {
     if (!cmd) {
       if (mandatory) {
@@ -65,9 +66,14 @@ export function runChecks(cwd: string, config: Config): ChecksResult {
     if (!r.passed) failures.push(`${label}: failed`);
   };
 
-  consider(config.checks.typecheck || detectTypecheck(cwd), "typecheck", false);
-  consider(config.checks.lint || detectLint(cwd), "lint", false);
-  consider(config.checks.test || detectTest(cwd), "test", true);
+  // Order = debugger priority (debug attacks failures[0] first): most fundamental
+  // first (build, types), then behavior (test), then cosmetics (lint, format).
+  // Commands are pre-resolved (config -> heuristic -> LLM) by resolveChecks.
+  consider(resolved.build, "build", false);
+  consider(resolved.typecheck, "typecheck", false);
+  consider(resolved.test, "test", true);
+  consider(resolved.lint, "lint", false);
+  consider(resolved.format, "format", false);
 
   const coverage = readCoverage(cwd);
   if (coverage !== null && coverage < config.limits.coverageThreshold) {

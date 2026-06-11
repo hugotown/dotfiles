@@ -12,6 +12,7 @@ import { registerTools } from "./tools/index.ts";
 import { registerInit } from "./commands/init.ts";
 import { handleBrainstormEnd } from "./phases/brainstorm.ts";
 import { appendMetric, type RecordMetric } from "./lib/metrics.ts";
+import { initLogger, logEvent } from "./lib/observability.ts";
 
 export default function obraSpFlow(pi: ExtensionAPI): void {
   let state: FlowState | null = null;
@@ -27,7 +28,26 @@ export default function obraSpFlow(pi: ExtensionAPI): void {
     if (!state) return;
     state = transition(state, event);
     persist(pi, state);
-    await driveCurrentPhase(state, pi, ctx, advance, record);
+    logEvent({ event: "phase", phase: state.phase, trigger: event.type });
+    try {
+      await driveCurrentPhase(state, pi, ctx, advance, record);
+    } catch (err) {
+      // A thrown phase must NEVER freeze the pipeline mid-flow (the failure mode
+      // that left the flow stuck in DEBUG all night). Surface the error and drive
+      // to a clean terminal state so the persisted state stays consistent.
+      const reason = `Phase ${state.phase} threw: ${String(err).slice(0, 300)}`;
+      ctx.ui.notify(`⛔ obra-sp-flow error: ${reason}`, "error");
+      logEvent({ event: "error", phase: state.phase, reason });
+      if (state.phase !== "COMPLETE") {
+        state = transition(state, { type: "ESCALATE", reason });
+        persist(pi, state);
+        try {
+          await driveCurrentPhase(state, pi, ctx, advance, record);
+        } catch {
+          /* terminal render failed; state is already persisted as COMPLETE */
+        }
+      }
+    }
   }
 
   pi.registerCommand("obra-sp-flow", {
@@ -47,6 +67,9 @@ export default function obraSpFlow(pi: ExtensionAPI): void {
       const trusted = typeof trustFn === "function" ? trustFn.call(ctx) : false;
       const config = loadConfig(ctx.cwd, trusted);
       state = captureDefaults(pi, ctx, createInitialState(idea, config));
+      const logger = initLogger(ctx.cwd, idea);
+      logEvent({ event: "start", idea, cwd: ctx.cwd });
+      if (logger.path) ctx.ui.notify(`Observability log: ${logger.path}`, "info");
       await advance(ctx, { type: "START" });
     },
   });
@@ -69,6 +92,8 @@ export default function obraSpFlow(pi: ExtensionAPI): void {
     const restored = restore(ctx);
     if (!restored || restored.phase === "IDLE" || restored.phase === "COMPLETE") return;
     state = restored;
+    initLogger(ctx.cwd, state.idea);
+    logEvent({ event: "resume", phase: state.phase });
     ctx.ui.notify(`obra-sp-flow resumed at phase: ${state.phase}`, "info");
     // Re-drive deterministic phases automatically (safe to repeat). LLM/child
     // phases are left for the user to resume to avoid duplicate paid work.

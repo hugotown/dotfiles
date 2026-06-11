@@ -48,10 +48,17 @@ export async function driveDebug(state: FlowState, _pi: ExtensionAPI, ctx: Exten
   const repoCtx = repoContextBlock(ctx.cwd);
   const sys = autonomousSkill(state.config.skillsDir, "systematic-debugging") + (repoCtx ? `\n\n${repoCtx}` : "") + rulesBlock(pm.rules);
   const res = await runChildPi(
-    { provider: pm.provider, model: pm.model, thinking: pm.thinking, systemPrompt: sys, userTask: task, toolAllowlist: phaseTools("debug", pm.tools), cwd: ctx.cwd },
+    { provider: pm.provider, model: pm.model, thinking: pm.thinking, systemPrompt: sys, userTask: task, toolAllowlist: phaseTools("debug", pm.tools), cwd: ctx.cwd, timeoutMs: lim.childTimeoutMs },
     "debug",
   );
   record(metricFromSpawn("debug", `debug-${errorKey}`.slice(0, 60), `${pm.provider}/${pm.model}`, res));
+  if (res.timedOut) {
+    // A timeout means the agent could not even finish one pass; retrying the same
+    // (often impossible) task would only burn the budget. Escalate immediately —
+    // this is exactly the hang that froze the pipeline all night.
+    await advance(ctx, { type: "ESCALATE", reason: `Debug subagent for '${errorKey}' timed out after ${lim.childTimeoutMs}ms on cycle ${perError}. Aborting to avoid a hang.` });
+    return;
+  }
   const budgets = { ...state.debugBudgets, [errorKey]: perError };
   await advance(ctx, { type: "DEBUG_DONE", budgets, globalCount: global });
 }

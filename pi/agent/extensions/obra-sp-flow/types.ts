@@ -34,10 +34,11 @@ export interface Config {
     debugGlobalCap: number;
     questionArchitectureThreshold: number;
     coverageThreshold: number;
+    childTimeoutMs: number;
   };
   branch: { prefix: string; base: string };
   finish: { action: "pr" | "merge" | "keep" };
-  checks: { typecheck: string; lint: string; test: string };
+  checks: { build: string; typecheck: string; test: string; lint: string; format: string };
   skillsDir: string;
 }
 

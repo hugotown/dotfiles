@@ -1,12 +1,12 @@
 // Loads the extension defaults (config.yml) and deep-merges a trusted
-// project override at {cwd}/.pi/obra-sp-flow.yml. Scalars support "$ENV" and
-// "$ENV:fallback". Project values win over defaults.
+// project override at {cwd}/.pi/obra-sp-flow/obra-sp-flow.yml. Scalars support
+// "$ENV" and "$ENV:fallback". Project values win over defaults.
 
 import * as fs from "node:fs";
-import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import type { Config, PhaseModel, Thinking } from "../types.ts";
+import { projectConfigPath } from "./paths.ts";
 
 const ENV_REF = /^\$([A-Z_][A-Z0-9_]*)(?::(.*))?$/s;
 type Raw = Record<string, any>;
@@ -67,13 +67,16 @@ function toConfig(raw: Raw): Config {
       debugGlobalCap: Number(l.debug_global_cap ?? 15),
       questionArchitectureThreshold: Number(l.question_architecture_threshold ?? 3),
       coverageThreshold: Number(l.coverage_threshold ?? 90),
+      childTimeoutMs: Number(l.child_timeout_ms ?? 600_000),
     },
     branch: { prefix: String(raw.branch?.prefix ?? "feature"), base: String(raw.branch?.base ?? "main") },
     finish: { action: (raw.finish?.action ?? "pr") as Config["finish"]["action"] },
     checks: {
+      build: String(raw.checks?.build ?? ""),
       typecheck: String(raw.checks?.typecheck ?? ""),
-      lint: String(raw.checks?.lint ?? ""),
       test: String(raw.checks?.test ?? ""),
+      lint: String(raw.checks?.lint ?? ""),
+      format: String(raw.checks?.format ?? ""),
     },
     skillsDir: String(raw.skills_dir ?? "$HOME/.config/agents/skills"),
   };
@@ -87,7 +90,7 @@ export function loadConfig(cwd: string, trusted: boolean): Config {
   const base = deepResolve(parseYaml(fs.readFileSync(defaultConfigPath(), "utf-8")) ?? {}) as Raw;
   let merged = base;
   if (trusted) {
-    const projPath = path.join(cwd, ".pi", "obra-sp-flow.yml");
+    const projPath = projectConfigPath(cwd);
     if (fs.existsSync(projPath)) {
       const over = deepResolve(parseYaml(fs.readFileSync(projPath, "utf-8")) ?? {});
       merged = deepMerge(base, over);

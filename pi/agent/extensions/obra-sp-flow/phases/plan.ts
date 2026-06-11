@@ -44,7 +44,7 @@ export async function drivePlan(state: FlowState, _pi: ExtensionAPI, ctx: Extens
   const repoCtx = repoContextBlock(ctx.cwd);
   const sys = system(state.config.skillsDir, state.config.limits.coverageThreshold) + (repoCtx ? `\n\n${repoCtx}` : "") + rulesBlock(pm.rules);
   const res = await runChildPi(
-    { provider: pm.provider, model: pm.model, thinking: pm.thinking, systemPrompt: sys, userTask: task, toolAllowlist: phaseTools("plan", pm.tools), cwd: ctx.cwd },
+    { provider: pm.provider, model: pm.model, thinking: pm.thinking, systemPrompt: sys, userTask: task, toolAllowlist: phaseTools("plan", pm.tools), cwd: ctx.cwd, timeoutMs: state.config.limits.childTimeoutMs },
     "plan",
   );
   record(metricFromSpawn("plan", "plan", `${pm.provider}/${pm.model}`, res));

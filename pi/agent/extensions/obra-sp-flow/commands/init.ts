@@ -1,12 +1,12 @@
-// /obra-sp-flow-init — scaffolds {cwd}/.pi/obra-sp-flow.yml from the extension
-// defaults, pre-filling each phase's `tools:` with a curated starter set.
+// /obra-sp-flow-init — scaffolds {cwd}/.pi/obra-sp-flow/obra-sp-flow.yml from the
+// extension defaults, pre-filling each phase's `tools:` with a curated starter set.
 // brainstorm additionally gets ask_user_question (the only interactive phase);
 // subagent is intentionally absent (this pipeline orchestrates child pis itself).
 
 import * as fs from "node:fs";
-import * as path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { defaultConfigPath } from "../lib/config-load.ts";
+import { projectConfigPath, projectDir } from "../lib/paths.ts";
 
 // Curated default tool set written into the generated template (editable per project).
 const TEMPLATE_TOOLS = [
@@ -46,16 +46,15 @@ export function fillTools(yaml: string): string {
 
 export function registerInit(pi: ExtensionAPI): void {
   pi.registerCommand("obra-sp-flow-init", {
-    description: "Scaffold {cwd}/.pi/obra-sp-flow.yml with defaults + a curated tool set per phase",
+    description: "Scaffold {cwd}/.pi/obra-sp-flow/obra-sp-flow.yml with defaults + a curated tool set per phase",
     handler: async (_args, ctx) => {
-      const dir = path.join(ctx.cwd, ".pi");
-      const dest = path.join(dir, "obra-sp-flow.yml");
+      const dest = projectConfigPath(ctx.cwd);
       if (fs.existsSync(dest)) {
         ctx.ui.notify(`Already exists: ${dest}`, "warning");
         return;
       }
       const text = fillTools(fs.readFileSync(defaultConfigPath(), "utf-8"));
-      fs.mkdirSync(dir, { recursive: true });
+      fs.mkdirSync(projectDir(ctx.cwd), { recursive: true });
       fs.writeFileSync(dest, text, "utf-8");
       ctx.ui.notify(`✅ Wrote ${dest} — edit models/rules/tools per project, then restart pi.`, "info");
     },

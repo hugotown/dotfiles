@@ -1,7 +1,7 @@
 # obra-sp-flow defaults. Each scalar may be a literal, "$ENV_VAR", or
 # "$ENV_VAR:fallback". A project may override any of these in
-# {project_root}/.pi/obra-sp-flow.yml (honored only when the project is trusted).
-# Edit and restart pi to apply.
+# {project_root}/.pi/obra-sp-flow/obra-sp-flow.yml (honored only when the project
+# is trusted). Edit and restart pi to apply.
 
 # Per-phase model routing. provider/model must exist in your pi enabledModels.
 # Each phase also accepts:
@@ -65,6 +65,7 @@ limits:
   debug_global_cap: 15 # total debug sub-cycles before hard escalate
   question_architecture_threshold: 3 # fix attempts before questioning architecture
   coverage_threshold: 90 # minimum % coverage to pass verification
+  child_timeout_ms: 600000 # hard wall-clock cap per child subagent (10 min) so a stalled agent never hangs the pipeline
 
 branch:
   prefix: feature # feature | chore | fix
@@ -73,11 +74,16 @@ branch:
 finish:
   action: pr # pr | merge | keep
 
-# Deterministic verification commands. Empty string => autodetect by stack.
+# Deterministic verification commands, in debugger-priority order. Empty string
+# => autodetect by stack; if detection finds nothing, an LLM resolver proposes a
+# command (never a verdict) and writes it back here with a provenance comment.
+# The verdict is ALWAYS the command's exit code, never an LLM opinion.
 checks:
+  build: ""
   typecheck: ""
-  lint: ""
   test: ""
+  lint: ""
+  format: ""
 
 # Where the superpowers skills live (loaded fresh from disk each phase).
 # Supports a leading ~ or $HOME.

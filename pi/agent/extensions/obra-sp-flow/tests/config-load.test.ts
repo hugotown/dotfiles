@@ -6,8 +6,8 @@ import { loadConfig } from "../lib/config-load.ts";
 
 function projectWith(yml: string): string {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), "obra-cfg-"));
-  fs.mkdirSync(path.join(d, ".pi"), { recursive: true });
-  fs.writeFileSync(path.join(d, ".pi", "obra-sp-flow.yml"), yml);
+  fs.mkdirSync(path.join(d, ".pi", "obra-sp-flow"), { recursive: true });
+  fs.writeFileSync(path.join(d, ".pi", "obra-sp-flow", "obra-sp-flow.yml"), yml);
   return d;
 }
 

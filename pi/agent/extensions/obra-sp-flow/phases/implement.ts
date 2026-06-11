@@ -47,7 +47,7 @@ function task(c: FileContract, all: string[], state: FlowState): string {
 
 async function spawn(pm: PhaseModel, sys: string, tools: string[], c: FileContract, all: string[], state: FlowState, cwd: string, tag: string, phaseLabel: string, record: RecordMetric): Promise<{ status: ImplStatus; notes: string }> {
   const res = await runChildPi(
-    { provider: pm.provider, model: pm.model, thinking: pm.thinking, systemPrompt: sys, userTask: task(c, all, state), toolAllowlist: tools, cwd },
+    { provider: pm.provider, model: pm.model, thinking: pm.thinking, systemPrompt: sys, userTask: task(c, all, state), toolAllowlist: tools, cwd, timeoutMs: state.config.limits.childTimeoutMs },
     tag,
   );
   record(metricFromSpawn(phaseLabel, tag, `${pm.provider}/${pm.model}`, res));
