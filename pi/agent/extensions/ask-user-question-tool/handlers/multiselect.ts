@@ -7,18 +7,22 @@ import { optionPicker } from "../ui/option-picker.ts";
 export const multiselectType: AnswerType = {
 	type: "multiselect",
 	fields: {
-		options: Type.Optional(
-			Type.Array(
-				Type.Object({
-					label: Type.String(),
-					description: Type.Optional(Type.String()),
+		options: Type.Array(
+			Type.Object({
+				label: Type.String(),
+				description: Type.String({
+					description: "REQUIRED. Detailed explanation of what choosing this option means and its tradeoffs.",
 				}),
-			),
+			}),
 		),
+		default: Type.Array(Type.String(), {
+			description: "REQUIRED. Labels of the recommended pre-checked options (use an empty array if none are recommended).",
+		}),
 	},
 
-	initial(_q: BaseQuestion): Answer {
-		return [];
+	initial(q: BaseQuestion): Answer {
+		const d = q["default"];
+		return Array.isArray(d) ? (d as string[]) : [];
 	},
 
 	display(q: BaseQuestion, answer: Answer, theme: Theme): string {

@@ -7,15 +7,15 @@ import { optionPicker } from "../ui/option-picker.ts";
 export const selectType: AnswerType = {
 	type: "select",
 	fields: {
-		options: Type.Optional(
-			Type.Array(
-				Type.Object({
-					label: Type.String(),
-					description: Type.Optional(Type.String()),
+		options: Type.Array(
+			Type.Object({
+				label: Type.String(),
+				description: Type.String({
+					description: "REQUIRED. Detailed explanation of what choosing this option means and its tradeoffs.",
 				}),
-			),
+			}),
 		),
-		default: Type.Optional(Type.String()),
+		default: Type.String({ description: "REQUIRED. Label of the recommended pre-selected option." }),
 	},
 
 	initial(q: BaseQuestion): Answer {

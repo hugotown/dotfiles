@@ -9,7 +9,7 @@ export const colorPaletteType: AnswerType = {
 	type: "color_palette",
 	fields: {
 		presets: Type.Optional(Type.Array(Type.Object({ name: Type.String(), hex: Type.String() }))),
-		default: Type.Optional(Type.String()),
+		default: Type.String({ description: "REQUIRED. Recommended hex color, e.g. #1e88e5." }),
 	},
 
 	initial(q: BaseQuestion): Answer {

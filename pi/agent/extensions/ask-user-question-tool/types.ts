@@ -14,7 +14,10 @@ export interface BaseQuestion {
 	id: string;
 	type: string;
 	label: string;
-	reasoning?: string;
+	/** What/why/how/when/where around the question + the flow of what must be decided. */
+	context: string;
+	/** Rationale explaining why the pre-selected recommendation is recommended. */
+	reasoning: string;
 	[key: string]: unknown;
 }
 

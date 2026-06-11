@@ -7,7 +7,7 @@ import type { Theme } from "@earendil-works/pi-coding-agent";
 export const textType: AnswerType = {
 	type: "text",
 	fields: {
-		default: Type.Optional(Type.String()),
+		default: Type.String({ description: "REQUIRED. Recommended pre-filled answer." }),
 	},
 
 	initial(q: BaseQuestion): Answer {

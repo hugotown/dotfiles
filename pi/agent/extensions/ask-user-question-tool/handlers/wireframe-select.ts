@@ -7,16 +7,16 @@ import { optionPicker } from "../ui/option-picker.ts";
 export const wireframeSelectType: AnswerType = {
 	type: "wireframe_select",
 	fields: {
-		options: Type.Optional(
-			Type.Array(
-				Type.Object({
-					label: Type.String(),
-					description: Type.Optional(Type.String()),
-					wireframe: Type.Optional(Type.Array(Type.String())),
+		options: Type.Array(
+			Type.Object({
+				label: Type.String(),
+				description: Type.String({
+					description: "REQUIRED. Detailed explanation of what choosing this option means and its tradeoffs.",
 				}),
-			),
+				wireframe: Type.Optional(Type.Array(Type.String())),
+			}),
 		),
-		default: Type.Optional(Type.String()),
+		default: Type.String({ description: "REQUIRED. Label of the recommended pre-selected option." }),
 	},
 
 	initial(q: BaseQuestion): Answer {

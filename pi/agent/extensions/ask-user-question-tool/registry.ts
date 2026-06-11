@@ -16,8 +16,15 @@ export function allTypes(): AnswerType[] {
 
 const BASE_FIELDS = {
 	id: Type.String(),
-	label: Type.String(),
-	reasoning: Type.Optional(Type.String()),
+	label: Type.String({ description: "Short question title shown as the header." }),
+	context: Type.String({
+		description:
+			"REQUIRED. Rich explanation around the question written in the user's language so a non-expert understands it without extra context: WHAT is being asked, WHY it matters / what it affects, HOW it will be used, WHEN/WHERE it applies, and a short flow of what must be decided. Several sentences; do not be terse.",
+	}),
+	reasoning: Type.String({
+		description:
+			"REQUIRED. Thorough rationale explaining WHY you recommend the pre-selected default option, including the tradeoffs you weighed.",
+	}),
 };
 
 /** Discriminated union of every registered type, for the tool's `questions` param. */
