@@ -38,6 +38,17 @@ function coerceNumber(field: string, raw: unknown): number {
   }
   throw new Error(`Config field "${field}": expected a number, got ${typeof raw}.`);
 }
+function coerceNonNegativeInt(field: string, raw: unknown): number {
+  // Accepts 0; used for retry counters where 0 means "no retries".
+  if (typeof raw === "number" && Number.isInteger(raw) && raw >= 0) return raw;
+  if (typeof raw === "string") {
+    if (raw.startsWith("$")) throw new Error(`Config field "${field}": unresolved env reference ${raw}.`);
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 0) throw new Error(`Config field "${field}": expected a non-negative integer, got ${JSON.stringify(raw)}.`);
+    return n;
+  }
+  throw new Error(`Config field "${field}": expected a non-negative integer, got ${typeof raw}.`);
+}
 function coerceBoolean(field: string, raw: unknown): boolean {
   if (typeof raw === "boolean") return raw;
   if (typeof raw === "string") {
@@ -78,12 +89,25 @@ function validateRole(field: string, raw: unknown): RoleSpec {
 function validateDepth(field: string, raw: unknown): DepthProfile {
   const r = raw as Record<string, unknown>;
   if (!r) throw new Error(`Config field "${field}": missing.`);
+  const subpiTimeout = coerceNumber(`${field}.subpi_timeout_ms`, r.subpi_timeout_ms);
   return {
     sub_questions: coerceNumber(`${field}.sub_questions`, r.sub_questions),
     curls_per_subpi: coerceNumber(`${field}.curls_per_subpi`, r.curls_per_subpi),
     concurrency_limit: coerceNumber(`${field}.concurrency_limit`, r.concurrency_limit),
     thinking: coerceEnum(`${field}.thinking`, r.thinking, THINKING),
-    subpi_timeout_ms: coerceNumber(`${field}.subpi_timeout_ms`, r.subpi_timeout_ms),
+    subpi_timeout_ms: subpiTimeout,
+    // Defaults below preserve back-compat with configs that predate these fields.
+    investigator_max_retries: r.investigator_max_retries === undefined
+      ? 1
+      : coerceNonNegativeInt(`${field}.investigator_max_retries`, r.investigator_max_retries),
+    // synth_timeout_ms defaults to subpi_timeout_ms when omitted (legacy behaviour).
+    synth_timeout_ms: r.synth_timeout_ms === undefined
+      ? subpiTimeout
+      : coerceNumber(`${field}.synth_timeout_ms`, r.synth_timeout_ms),
+    // wall_clock_budget_ms defaults to 10 minutes when omitted — a sane upper bound that prevents hangs.
+    wall_clock_budget_ms: r.wall_clock_budget_ms === undefined
+      ? 600_000
+      : coerceNumber(`${field}.wall_clock_budget_ms`, r.wall_clock_budget_ms),
     planner: validateRole(`${field}.planner`, r.planner),
     investigator: validateRole(`${field}.investigator`, r.investigator),
     synthesizer: validateRole(`${field}.synthesizer`, r.synthesizer),

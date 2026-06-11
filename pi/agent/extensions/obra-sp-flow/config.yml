@@ -1,0 +1,84 @@
+# obra-sp-flow defaults. Each scalar may be a literal, "$ENV_VAR", or
+# "$ENV_VAR:fallback". A project may override any of these in
+# {project_root}/.pi/obra-sp-flow.yml (honored only when the project is trusted).
+# Edit and restart pi to apply.
+
+# Per-phase model routing. provider/model must exist in your pi enabledModels.
+# Each phase also accepts:
+#   rules: []  -> behavioral lines injected only into that phase's prompt
+#   tools: []  -> tool allowlist override (empty = code default for that phase)
+# Code defaults (when tools is []): brainstorm = obra_spec, ask_user_question, read,
+#   bash, grep, find, ls; others = read, bash, grep, find, ls, write, edit + gemini_* research.
+# `/obra-sp-flow-init` pre-fills `tools:` with a curated starter set per phase;
+#   brainstorm also gets ask_user_question (the only interactive phase). subagent is
+#   omitted (this pipeline orchestrates child pis itself). Edit the lists per project.
+phases:
+  # Step 1 — interactive design dialogue. Strong reasoning model.
+  brainstorm:
+    provider: minimax
+    model: MiniMax-M3
+    thinking: high
+    rules: []
+    tools: []
+  # Step 2 — autonomous planning with Gemini research grounding gate.
+  plan:
+    provider: opencode
+    model: claude-opus-4-8
+    thinking: high
+    rules: []
+    tools: []
+  # Step 4 — parallel implementation (1 agent = 1 file). Medium-tier.
+  implement:
+    provider: minimax
+    model: MiniMax-M2.7-highspeed
+    thinking: high
+    rules:
+      - "Never leave a dev server running; stop any process you start."
+      - "Always use `mise` to run tests and tasks."
+    tools: []
+  # Step 4b — retry model for an implement file that returns BLOCKED (stronger tier).
+  # Defaults to the review model if omitted.
+  implement_escalate:
+    provider: opencode
+    model: claude-opus-4-8
+    thinking: high
+    rules: []
+    tools: []
+  # Step 5 — consolidated code review (request + receive fused). Top-tier.
+  review:
+    provider: opencode
+    model: claude-opus-4-8
+    thinking: high
+    rules: []
+    tools: []
+  # Step 7 — systematic-debugging circuit. Top-tier.
+  debug:
+    provider: minimax
+    model: MiniMax-M3
+    thinking: high
+    rules: []
+    tools: []
+
+limits:
+  impl_concurrency: 4 # max parallel implementer agents per DAG level
+  debug_subcycles_per_error: 5 # max debug attempts per distinct error
+  debug_global_cap: 15 # total debug sub-cycles before hard escalate
+  question_architecture_threshold: 3 # fix attempts before questioning architecture
+  coverage_threshold: 90 # minimum % coverage to pass verification
+
+branch:
+  prefix: feature # feature | chore | fix
+  base: main # base branch to cut from and target on finish
+
+finish:
+  action: pr # pr | merge | keep
+
+# Deterministic verification commands. Empty string => autodetect by stack.
+checks:
+  typecheck: ""
+  lint: ""
+  test: ""
+
+# Where the superpowers skills live (loaded fresh from disk each phase).
+# Supports a leading ~ or $HOME.
+skills_dir: "~/.config/agents/skills"

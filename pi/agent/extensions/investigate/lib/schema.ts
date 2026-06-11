@@ -6,7 +6,7 @@ const DepthSchema = Type.Union(
   [Type.Literal("light"), Type.Literal("medium"), Type.Literal("high"), Type.Literal("deep")],
   {
     description:
-      "Investigation budget. 'light' = 3 sub-questions (~30s, simple lookup); 'medium' = 5 (~60s, standard analysis); 'high' = 8 (~2min, broad research); 'deep' = 12 (~5min, thesis-grade). Pick the smallest depth that fits — deep is expensive.",
+      "Investigation budget. Realistic wall-clock budgets: 'light' = 3 sub-questions (~1-2min, simple lookup); 'medium' = 5 (~3-5min, standard analysis); 'high' = 8 (~5-10min, broad research); 'deep' = 12 (~10-15min, thesis-grade). Pick the smallest depth that fits — deep is expensive AND slow. Do NOT reinvoke the tool while a call is still running.",
   },
 );
 

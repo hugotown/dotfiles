@@ -16,6 +16,12 @@ export interface DepthProfile {
   concurrency_limit: number;
   thinking: ThinkingLevel;
   subpi_timeout_ms: number;
+  /** Number of retry attempts for an investigator sub-pi that times out OR returns no FINDINGS marker (0 = no retry). Each retry uses timeout * 1.5. */
+  investigator_max_retries: number;
+  /** Hard timeout (ms) for ONE synthesizer call (single synth in small runs, or each map-reduce step in large runs). Independent of subpi_timeout_ms. */
+  synth_timeout_ms: number;
+  /** Wall-clock budget (ms) for the WHOLE investigate run (plan + map + reduce). When exceeded the run aborts and returns whatever findings were collected. */
+  wall_clock_budget_ms: number;
   planner: RoleSpec;
   investigator: RoleSpec;
   synthesizer: RoleSpec;
@@ -53,6 +59,10 @@ export interface Finding {
   errorMessage?: string;
   exitCode?: number;
   durationMs: number;
+  /** True when the sub-pi was killed (timeout or non-zero exit) but partial FINDINGS were recovered. */
+  partial?: boolean;
+  /** How many retry attempts were spent on this sub-pi (0 = first try succeeded or only one try). */
+  attempts?: number;
 }
 
 export class MissingProxyEnvError extends Error {

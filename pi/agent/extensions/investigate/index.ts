@@ -7,6 +7,8 @@
 // investigator sub-pi spawns with `--tools curl`; if the curl extension is
 // loaded in the same pi installation, the sub-pi exposes it. If not, the
 // sub-pi fails fast at startup (captured as an error Finding, synthesis proceeds).
+//
+// Set INVESTIGATE_VERBOSE=0 (or false/no) to silence the stderr progress log.
 import type { AgentToolResult, AgentToolUpdateCallback, ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
 import { checkBashCommand } from "./lib/bash-guard.ts";
@@ -22,14 +24,17 @@ import { type Finding, type InvestigateInput, MissingProxyEnvError } from "./typ
 
 const DESCRIPTION = [
   "Perform multi-source web research on a question and return a synthesized report (Markdown, Spanish).",
-  "Internally: PLAN (split into N orthogonal sub-questions) → MAP (N sub-pi investigators in parallel, each with the `curl` tool) → REDUCE (one synthesis pass).",
-  "Depth controls cost: light(~30s)/medium(~60s)/high(~2min)/deep(~5min).",
+  "Internally: PLAN (split into N orthogonal sub-questions) → MAP (N sub-pi investigators in parallel, each with the `curl` tool) → REDUCE (single synthesis for ≤6 findings, map-reduce fusion for more).",
+  "Realistic wall-clock budgets per depth: light~2min / medium~5min / high~10min / deep~15min. NEVER reinvoke if a call is still in flight — wait for it to finish.",
+  "If synthesis cannot complete within budget the tool returns a raw-findings fallback (still useful, you can summarise it yourself).",
   "Use this for ANY broad research; for single HTTP requests use the `curl` tool directly.",
 ].join(" ");
 
 const GUIDELINES = [
-  "Pick the smallest depth that fits — deep is expensive. Use 'light' for a single fact, 'medium' for standard analysis, 'high' for broad research, 'deep' for thesis-grade work.",
+  "Pick the smallest depth that fits — deep is expensive AND slow (up to 15 minutes). Use 'light' for a single fact, 'medium' for standard analysis, 'high' for broad research, 'deep' only for thesis-grade work where you truly need 12 angles.",
   "The pregunta must be SPECIFIC. Bad: 'React'. Good: 'state management patterns for React 19 server components'.",
+  "Each `investigate` call may take SEVERAL MINUTES. Do NOT reinvoke the tool while a previous call is still running.",
+  "If the tool returns a fallback report ('# Reporte de investigación (fallback sin síntesis)'), that means synthesis failed but the raw findings are present — summarise them yourself rather than calling investigate again.",
   "For single HTTP requests (one API call, one known URL), use the `curl` tool directly — do not wrap a single request in investigate.",
   "External HTTP via `bash` (curl/wget/etc.) is blocked. Use `curl` tool for one request, `investigate` for research.",
 ];
@@ -41,6 +46,19 @@ function isProxyMissingAtStartup(envNames: { login: string; pass: string; host: 
   if (!process.env[envNames.host]) missing.push(envNames.host);
   if (!process.env[envNames.port]) missing.push(envNames.port);
   return missing;
+}
+
+/** Resolve INVESTIGATE_VERBOSE env var. Defaults to ON to preserve current behaviour. */
+function isVerboseEnabled(): boolean {
+  const raw = process.env.INVESTIGATE_VERBOSE;
+  if (raw === undefined) return true;
+  const v = raw.toLowerCase().trim();
+  return !(v === "0" || v === "false" || v === "no" || v === "off");
+}
+
+const VERBOSE = isVerboseEnabled();
+function vlog(line: string): void {
+  if (VERBOSE) console.error(line);
 }
 
 export default function investigate(pi: ExtensionAPI): void {
@@ -85,6 +103,21 @@ export default function investigate(pi: ExtensionAPI): void {
     async execute(_id, params, signal, onUpdate: AgentToolUpdateCallback<{ findings: Finding[] }> | undefined, ctx): Promise<AgentToolResult<{ findings: Finding[] }>> {
       // Mutable accumulator outside try so findings survive errors after MAP phase.
       let collectedFindings: Finding[] = [];
+
+      // Compose the parent's signal with our wall-clock budget timer. Whichever
+      // fires first aborts everything downstream.
+      const localAbort = new AbortController();
+      const onParentAbort = () => localAbort.abort();
+      if (signal) {
+        if (signal.aborted) localAbort.abort();
+        else signal.addEventListener("abort", onParentAbort, { once: true });
+      }
+      let budgetTimer: ReturnType<typeof setTimeout> | undefined;
+      const cleanup = () => {
+        if (budgetTimer) clearTimeout(budgetTimer);
+        if (signal) signal.removeEventListener("abort", onParentAbort);
+      };
+
       try {
         const input = params as InvestigateInput;
 
@@ -97,7 +130,15 @@ export default function investigate(pi: ExtensionAPI): void {
         const freshness = input.freshness ?? config.defaults.freshness;
         const cutoffDate = freshnessToDate(freshness);
 
+        // 2.5 Arm the wall-clock budget timer now that we know the depth.
+        budgetTimer = setTimeout(() => {
+          vlog(`[investigate] wall-clock budget ${profile.wall_clock_budget_ms}ms exceeded — aborting`);
+          localAbort.abort();
+        }, profile.wall_clock_budget_ms);
+
         // 3. PLAN
+        const runStart = Date.now();
+        vlog(`[investigate] start depth=${input.depth} N=${profile.sub_questions} cutoff=${cutoffDate ?? "any"} retries=${profile.investigator_max_retries} budget=${profile.wall_clock_budget_ms}ms`);
         onUpdate?.({ content: [{ type: "text", text: `Planning ${profile.sub_questions} sub-questions…` }], details: { findings: [] } });
         const subQuestions = await planSubQuestions({
           pregunta: input.pregunta,
@@ -105,8 +146,9 @@ export default function investigate(pi: ExtensionAPI): void {
           cutoffDate,
           profile,
           cwd: ctx.cwd,
-          signal,
+          signal: localAbort.signal,
         });
+        vlog(`[investigate] plan ok: ${subQuestions.length} sub-questions (${Date.now() - runStart}ms elapsed)`);
 
         // 4. MAP (parallel, semaphore-bounded)
         const semaphore = createSemaphore(profile.concurrency_limit);
@@ -123,10 +165,12 @@ export default function investigate(pi: ExtensionAPI): void {
                 profile,
                 cwd: ctx.cwd,
                 maxTextKb: config.limits.max_subpi_text_kb,
-                signal,
+                signal: localAbort.signal,
               });
               live[i] = f;
               doneCount++;
+              const tag = f.partial ? `${f.status}+partial` : f.status;
+              vlog(`[investigate] sub ${i + 1}/${subQuestions.length} ${tag} ${f.durationMs}ms exit=${f.exitCode ?? "n/a"} attempts=${(f.attempts ?? 0) + 1}${f.errorMessage ? ` err="${f.errorMessage.slice(0, 120)}"` : ""}`);
               onUpdate?.({
                 content: [{ type: "text", text: `${doneCount}/${subQuestions.length} sub-investigators done` }],
                 details: { findings: [...live] },
@@ -138,16 +182,20 @@ export default function investigate(pi: ExtensionAPI): void {
           }),
         );
 
-        // Persist findings so the catch block can return them if synthesis fails.
+        // Persist findings so the catch block can return them if anything below blows up.
         collectedFindings = findings;
 
         // 5. REDUCE
+        const okCount = findings.filter((f) => f.status === "ok").length;
+        vlog(`[investigate] map done: ${okCount}/${findings.length} usable (${Date.now() - runStart}ms elapsed); starting synthesis`);
         onUpdate?.({ content: [{ type: "text", text: "Synthesizing…" }], details: { findings } });
-        const report = await synthesize({ pregunta: input.pregunta, findings, cutoffDate, profile, cwd: ctx.cwd, signal });
+        const report = await synthesize({ pregunta: input.pregunta, findings, cutoffDate, profile, cwd: ctx.cwd, signal: localAbort.signal });
+        vlog(`[investigate] synthesis ok: ${report.length} chars (${Date.now() - runStart}ms elapsed total)`);
 
         return { content: [{ type: "text", text: report }], details: { findings } };
       } catch (err) {
         const e = err as Error;
+        vlog(`[investigate] FAILED ${e.name}: ${e.message} (findings collected: ${collectedFindings.length})`);
         let text = `${e.name}: ${e.message}`;
         if (collectedFindings.length > 0) {
           const lines = ["", "--- Raw Findings ---"];
@@ -164,6 +212,8 @@ export default function investigate(pi: ExtensionAPI): void {
           content: [{ type: "text", text }],
           details: { findings: collectedFindings },
         };
+      } finally {
+        cleanup();
       }
     },
   });

@@ -42,10 +42,35 @@ export function buildInvestigatorSystemPrompt(input: InvestigatorPromptInput): s
   ].join("\n");
 }
 
-const FINDINGS_RE = /FINDINGS:[\s\S]*$/;
+// Match a FINDINGS marker line. Case-insensitive, tolerates markdown wrappers
+// (** or ##/###), trailing `:`, and trailing `**`. The marker MUST be on its
+// own line (anchored with `m` flag → `^` matches start of any line) and the
+// rest of the line after the marker must contain only optional whitespace and
+// punctuation — no prose. This avoids matching inline mentions like
+// "the findings show that ...".
+// Examples accepted on a single line:
+//   FINDINGS:
+//   **FINDINGS:**
+//   ## FINDINGS
+//   ### Findings:
+//   findings:
+const FINDINGS_LINE_RE = /^[ \t]*(?:#{1,4}[ \t]*)?\*{0,2}findings\*{0,2}\s*:?\s*\*{0,2}[ \t]*$/gim;
 
-/** Extract the `FINDINGS:` section from the sub-pi's final assistant text. */
+/**
+ * Extract the body that follows the LAST `FINDINGS:` marker line in `finalText`.
+ * Returns the body prefixed with a normalized `FINDINGS:` header, or null when
+ * no marker is present or the body after the marker is empty.
+ *
+ * We pick the LAST marker on purpose: a sub-pi sometimes uses the literal word
+ * "FINDINGS:" on its own line earlier (e.g. echoing back the rule) before
+ * emitting the real section. Taking the last match avoids capturing prose.
+ */
 export function extractFindings(finalText: string): string | null {
-  const m = finalText.match(FINDINGS_RE);
-  return m ? m[0] : null;
+  const matches = [...finalText.matchAll(FINDINGS_LINE_RE)];
+  if (matches.length === 0) return null;
+  const last = matches[matches.length - 1];
+  const bodyStart = (last.index ?? 0) + last[0].length;
+  const body = finalText.slice(bodyStart).replace(/^\n+/, "").trimEnd();
+  if (body.length === 0) return null;
+  return `FINDINGS:\n${body}`;
 }

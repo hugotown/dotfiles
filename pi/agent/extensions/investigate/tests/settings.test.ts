@@ -66,6 +66,54 @@ describe("validateConfig", () => {
     raw.defaults.freshness = "decade";
     expect(() => validateConfig(raw)).toThrow(/freshness/);
   });
+
+  test("investigator_max_retries defaults to 1 when omitted", () => {
+    const c = validateConfig(minimalRaw());
+    for (const depth of ["light", "medium", "high", "deep"] as const) {
+      expect(c.depths[depth].investigator_max_retries).toBe(1);
+    }
+  });
+
+  test("investigator_max_retries accepts 0 (no retries)", () => {
+    const raw = minimalRaw();
+    (raw.depths.light as Record<string, unknown>).investigator_max_retries = "0";
+    const c = validateConfig(raw);
+    expect(c.depths.light.investigator_max_retries).toBe(0);
+  });
+
+  test("investigator_max_retries rejects negative values", () => {
+    const raw = minimalRaw();
+    (raw.depths.medium as Record<string, unknown>).investigator_max_retries = "-1";
+    expect(() => validateConfig(raw)).toThrow(/investigator_max_retries/);
+  });
+
+  test("synth_timeout_ms defaults to subpi_timeout_ms when omitted", () => {
+    const c = validateConfig(minimalRaw());
+    for (const depth of ["light", "medium", "high", "deep"] as const) {
+      expect(c.depths[depth].synth_timeout_ms).toBe(c.depths[depth].subpi_timeout_ms);
+    }
+  });
+
+  test("synth_timeout_ms accepts an explicit override", () => {
+    const raw = minimalRaw();
+    (raw.depths.high as Record<string, unknown>).synth_timeout_ms = "45000";
+    const c = validateConfig(raw);
+    expect(c.depths.high.synth_timeout_ms).toBe(45000);
+  });
+
+  test("wall_clock_budget_ms defaults to 600000 (10 min) when omitted", () => {
+    const c = validateConfig(minimalRaw());
+    for (const depth of ["light", "medium", "high", "deep"] as const) {
+      expect(c.depths[depth].wall_clock_budget_ms).toBe(600000);
+    }
+  });
+
+  test("wall_clock_budget_ms accepts an explicit override", () => {
+    const raw = minimalRaw();
+    (raw.depths.deep as Record<string, unknown>).wall_clock_budget_ms = "900000";
+    const c = validateConfig(raw);
+    expect(c.depths.deep.wall_clock_budget_ms).toBe(900000);
+  });
 });
 
 describe("parseConfig (YAML → validated)", () => {
