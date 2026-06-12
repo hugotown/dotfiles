@@ -31,5 +31,6 @@ const BASE_FIELDS = {
 export function buildQuestionsSchema(): TSchema {
 	return Type.Array(
 		Type.Union(allTypes().map((t) => Type.Object({ ...BASE_FIELDS, type: Type.Literal(t.type), ...t.fields }))),
+		{ minItems: 1, description: "REQUIRED. Ask at least one question." },
 	);
 }

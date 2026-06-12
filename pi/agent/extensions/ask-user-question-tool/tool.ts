@@ -20,18 +20,17 @@ export function registerAskUserQuestion(pi: ExtensionAPI): void {
 			"Question types: 'select' (one of several options; `default` = recommended option label), 'multiselect' (choose several; `default` = array of recommended option labels, may be empty), 'text' (free input; `default` = recommended pre-filled answer), 'wireframe_select' (select with an optional ASCII wireframe per option in the `wireframe` string array), and 'color_palette' (when the decision is a color; offer `presets` as {name, hex} objects and/or let the user type a custom hex; `default` = recommended hex). " +
 			"Set done=true once you have enough to proceed.",
 		parameters: Type.Object({
-			title: Type.Optional(Type.String({ description: "Short topic shown in the form header." })),
+			title: Type.String({ description: "REQUIRED. Short topic shown in the form header." }),
 			done: Type.Boolean({ description: "True if you have enough information to proceed after this round." }),
-			assumptions: Type.Optional(
-				Type.Array(
-					Type.Object({
-						id: Type.String(),
-						text: Type.String(),
-						confidence: Type.Union([Type.Literal("high"), Type.Literal("medium"), Type.Literal("low")]),
-					}),
-				),
+			assumptions: Type.Array(
+				Type.Object({
+					id: Type.String(),
+					text: Type.String(),
+					confidence: Type.Union([Type.Literal("high"), Type.Literal("medium"), Type.Literal("low")]),
+				}),
+				{ minItems: 1, description: "REQUIRED. State at least one assumption you inferred." },
 			),
-			questions: Type.Optional(buildQuestionsSchema()),
+			questions: buildQuestionsSchema(),
 		}),
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
 			const assumptions = (params.assumptions ?? []) as import("./types.ts").Assumption[];
