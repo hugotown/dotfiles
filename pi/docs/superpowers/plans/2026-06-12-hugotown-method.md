@@ -3414,3 +3414,400 @@ export default function hugotownMethod(pi: ExtensionAPI): void {
 - [ ] **Step 5: Commit** — `git add index.ts index.test.ts && git commit -m "feat: wire hugotown-method entry point"`
 
 ---
+
+## Section G — Bundled Assets + Integration Suites (Layer 6)
+
+> Bundled YAML/MD are validated by a parse+validate test (G7). Integration suites use the `*.itest.ts` suffix so unit `bun test` excludes them; run with `bun test tests/integration`. They REQUIRE: `pi` authenticated, `wt`, `git`, `bun`/`uv`, and (for PR flows) `gh`. AI assertions follow the agreed strategy: **mechanics + JSON-schema conformance** for general flow, **output-constrained prompts** where exact content is asserted. The model/provider are read from `~/.pi/agent/settings.json` at test setup.
+
+### Task G1: workflows/fix-issue.yaml
+
+**Files:** Create `workflows/fix-issue.yaml`
+
+- [ ] **Step 1: Write the workflow**
+
+```yaml
+name: fix-issue
+description: Investigate and fix a GitHub issue end-to-end, then open a PR.
+worktree: true
+nodes:
+  - id: classify
+    prompt: |
+      Classify this GitHub issue request and respond with JSON only: $ARGUMENTS
+    thinking: low
+    output_format:
+      type: object
+      properties:
+        type: { type: string, enum: [bug, feature, refactor, docs] }
+      required: [type]
+  - id: investigate
+    command: investigate-issue
+    depends_on: [classify]
+    context: fresh
+  - id: implement
+    command: implement-feature
+    depends_on: [investigate]
+    allowed_tools: [read, edit, write, bash, grep, find, ls]
+  - id: test
+    bash: "bun test 2>&1 || true"
+    depends_on: [implement]
+  - id: review-gate
+    approval:
+      message: "Implementation + tests done. Approve to open a PR, reject to abort."
+    depends_on: [test]
+  - id: create-pr
+    bash: 'gh pr create --title "fix: $ARGUMENTS" --body "By hugotown-method (base $BASE_BRANCH)" --base "$BASE_BRANCH" 2>&1 || true'
+    depends_on: [review-gate]
+    when: "$review-gate.output != 'rejected'"
+  - id: aborted
+    cancel: "User rejected the implementation."
+    depends_on: [review-gate]
+    when: "$review-gate.output == 'rejected'"
+```
+
+- [ ] **Step 2: Commit** — `git add workflows/fix-issue.yaml && git commit -m "feat: bundled fix-issue workflow"`
+
+### Task G2: workflows/feature-dev.yaml
+
+**Files:** Create `workflows/feature-dev.yaml`
+
+- [ ] **Step 1: Write the workflow**
+
+```yaml
+name: feature-dev
+description: Plan, implement, and iteratively test a feature, then open a PR.
+worktree: true
+nodes:
+  - id: plan
+    prompt: |
+      Produce a concise implementation plan for: $ARGUMENTS
+      Write it to $ARTIFACTS_DIR/plan.md and end with the path.
+    allowed_tools: [read, write, edit, bash, grep, find, ls]
+  - id: implement
+    command: implement-feature
+    depends_on: [plan]
+    allowed_tools: [read, write, edit, bash, grep, find, ls]
+  - id: verify
+    loop:
+      prompt: |
+        Run the tests; fix any failures. Previous attempt: $LOOP_PREV_OUTPUT
+        When all tests pass, end your message with <promise>COMPLETE</promise>.
+      until: COMPLETE
+      until_bash: "bun test >/dev/null 2>&1"
+      max_iterations: 5
+    depends_on: [implement]
+    allowed_tools: [read, write, edit, bash, grep, find, ls]
+  - id: review-gate
+    approval:
+      message: "Feature implemented and tests pass. Approve to open a PR."
+    depends_on: [verify]
+  - id: create-pr
+    bash: 'gh pr create --title "feat: $ARGUMENTS" --body "By hugotown-method" --base "$BASE_BRANCH" 2>&1 || true'
+    depends_on: [review-gate]
+    when: "$review-gate.output != 'rejected'"
+```
+
+- [ ] **Step 2: Commit** — `git add workflows/feature-dev.yaml && git commit -m "feat: bundled feature-dev workflow"`
+
+### Task G3: workflows/pr-review.yaml
+
+**Files:** Create `workflows/pr-review.yaml`
+
+- [ ] **Step 1: Write the workflow**
+
+```yaml
+name: pr-review
+description: Fetch a PR diff, run three parallel reviews, synthesize, and comment.
+nodes:
+  - id: fetch-diff
+    bash: 'gh pr diff "$ARGUMENTS" 2>&1 || true'
+  - id: code-quality
+    prompt: |
+      Review this diff for code quality and maintainability:
+      $fetch-diff.output
+    depends_on: [fetch-diff]
+  - id: security
+    prompt: |
+      Review this diff for security issues:
+      $fetch-diff.output
+    depends_on: [fetch-diff]
+  - id: architecture
+    prompt: |
+      Review this diff for architectural concerns:
+      $fetch-diff.output
+    depends_on: [fetch-diff]
+  - id: synthesize
+    prompt: |
+      Synthesize these reviews into one prioritized summary:
+      ## Code quality
+      $code-quality.output
+      ## Security
+      $security.output
+      ## Architecture
+      $architecture.output
+    depends_on: [code-quality, security, architecture]
+  - id: comment
+    bash: 'gh pr comment "$ARGUMENTS" --body "$synthesize.output" 2>&1 || true'
+    depends_on: [synthesize]
+```
+
+- [ ] **Step 2: Commit** — `git add workflows/pr-review.yaml && git commit -m "feat: bundled pr-review workflow"`
+
+### Task G4-G6: Bundled command templates
+
+**Files:** Create `commands/investigate-issue.md`, `commands/implement-feature.md`, `commands/review-code.md`
+
+- [ ] **Step 1: Write `commands/investigate-issue.md`**
+
+```markdown
+# Investigate Issue
+
+Input: $ARGUMENTS
+
+Investigate thoroughly:
+1. Reproduce the problem if possible.
+2. Identify the root cause in the codebase.
+3. Propose a concrete fix.
+
+Write your findings to $ARTIFACTS_DIR/investigation.md and end your message with that path. Do NOT modify code yet.
+```
+
+- [ ] **Step 2: Write `commands/implement-feature.md`**
+
+```markdown
+# Implement
+
+Input: $ARGUMENTS
+
+Implement the change following existing patterns:
+- Read any plan/investigation in $ARTIFACTS_DIR first.
+- Write tests for new behavior.
+- Keep changes minimal and focused.
+
+End with a short summary of the files you changed.
+```
+
+- [ ] **Step 3: Write `commands/review-code.md`**
+
+```markdown
+# Review Code
+
+Input: $ARGUMENTS
+
+Review the current changes (run `git diff`) for correctness, security, and maintainability. List concrete, prioritized findings with file:line references.
+```
+
+- [ ] **Step 4: Commit** — `git add commands/ && git commit -m "feat: bundled command templates"`
+
+### Task G7: tests/bundled.test.ts (unit — assets parse + validate)
+
+**Files:** Create `tests/bundled.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// tests/bundled.test.ts
+import { test, expect } from "bun:test";
+import { parseWorkflow } from "../lib/loader.ts";
+import { validateWorkflow } from "../lib/validator.ts";
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+const wfDir = path.join(import.meta.dir, "..", "workflows");
+
+test("every bundled workflow parses and validates", () => {
+  for (const f of fs.readdirSync(wfDir).filter((x) => x.endsWith(".yaml"))) {
+    const def = parseWorkflow(fs.readFileSync(path.join(wfDir, f), "utf-8"));
+    expect(validateWorkflow(def), `${f} should be valid`).toBeNull();
+  }
+});
+
+test("referenced commands exist", () => {
+  const cmds = fs.readdirSync(path.join(import.meta.dir, "..", "commands")).map((f) => f.replace(/\.md$/, ""));
+  for (const f of fs.readdirSync(wfDir).filter((x) => x.endsWith(".yaml"))) {
+    const def = parseWorkflow(fs.readFileSync(path.join(wfDir, f), "utf-8"));
+    for (const n of def.nodes) if (n.command) expect(cmds, `${n.command} for ${f}`).toContain(n.command);
+  }
+});
+```
+
+- [ ] **Step 2: Run → FAIL** (until G1-G6 exist; if assets present, PASS).
+- [ ] **Step 3: Fix any invalid bundled asset until green.**
+- [ ] **Step 4: Run → PASS** (`bun test tests/bundled.test.ts`).
+- [ ] **Step 5: Commit** — `git add tests/bundled.test.ts && git commit -m "test: validate bundled assets"`
+
+### Task G8: tests/integration/helpers.ts (shared test setup)
+
+**Files:** Create `tests/integration/helpers.ts`
+
+- [ ] **Step 1: Implement helper (no test of its own; used by suites)**
+
+```typescript
+// tests/integration/helpers.ts — Shared setup for integration suites.
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+export function defaultModel(): { provider: string; model: string } {
+  const settings = path.join(os.homedir(), ".pi", "agent", "settings.json");
+  const cfg = JSON.parse(fs.readFileSync(settings, "utf-8"));
+  const m: string = cfg.model ?? cfg.defaultModel ?? "";
+  const [provider, ...rest] = m.split("/");
+  return rest.length ? { provider, model: rest.join("/") } : { provider: "anthropic", model: m || "claude-sonnet-4" };
+}
+
+export function tempGitRepo(): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ht-it-"));
+  Bun.spawnSync(["git", "init"], { cwd: dir });
+  Bun.spawnSync(["git", "commit", "--allow-empty", "-m", "init"], { cwd: dir });
+  return dir;
+}
+
+export const realExec = async (command: string, args: string[], options?: { cwd?: string }) => {
+  const p = Bun.spawnSync([command, ...args], { cwd: options?.cwd });
+  return { stdout: p.stdout.toString(), stderr: p.stderr.toString(), code: p.exitCode, killed: false };
+};
+```
+
+- [ ] **Step 2: Commit** — `git add tests/integration/helpers.ts && git commit -m "test: integration helpers"`
+
+### Task G9: tests/integration/runner.itest.ts (real pi spawn)
+
+**Files:** Create `tests/integration/runner.itest.ts`
+
+- [ ] **Step 1: Write the integration test**
+
+```typescript
+// tests/integration/runner.itest.ts — Spawns a REAL pi subprocess.
+import { test, expect } from "bun:test";
+import { runPi } from "../../lib/runner.ts";
+import { enforceOutput } from "../../lib/output-schema.ts";
+import { defaultModel } from "./helpers.ts";
+
+const { provider, model } = defaultModel();
+
+test("mechanics: real pi run returns ok with output", async () => {
+  const r = await runPi({ provider, model, thinking: "low", system: "Be terse.", task: "Reply with the single word: READY", cwd: process.cwd() });
+  expect(r.status).toBe("ok");
+  expect(r.output.toUpperCase()).toContain("READY"); // output-constrained assertion
+}, 120000);
+
+test("schema: structured JSON conforms to a schema", async () => {
+  const r = await runPi({ provider, model, thinking: "low", system: "Output JSON only, no prose.", task: 'Return {"type":"bug"} as JSON.', cwd: process.cwd() });
+  const v = enforceOutput(r.output, { type: "object", properties: { type: { type: "string" } }, required: ["type"] });
+  expect(v.ok).toBe(true); // schema conformance, not exact value
+}, 120000);
+```
+
+- [ ] **Step 2: Run** (`bun test tests/integration/runner.itest.ts`) → Expected: PASS (requires pi auth).
+- [ ] **Step 3: Commit** — `git add tests/integration/runner.itest.ts && git commit -m "test: runner integration (real pi)"`
+
+### Task G10: tests/integration/wt.itest.ts (real wt)
+
+**Files:** Create `tests/integration/wt.itest.ts`
+
+- [ ] **Step 1: Write the integration test**
+
+```typescript
+// tests/integration/wt.itest.ts — Exercises the real `wt` CLI in a temp git repo.
+import { test, expect } from "bun:test";
+import { wtCreate, wtPath, wtRemove } from "../../lib/wt.ts";
+import { realExec, tempGitRepo } from "./helpers.ts";
+
+test("create then remove a worktree", async () => {
+  const repo = tempGitRepo();
+  const branch = `hugotown/it-${Date.now().toString(36)}`;
+  const { path } = await wtCreate(realExec, branch, repo);
+  expect(await wtPath(realExec, branch, repo)).toBe(path);
+  await wtRemove(realExec, branch, repo);
+  expect(await wtPath(realExec, branch, repo)).toBeNull();
+}, 60000);
+```
+
+- [ ] **Step 2: Run** (`bun test tests/integration/wt.itest.ts`) → Expected: PASS (requires `wt`).
+- [ ] **Step 3: Commit** — `git add tests/integration/wt.itest.ts && git commit -m "test: wt integration (real worktrees)"`
+
+### Task G11: tests/integration/dag-flow.itest.ts (end-to-end engine)
+
+**Files:** Create `tests/integration/dag-flow.itest.ts`
+
+- [ ] **Step 1: Write the integration test**
+
+```typescript
+// tests/integration/dag-flow.itest.ts — End-to-end DAG with deterministic + AI nodes + approval resume.
+import { test, expect } from "bun:test";
+import { startRun, resumeRun } from "../../lib/run-controller.ts";
+import { realExec, defaultModel } from "./helpers.ts";
+import type { RunDeps } from "../../runtime-types.ts";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+function project(): RunDeps {
+  const proj = fs.mkdtempSync(path.join(os.tmpdir(), "ht-e2e-"));
+  fs.mkdirSync(path.join(proj, ".hugotown", "workflows"), { recursive: true });
+  const { provider, model } = defaultModel();
+  fs.writeFileSync(path.join(proj, ".hugotown", "workflows", "demo.yaml"),
+    "name: demo\ndescription: e2e\nnodes:\n" +
+    "  - id: classify\n    prompt: 'Output JSON only: {\"type\":\"bug\"}'\n    output_format: { type: object, required: [type] }\n" +
+    "  - id: branch\n    bash: 'echo handled $classify.output.type'\n    depends_on: [classify]\n" +
+    "  - id: gate\n    approval: { message: review }\n    depends_on: [branch]\n" +
+    "  - id: done\n    bash: 'echo finished'\n    depends_on: [gate]\n");
+  return {
+    exec: realExec as RunDeps["exec"], notify: () => {}, emit: () => {},
+    home: path.join(proj, ".hugotown"), bundledDir: path.join(proj, ".hugotown"),
+    projectDir: proj, defaultProvider: provider, defaultModel: model,
+  };
+}
+
+test("AI classify -> bash branch -> approval pause -> resume -> done", async () => {
+  const deps = project();
+  const paused = await startRun("demo", "fix the bug", deps);
+  expect(paused.status).toBe("paused");
+  expect(paused.nodes.classify.status).toBe("completed");
+  expect(paused.nodes.branch.output).toContain("handled bug"); // structured field flowed into bash
+  const done = await resumeRun(paused.id, deps, { decision: "approve" });
+  expect(done.status).toBe("completed");
+  expect(done.nodes.done.output).toBe("finished");
+}, 120000);
+```
+
+- [ ] **Step 2: Run** (`bun test tests/integration/dag-flow.itest.ts`) → Expected: PASS (requires pi auth).
+- [ ] **Step 3: Commit** — `git add tests/integration/dag-flow.itest.ts && git commit -m "test: end-to-end DAG integration"`
+
+### Task G12: Coverage gate
+
+- [ ] **Step 1: Run unit coverage**
+
+Run: `bun test --coverage`
+Expected: line + function coverage > 90% across `lib/`, `nodes/`, top-level units.
+
+- [ ] **Step 2: Run integration suites**
+
+Run: `bun test tests/integration`
+Expected: all PASS (with pi/wt/gh available).
+
+- [ ] **Step 3: Typecheck**
+
+Run: `npx tsc --noEmit`
+Expected: PASS.
+
+- [ ] **Step 4: If coverage < 90%**, add targeted tests for the uncovered branches (do NOT lower the threshold), then re-run.
+
+---
+
+## Deferred (explicitly OUT OF SCOPE for v1)
+
+These were considered and consciously excluded; each has a clean extension point:
+- **`on_reject.prompt` AI-rework loop** (Archon): v1 reject = `"rejected"` branch or `on_reject: abort`. Extension point: `resumeRun` reject path.
+- **`persist_sessions` / per-node `--resume`**: the AS_IS runner uses `--no-session`, so node session IDs are not captured. Resume re-runs failed nodes from scratch (artifacts carry state). Extension point: `runner.ts` + `NodeState.session_id`.
+- **MCP servers, Claude SDK hooks, per-node skills**: not supported by the generic `pi --mode json` runner path. Extension point: `runner.ts` flags.
+- **Custom TUI panel** (`pi-tui` Component): v1 uses inline plain-text summaries. Extension point: `index.ts` `renderResult`.
+- **GitHub webhooks / external triggers**: pi TUI only; GitHub lifecycle is via `gh` bash nodes inside workflows.
+
+## Self-Review Checklist (run before execution)
+
+1. Spec coverage: every spec section maps to a task (engine, 7 node types, wt, gh-as-bash, structured output, approval-resume, retry, discovery, commands, bundled workflows). ✓
+2. No placeholders: every step has real code/commands. ✓
+3. Type consistency: `RunDeps`, `RunCtx`, `NodeResult`, `RunState`, `SubContext`, `PiRunResult` used identically across tasks. ✓
+4. File-size: each source file ≤ 120 LOC; helpers extracted where needed. ✓
+5. 1 unit = source + its test, co-located. ✓
