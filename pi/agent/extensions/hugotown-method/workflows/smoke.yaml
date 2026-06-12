@@ -1,0 +1,18 @@
+name: smoke
+description: Safe end-to-end smoke test - bash, AI prompt, approval gate. No worktree, no gh.
+nodes:
+  - id: greet
+    bash: 'echo "hello from $ARGUMENTS"'
+  - id: classify
+    prompt: |
+      Reply with a single word (lowercase, no punctuation) naming the topic of this text: $ARGUMENTS
+      Output only the word.
+    thinking: low
+    depends_on: [greet]
+  - id: gate
+    approval:
+      message: "Smoke test reached the approval gate. Approve to finish."
+    depends_on: [classify]
+  - id: done
+    bash: 'echo "smoke complete: greet=$greet.output topic=$classify.output"'
+    depends_on: [gate]

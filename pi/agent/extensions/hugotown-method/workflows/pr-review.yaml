@@ -1,0 +1,33 @@
+name: pr-review
+description: Fetch a PR diff, run three parallel reviews, synthesize, and comment.
+nodes:
+  - id: fetch-diff
+    bash: 'gh pr diff "$ARGUMENTS" 2>&1 || true'
+  - id: code-quality
+    prompt: |
+      Review this diff for code quality and maintainability:
+      $fetch-diff.output
+    depends_on: [fetch-diff]
+  - id: security
+    prompt: |
+      Review this diff for security issues:
+      $fetch-diff.output
+    depends_on: [fetch-diff]
+  - id: architecture
+    prompt: |
+      Review this diff for architectural concerns:
+      $fetch-diff.output
+    depends_on: [fetch-diff]
+  - id: synthesize
+    prompt: |
+      Synthesize these reviews into one prioritized summary:
+      ## Code quality
+      $code-quality.output
+      ## Security
+      $security.output
+      ## Architecture
+      $architecture.output
+    depends_on: [code-quality, security, architecture]
+  - id: comment
+    bash: 'gh pr comment "$ARGUMENTS" --body "$synthesize.output" 2>&1 || true'
+    depends_on: [synthesize]
