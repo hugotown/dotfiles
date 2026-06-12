@@ -1580,3 +1580,1120 @@ export function buildScriptArgv(spec: ScriptSpec, code: string): string[] {
 - [ ] **Step 5: Commit** — `git add lib/script-detect.ts lib/script-detect.test.ts && git commit -m "feat: script runtime detection"`
 
 ---
+
+## Section C — IO / Process (Layer 2)
+
+> These touch the filesystem and subprocesses. Pure-ish units (state, artifacts, discovery, wt, git-info) are UNIT-tested with temp dirs or an injected fake `exec` (DIP). Real-process behavior (spawning `pi`, real `wt`) is INTEGRATION-tested in Section G. `runner.ts` exports `buildBaseArgs` for unit testing the flag assembly.
+
+### Task C1: lib/pi-invocation.ts
+
+**Files:** Create `lib/pi-invocation.ts`, Test `lib/pi-invocation.test.ts` (verified copy of subagent logic)
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/pi-invocation.test.ts
+import { test, expect } from "bun:test";
+import { getPiInvocation, writeSystemPrompt, cleanupTemp } from "./pi-invocation.ts";
+import * as fs from "node:fs";
+
+test("getPiInvocation returns a command + args including our args", () => {
+  const { command, args } = getPiInvocation(["--mode", "json"]);
+  expect(typeof command).toBe("string");
+  expect(args).toContain("--mode");
+});
+
+test("writeSystemPrompt writes file then cleanup removes it", async () => {
+  const { dir, filePath } = await writeSystemPrompt("node", "hello");
+  expect(fs.readFileSync(filePath, "utf-8")).toBe("hello");
+  cleanupTemp(dir, filePath);
+  expect(fs.existsSync(filePath)).toBe(false);
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/pi-invocation.ts — Resolve the pi binary and stage the system-prompt temp file.
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+export function getPiInvocation(args: string[]): { command: string; args: string[] } {
+  const script = process.argv[1];
+  const isBunVirtual = script?.startsWith("/$bunfs/root/");
+  if (script && !isBunVirtual && fs.existsSync(script)) {
+    return { command: process.execPath, args: [script, ...args] };
+  }
+  const execName = path.basename(process.execPath).toLowerCase();
+  if (/^pi(\.exe)?$/.test(execName)) return { command: process.execPath, args };
+  return { command: "pi", args };
+}
+
+export async function writeSystemPrompt(name: string, prompt: string): Promise<{ dir: string; filePath: string }> {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "hugotown-"));
+  const safe = name.replace(/[^\w.-]+/g, "_");
+  const filePath = path.join(dir, `system-${safe}.md`);
+  await fs.promises.writeFile(filePath, prompt, { encoding: "utf-8", mode: 0o600 });
+  return { dir, filePath };
+}
+
+export function cleanupTemp(dir: string | null, filePath: string | null): void {
+  if (filePath) try { fs.unlinkSync(filePath); } catch { /* ignore */ }
+  if (dir) try { fs.rmdirSync(dir); } catch { /* ignore */ }
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/pi-invocation.ts lib/pi-invocation.test.ts && git commit -m "feat: pi binary resolution + system-prompt staging"`
+
+### Task C2: lib/runner.ts
+
+**Files:** Create `lib/runner.ts`, Test `lib/runner.test.ts` (unit: arg assembly; full spawn covered in Section G)
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/runner.test.ts
+import { test, expect } from "bun:test";
+import { buildBaseArgs } from "./runner.ts";
+
+test("assembles fixed flags in order", () => {
+  const a = buildBaseArgs({ provider: "anthropic", model: "claude-sonnet-4", thinking: "medium", system: "", task: "t", cwd: "/" });
+  expect(a.slice(0, 9)).toEqual(["--mode", "json", "-p", "--no-session", "--provider", "anthropic", "--model", "claude-sonnet-4", "--thinking"]);
+});
+
+test("adds --tools allowlist when present", () => {
+  const a = buildBaseArgs({ provider: "p", model: "m", thinking: "low", tools: ["read", "edit"], system: "", task: "t", cwd: "/" });
+  expect(a).toContain("--tools");
+  expect(a[a.indexOf("--tools") + 1]).toBe("read,edit");
+});
+
+test("omits --tools when empty", () => {
+  const a = buildBaseArgs({ provider: "p", model: "m", thinking: "low", tools: [], system: "", task: "t", cwd: "/" });
+  expect(a).not.toContain("--tools");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/runner.ts — Spawn one isolated `pi --mode json` subprocess; stream NDJSON to a result.
+import { spawn } from "node:child_process";
+import { getPiInvocation, writeSystemPrompt, cleanupTemp } from "./pi-invocation.ts";
+import { applyJsonLine } from "./json-stream.ts";
+import type { PiRunResult } from "../runtime-types.ts";
+
+export interface RunPiOpts {
+  provider: string; model: string; thinking: string;
+  tools?: string[]; system: string; task: string; cwd: string; signal?: AbortSignal;
+}
+
+export function buildBaseArgs(o: RunPiOpts): string[] {
+  const a = ["--mode", "json", "-p", "--no-session", "--provider", o.provider, "--model", o.model, "--thinking", o.thinking];
+  if (o.tools && o.tools.length > 0) a.push("--tools", o.tools.join(","));
+  return a;
+}
+
+function stream(command: string, args: string[], o: RunPiOpts, result: PiRunResult): Promise<{ exitCode: number; aborted: boolean }> {
+  return new Promise((resolve) => {
+    const proc = spawn(command, args, { cwd: o.cwd, shell: false, stdio: ["ignore", "pipe", "pipe"] });
+    let buffer = "", aborted = false;
+    proc.stdout.on("data", (d) => {
+      buffer += d.toString();
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) applyJsonLine(result, line);
+    });
+    proc.stderr.on("data", (d) => { result.stderr += d.toString(); });
+    proc.on("close", (code) => { if (buffer.trim()) applyJsonLine(result, buffer); resolve({ exitCode: code ?? 0, aborted }); });
+    proc.on("error", () => resolve({ exitCode: 1, aborted }));
+    if (o.signal) {
+      const kill = () => { aborted = true; proc.kill("SIGTERM"); setTimeout(() => !proc.killed && proc.kill("SIGKILL"), 5000); };
+      o.signal.aborted ? kill() : o.signal.addEventListener("abort", kill, { once: true });
+    }
+  });
+}
+
+export async function runPi(o: RunPiOpts): Promise<PiRunResult> {
+  const result: PiRunResult = { output: "", status: "ok", exitCode: 0, stderr: "", messages: [] };
+  const sys = await writeSystemPrompt("node", o.system);
+  try {
+    const args = [...buildBaseArgs(o), "--append-system-prompt", sys.filePath, o.task];
+    const { command, args: cmdArgs } = getPiInvocation(args);
+    const { exitCode, aborted } = await stream(command, cmdArgs, o, result);
+    result.exitCode = exitCode;
+    result.status = exitCode === 0 && result.stopReason !== "error" && result.stopReason !== "aborted" && !aborted ? "ok" : "failed";
+    return result;
+  } finally {
+    cleanupTemp(sys.dir, sys.filePath);
+  }
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/runner.ts lib/runner.test.ts && git commit -m "feat: pi subprocess runner"`
+
+### Task C3: lib/state.ts
+
+**Files:** Create `lib/state.ts`, Test `lib/state.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/state.test.ts
+import { test, expect } from "bun:test";
+import { saveRun, loadRun, listRuns } from "./state.ts";
+import type { RunState } from "../runtime-types.ts";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+const home = fs.mkdtempSync(path.join(os.tmpdir(), "ht-state-"));
+const state: RunState = {
+  id: "r1", workflow: "w", arguments: "", status: "running",
+  artifacts_dir: "/tmp", base_branch: "main", started_at: "t", nodes: {},
+};
+
+test("save then load round-trips", () => {
+  saveRun(home, state);
+  expect(loadRun(home, "r1")?.workflow).toBe("w");
+});
+
+test("loadRun returns null for missing", () => {
+  expect(loadRun(home, "nope")).toBeNull();
+});
+
+test("listRuns returns saved runs", () => {
+  expect(listRuns(home).map((r) => r.id)).toContain("r1");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/state.ts — Persist/restore RunState as JSON files under <home>/runs/.
+import * as fs from "node:fs";
+import * as path from "node:path";
+import type { RunState } from "../runtime-types.ts";
+
+function runsDir(home: string): string { return path.join(home, "runs"); }
+
+export function saveRun(home: string, state: RunState): void {
+  fs.mkdirSync(runsDir(home), { recursive: true });
+  fs.writeFileSync(path.join(runsDir(home), `${state.id}.json`), JSON.stringify(state, null, 2));
+}
+
+export function loadRun(home: string, id: string): RunState | null {
+  try { return JSON.parse(fs.readFileSync(path.join(runsDir(home), `${id}.json`), "utf-8")); }
+  catch { return null; }
+}
+
+export function listRuns(home: string): RunState[] {
+  try {
+    return fs.readdirSync(runsDir(home)).filter((f) => f.endsWith(".json"))
+      .map((f) => JSON.parse(fs.readFileSync(path.join(runsDir(home), f), "utf-8")));
+  } catch { return []; }
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/state.ts lib/state.test.ts && git commit -m "feat: run state persistence"`
+
+### Task C4: lib/artifacts.ts
+
+**Files:** Create `lib/artifacts.ts`, Test `lib/artifacts.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/artifacts.test.ts
+import { test, expect } from "bun:test";
+import { createArtifactsDir } from "./artifacts.ts";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+test("creates a per-run artifacts dir", () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "ht-art-"));
+  const dir = createArtifactsDir(home, "run1");
+  expect(fs.existsSync(dir)).toBe(true);
+  expect(dir).toContain("run1");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/artifacts.ts — Create the per-run shared artifacts directory.
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+export function createArtifactsDir(home: string, id: string): string {
+  const dir = path.join(home, "artifacts", id);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/artifacts.ts lib/artifacts.test.ts && git commit -m "feat: artifacts dir creation"`
+
+### Task C5: lib/wt.ts
+
+**Files:** Create `lib/wt.ts`, Test `lib/wt.test.ts` (fake exec; real wt in Section G)
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/wt.test.ts
+import { test, expect } from "bun:test";
+import { wtCreate, wtPath, wtRemove } from "./wt.ts";
+import type { ExecLike } from "../runtime-types.ts";
+
+const fakeExec = (responses: Record<string, { stdout?: string; code?: number }>): ExecLike =>
+  async (cmd, args) => {
+    const key = `${cmd} ${args.join(" ")}`;
+    const r = responses[key] ?? { code: 0 };
+    return { stdout: r.stdout ?? "", stderr: "", code: r.code ?? 0, killed: false };
+  };
+
+test("wtCreate switches then resolves path", async () => {
+  const exec = fakeExec({
+    "wt switch --create hugotown/x": { code: 0 },
+    "wt list --format=json": { stdout: JSON.stringify([{ branch: "hugotown/x", path: "/wt/x" }]) },
+  });
+  expect((await wtCreate(exec, "hugotown/x", "/repo")).path).toBe("/wt/x");
+});
+
+test("wtPath returns null when branch absent", async () => {
+  const exec = fakeExec({ "wt list --format=json": { stdout: "[]" } });
+  expect(await wtPath(exec, "missing", "/repo")).toBeNull();
+});
+
+test("wtRemove issues remove with flags", async () => {
+  let called = "";
+  const exec: ExecLike = async (cmd, args) => { called = `${cmd} ${args.join(" ")}`; return { stdout: "", stderr: "", code: 0, killed: false }; };
+  await wtRemove(exec, "hugotown/x", "/repo");
+  expect(called).toBe("wt remove hugotown/x --yes --force");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/wt.ts — Worktree lifecycle via the `wt` CLI (injected exec).
+import type { ExecLike } from "../runtime-types.ts";
+
+export async function wtPath(exec: ExecLike, branch: string, cwd: string): Promise<string | null> {
+  const r = await exec("wt", ["list", "--format=json"], { cwd });
+  if (r.code !== 0) return null;
+  try {
+    const list = JSON.parse(r.stdout) as Array<{ branch?: string; path?: string }>;
+    return list.find((w) => w.branch === branch)?.path ?? null;
+  } catch { return null; }
+}
+
+export async function wtCreate(exec: ExecLike, branch: string, cwd: string): Promise<{ path: string }> {
+  const r = await exec("wt", ["switch", "--create", branch], { cwd });
+  if (r.code !== 0) throw new Error(`wt switch failed: ${r.stderr}`);
+  const p = await wtPath(exec, branch, cwd);
+  if (!p) throw new Error(`worktree path not found for ${branch}`);
+  return { path: p };
+}
+
+export async function wtMerge(exec: ExecLike, cwd: string): Promise<void> {
+  const r = await exec("wt", ["merge", "--yes"], { cwd });
+  if (r.code !== 0) throw new Error(`wt merge failed: ${r.stderr}`);
+}
+
+export async function wtRemove(exec: ExecLike, branch: string, cwd: string): Promise<void> {
+  await exec("wt", ["remove", branch, "--yes", "--force"], { cwd });
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/wt.ts lib/wt.test.ts && git commit -m "feat: wt worktree integration"`
+
+### Task C6: lib/git-info.ts
+
+**Files:** Create `lib/git-info.ts`, Test `lib/git-info.test.ts` (fake exec)
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/git-info.test.ts
+import { test, expect } from "bun:test";
+import { detectBaseBranch } from "./git-info.ts";
+import type { ExecLike } from "../runtime-types.ts";
+
+test("reads origin/HEAD when available", async () => {
+  const exec: ExecLike = async (_c, args) =>
+    args.includes("symbolic-ref")
+      ? { stdout: "refs/remotes/origin/main\n", stderr: "", code: 0, killed: false }
+      : { stdout: "", stderr: "", code: 1, killed: false };
+  expect(await detectBaseBranch(exec, "/repo")).toBe("main");
+});
+
+test("falls back to current branch then 'main'", async () => {
+  const exec: ExecLike = async (_c, args) =>
+    args.includes("--show-current")
+      ? { stdout: "dev\n", stderr: "", code: 0, killed: false }
+      : { stdout: "", stderr: "", code: 1, killed: false };
+  expect(await detectBaseBranch(exec, "/repo")).toBe("dev");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/git-info.ts — Detect the repository base branch via git (injected exec).
+import type { ExecLike } from "../runtime-types.ts";
+
+export async function detectBaseBranch(exec: ExecLike, cwd: string): Promise<string> {
+  const head = await exec("git", ["symbolic-ref", "refs/remotes/origin/HEAD"], { cwd });
+  if (head.code === 0) {
+    const m = head.stdout.trim().match(/refs\/remotes\/origin\/(.+)$/);
+    if (m) return m[1];
+  }
+  const cur = await exec("git", ["branch", "--show-current"], { cwd });
+  return cur.code === 0 && cur.stdout.trim() ? cur.stdout.trim() : "main";
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/git-info.ts lib/git-info.test.ts && git commit -m "feat: base branch detection"`
+
+### Task C7: lib/discovery.ts
+
+**Files:** Create `lib/discovery.ts`, Test `lib/discovery.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/discovery.test.ts
+import { test, expect } from "bun:test";
+import { findWorkflow, listWorkflows, findCommand } from "./discovery.ts";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+const proj = fs.mkdtempSync(path.join(os.tmpdir(), "ht-proj-"));
+const bundled = fs.mkdtempSync(path.join(os.tmpdir(), "ht-bundled-"));
+fs.mkdirSync(path.join(bundled, "workflows"), { recursive: true });
+fs.mkdirSync(path.join(proj, "workflows"), { recursive: true });
+fs.mkdirSync(path.join(bundled, "commands"), { recursive: true });
+fs.writeFileSync(path.join(bundled, "workflows", "fix.yaml"), "name: fix\ndescription: bundled\nnodes:\n  - id: a\n    bash: x");
+fs.writeFileSync(path.join(proj, "workflows", "fix.yaml"), "name: fix\ndescription: project\nnodes:\n  - id: a\n    bash: x");
+fs.writeFileSync(path.join(bundled, "commands", "c.md"), "hi");
+
+test("project workflow overrides bundled", () => {
+  const p = findWorkflow("fix", [proj, bundled]);
+  expect(p).toBe(path.join(proj, "workflows", "fix.yaml"));
+});
+
+test("listWorkflows dedupes by name (project wins)", () => {
+  const list = listWorkflows([proj, bundled]);
+  expect(list.find((w) => w.name === "fix")?.description).toBe("project");
+});
+
+test("findCommand resolves bundled when not in project", () => {
+  expect(findCommand("c", [proj, bundled])).toBe(path.join(bundled, "commands", "c.md"));
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/discovery.ts — Resolve workflow/command files; earlier dirs override later ones.
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { parseWorkflow } from "./loader.ts";
+
+function firstExisting(dirs: string[], rel: string): string | null {
+  for (const d of dirs) {
+    const p = path.join(d, rel);
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+export function findWorkflow(name: string, dirs: string[]): string | null {
+  return firstExisting(dirs, path.join("workflows", `${name}.yaml`));
+}
+
+export function findCommand(name: string, dirs: string[]): string | null {
+  return firstExisting(dirs, path.join("commands", `${name}.md`));
+}
+
+export function listWorkflows(dirs: string[]): { name: string; description: string }[] {
+  const seen = new Map<string, { name: string; description: string }>();
+  for (const d of dirs) {
+    const wd = path.join(d, "workflows");
+    if (!fs.existsSync(wd)) continue;
+    for (const f of fs.readdirSync(wd)) {
+      const name = f.replace(/\.yaml$/, "");
+      if (!f.endsWith(".yaml") || seen.has(name)) continue;
+      try {
+        const def = parseWorkflow(fs.readFileSync(path.join(wd, f), "utf-8"));
+        seen.set(name, { name, description: def.description });
+      } catch { /* skip invalid */ }
+    }
+  }
+  return [...seen.values()];
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/discovery.ts lib/discovery.test.ts && git commit -m "feat: workflow/command discovery"`
+
+### Task C8: lib/command-loader.ts
+
+**Files:** Create `lib/command-loader.ts`, Test `lib/command-loader.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/command-loader.test.ts
+import { test, expect } from "bun:test";
+import { loadCommandText } from "./command-loader.ts";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ht-cmd-"));
+fs.mkdirSync(path.join(dir, "commands"), { recursive: true });
+fs.writeFileSync(path.join(dir, "commands", "investigate.md"), "Investigate: $ARGUMENTS");
+
+test("loads command text", () => {
+  expect(loadCommandText("investigate", [dir])).toContain("Investigate:");
+});
+
+test("throws on missing command", () => {
+  expect(() => loadCommandText("nope", [dir])).toThrow(/not found/);
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/command-loader.ts — Load a .md command template's raw text.
+import * as fs from "node:fs";
+import { findCommand } from "./discovery.ts";
+
+export function loadCommandText(name: string, dirs: string[]): string {
+  const file = findCommand(name, dirs);
+  if (!file) throw new Error(`Command "${name}" not found in ${dirs.join(", ")}`);
+  return fs.readFileSync(file, "utf-8");
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/command-loader.ts lib/command-loader.test.ts && git commit -m "feat: command template loader"`
+
+---
+
+## Section D — Node Handlers (Layer 3)
+
+> Each handler takes a `RunCtx` and returns a `NodeResult`. AI handlers (`prompt`, `command`, `loop`) accept an injectable `run = runPi` parameter (default = real spawn) so unit tests can pass a deterministic fake, while Section G drives the real spawn. Deterministic handlers (`bash`, `script`) expose pure helpers (`inlineOutputs`, `resolveArgv`) for unit tests; real-process behavior is integration-tested in Section G.
+
+### Task D1: nodes/prompt.ts
+
+**Files:** Create `nodes/prompt.ts`, Test `nodes/prompt.test.ts`
+**Exports (contract update):** `runAiTask(rctx, task, run?)`, `runPrompt(rctx, run?)`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// nodes/prompt.test.ts
+import { test, expect } from "bun:test";
+import { runPrompt, runAiTask } from "./prompt.ts";
+import type { RunCtx, PiRunResult } from "../runtime-types.ts";
+
+const okRun = async (): Promise<PiRunResult> =>
+  ({ output: '{"type":"bug"}', status: "ok", exitCode: 0, stderr: "", messages: [] });
+
+const ctx = (overrides = {}): RunCtx => ({
+  node: { id: "n", prompt: "Classify $ARGUMENTS", ...overrides },
+  state: {} as RunCtx["state"],
+  deps: { defaultProvider: "anthropic", defaultModel: "m", exec: (async () => ({ stdout: "", stderr: "", code: 0, killed: false })) as RunCtx["deps"]["exec"], notify: () => {}, emit: () => {}, home: "/h", bundledDir: "/b", projectDir: "/p" },
+  sub: { builtins: { ARGUMENTS: "#42" }, nodeOutputs: {}, nodeStructured: {} },
+  cwd: "/p",
+});
+
+test("runs AI task and returns completed output", async () => {
+  const r = await runPrompt(ctx(), okRun);
+  expect(r.status).toBe("completed");
+});
+
+test("validates output_format and exposes structured data", async () => {
+  const r = await runAiTask(ctx({ output_format: { type: "object", required: ["type"] } }), "x", okRun);
+  expect(r.status).toBe("completed");
+  expect((r.structured as { type: string }).type).toBe("bug");
+});
+
+test("fails when output_format unmet", async () => {
+  const bad = async (): Promise<PiRunResult> => ({ output: "{}", status: "ok", exitCode: 0, stderr: "", messages: [] });
+  const r = await runAiTask(ctx({ output_format: { type: "object", required: ["type"] } }), "x", bad);
+  expect(r.status).toBe("failed");
+});
+
+test("fails when no model resolved", async () => {
+  const c = ctx(); c.deps = { ...c.deps, defaultModel: undefined };
+  const r = await runAiTask(c, "x", okRun);
+  expect(r.status).toBe("failed");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// nodes/prompt.ts — Run a prompt/command AI task in an isolated pi subprocess.
+import { runPi } from "../lib/runner.ts";
+import { substitute } from "../lib/variable-sub.ts";
+import { enforceOutput } from "../lib/output-schema.ts";
+import { QUESTION_PROHIBITION, DEFAULT_BLOCKED_TOOLS } from "../constants.ts";
+import type { RunCtx, NodeResult } from "../runtime-types.ts";
+
+export async function runAiTask(rctx: RunCtx, task: string, run = runPi): Promise<NodeResult> {
+  const { node, deps, cwd } = rctx;
+  const provider = node.provider ?? deps.defaultProvider;
+  const model = node.model ?? deps.defaultModel;
+  if (!provider || !model) return { status: "failed", output: "", error: "No provider/model resolved for node" };
+  const tools = node.allowed_tools?.filter((t) => !DEFAULT_BLOCKED_TOOLS.includes(t));
+  const r = await run({
+    provider, model, thinking: node.thinking ?? "medium",
+    tools, system: QUESTION_PROHIBITION, task, cwd, signal: deps.signal,
+  });
+  if (r.status === "failed") return { status: "failed", output: r.output, error: r.errorMessage ?? r.stderr };
+  if (node.output_format) {
+    const v = enforceOutput(r.output, node.output_format);
+    if (!v.ok) return { status: "failed", output: r.output, error: v.error };
+    return { status: "completed", output: r.output, structured: v.data };
+  }
+  return { status: "completed", output: r.output };
+}
+
+export function runPrompt(rctx: RunCtx, run = runPi): Promise<NodeResult> {
+  return runAiTask(rctx, substitute(rctx.node.prompt ?? "", rctx.sub), run);
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add nodes/prompt.ts nodes/prompt.test.ts && git commit -m "feat: prompt node handler"`
+
+### Task D2: nodes/command.ts
+
+**Files:** Create `nodes/command.ts`, Test `nodes/command.test.ts`
+**Exports (contract):** `runCommand(rctx, run?)`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// nodes/command.test.ts
+import { test, expect } from "bun:test";
+import { runCommand } from "./command.ts";
+import type { RunCtx, PiRunResult } from "../runtime-types.ts";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+const bundled = fs.mkdtempSync(path.join(os.tmpdir(), "ht-cmd-h-"));
+fs.mkdirSync(path.join(bundled, "commands"), { recursive: true });
+fs.writeFileSync(path.join(bundled, "commands", "investigate.md"), "Investigate: $ARGUMENTS");
+
+const capture = { task: "" };
+const fakeRun = async (o: { task: string }): Promise<PiRunResult> => {
+  capture.task = o.task;
+  return { output: "done", status: "ok", exitCode: 0, stderr: "", messages: [] };
+};
+
+test("loads template, substitutes, runs", async () => {
+  const ctx: RunCtx = {
+    node: { id: "n", command: "investigate" },
+    state: {} as RunCtx["state"],
+    deps: { defaultProvider: "p", defaultModel: "m", exec: (async () => ({ stdout: "", stderr: "", code: 0, killed: false })) as RunCtx["deps"]["exec"], notify: () => {}, emit: () => {}, home: "/h", bundledDir: bundled, projectDir: "/nope" },
+    sub: { builtins: { ARGUMENTS: "#7" }, nodeOutputs: {}, nodeStructured: {} },
+    cwd: "/p",
+  };
+  const r = await runCommand(ctx, fakeRun as never);
+  expect(r.status).toBe("completed");
+  expect(capture.task).toBe("Investigate: #7");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// nodes/command.ts — Run a command node: load .md template, substitute, run as AI task.
+import * as path from "node:path";
+import { runAiTask } from "./prompt.ts";
+import { loadCommandText } from "../lib/command-loader.ts";
+import { substitute } from "../lib/variable-sub.ts";
+import { runPi } from "../lib/runner.ts";
+import type { RunCtx, NodeResult } from "../runtime-types.ts";
+
+export function runCommand(rctx: RunCtx, run = runPi): Promise<NodeResult> {
+  const { node, deps } = rctx;
+  const dirs = [path.join(deps.projectDir, ".hugotown"), deps.bundledDir];
+  const text = loadCommandText(node.command ?? "", dirs);
+  return runAiTask(rctx, substitute(text, rctx.sub), run);
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add nodes/command.ts nodes/command.test.ts && git commit -m "feat: command node handler"`
+
+### Task D3: nodes/bash.ts
+
+**Files:** Create `nodes/bash.ts`, Test `nodes/bash.test.ts`
+**Exports (contract):** `inlineOutputs(template, sub)`, `runBash(rctx)`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// nodes/bash.test.ts
+import { test, expect } from "bun:test";
+import { inlineOutputs, runBash } from "./bash.ts";
+import type { RunCtx, SubContext } from "../runtime-types.ts";
+
+const sub: SubContext = {
+  builtins: { ARGUMENTS: "hello" },
+  nodeOutputs: { prev: "a'b" },
+  nodeStructured: {},
+};
+
+test("inlineOutputs shell-quotes node outputs", () => {
+  expect(inlineOutputs("echo $prev.output", sub)).toBe("echo 'a'\\''b'");
+});
+
+test("runBash executes with builtins as env", async () => {
+  const ctx: RunCtx = {
+    node: { id: "n", bash: "echo $ARGUMENTS" },
+    state: {} as RunCtx["state"],
+    deps: { exec: (async () => ({ stdout: "", stderr: "", code: 0, killed: false })) as RunCtx["deps"]["exec"], notify: () => {}, emit: () => {}, home: "/h", bundledDir: "/b", projectDir: "/p" },
+    sub, cwd: process.cwd(),
+  };
+  const r = await runBash(ctx);
+  expect(r.status).toBe("completed");
+  expect(r.output).toBe("hello");
+});
+
+test("runBash fails on non-zero exit", async () => {
+  const ctx: RunCtx = {
+    node: { id: "n", bash: "exit 3" },
+    state: {} as RunCtx["state"],
+    deps: { exec: (async () => ({ stdout: "", stderr: "", code: 0, killed: false })) as RunCtx["deps"]["exec"], notify: () => {}, emit: () => {}, home: "/h", bundledDir: "/b", projectDir: "/p" },
+    sub, cwd: process.cwd(),
+  };
+  expect((await runBash(ctx)).status).toBe("failed");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// nodes/bash.ts — Run a deterministic bash node. Builtins via env; node outputs inline-quoted.
+import { spawn } from "node:child_process";
+import type { RunCtx, NodeResult, SubContext } from "../runtime-types.ts";
+
+const shQuote = (v: string) => `'${v.replace(/'/g, "'\\''")}'`;
+
+export function inlineOutputs(template: string, sub: SubContext): string {
+  const withFields = template.replace(/\$([A-Za-z0-9_-]+)\.output\.([A-Za-z0-9_]+)/g, (m, id, f) => {
+    const s = sub.nodeStructured[id] as Record<string, unknown> | undefined;
+    return s && f in s ? shQuote(String(s[f])) : m;
+  });
+  return withFields.replace(/\$([A-Za-z0-9_-]+)\.output\b/g, (m, id) =>
+    id in sub.nodeOutputs ? shQuote(sub.nodeOutputs[id]) : m);
+}
+
+export function runBash(rctx: RunCtx): Promise<NodeResult> {
+  const { node, sub, cwd, deps } = rctx;
+  const script = inlineOutputs(node.bash ?? "", sub);
+  const env = { ...process.env, ...sub.builtins };
+  return new Promise((resolve) => {
+    const proc = spawn("bash", ["-c", script], { cwd, env, stdio: ["ignore", "pipe", "pipe"] });
+    let out = "", err = "";
+    proc.stdout.on("data", (d) => { out += d; });
+    proc.stderr.on("data", (d) => { err += d; });
+    proc.on("close", (code) => resolve(code === 0
+      ? { status: "completed", output: out.replace(/\n$/, "") }
+      : { status: "failed", output: out, error: err || `exit ${code}` }));
+    proc.on("error", (e) => resolve({ status: "failed", output: "", error: e.message }));
+    if (deps.signal) deps.signal.addEventListener("abort", () => proc.kill("SIGTERM"), { once: true });
+  });
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add nodes/bash.ts nodes/bash.test.ts && git commit -m "feat: bash node handler"`
+
+### Task D4: nodes/script.ts
+
+**Files:** Create `nodes/script.ts`, Test `nodes/script.test.ts`
+**Exports (contract):** `resolveArgv(spec, sub, projectDir)`, `runScript(rctx)`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// nodes/script.test.ts
+import { test, expect } from "bun:test";
+import { resolveArgv, runScript } from "./script.ts";
+import type { RunCtx, SubContext } from "../runtime-types.ts";
+
+const sub: SubContext = { builtins: {}, nodeOutputs: { prev: "VALUE" }, nodeStructured: {} };
+
+test("resolveArgv inlines RAW (unquoted) substitution for inline bun", () => {
+  const argv = resolveArgv({ inline: "console.log('$prev.output')", runtime: "bun" }, sub, "/p");
+  expect(argv).toEqual(["bun", "--no-env-file", "-e", "console.log('VALUE')"]);
+});
+
+test("resolveArgv builds named uv path under .hugotown/scripts", () => {
+  const argv = resolveArgv({ file: "calc.py" }, sub, "/p");
+  expect(argv[0]).toBe("uv");
+  expect(argv[argv.length - 1]).toContain("/.hugotown/scripts/calc.py");
+});
+
+test("runScript runs inline bun and captures stdout", async () => {
+  const ctx: RunCtx = {
+    node: { id: "n", script: { inline: "console.log(40 + 2)", runtime: "bun" } },
+    state: {} as RunCtx["state"],
+    deps: { exec: (async () => ({ stdout: "", stderr: "", code: 0, killed: false })) as RunCtx["deps"]["exec"], notify: () => {}, emit: () => {}, home: "/h", bundledDir: "/b", projectDir: "/p" },
+    sub, cwd: process.cwd(),
+  };
+  expect((await runScript(ctx)).output).toBe("42");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// nodes/script.ts — Run a deterministic bun/uv script node (inline or named).
+import { spawn } from "node:child_process";
+import * as path from "node:path";
+import { buildScriptArgv, runtimeForFile } from "../lib/script-detect.ts";
+import { substitute } from "../lib/variable-sub.ts";
+import type { RunCtx, NodeResult, SubContext } from "../runtime-types.ts";
+import type { ScriptSpec } from "../types.ts";
+
+export function resolveArgv(spec: ScriptSpec, sub: SubContext, projectDir: string): string[] {
+  if (spec.inline !== undefined) return buildScriptArgv(spec, substitute(spec.inline, sub));
+  const file = path.join(projectDir, ".hugotown", "scripts", spec.file ?? "");
+  return buildScriptArgv({ ...spec, runtime: spec.runtime ?? runtimeForFile(file) }, file);
+}
+
+export function runScript(rctx: RunCtx): Promise<NodeResult> {
+  const { node, sub, cwd, deps } = rctx;
+  const argv = resolveArgv(node.script as ScriptSpec, sub, deps.projectDir);
+  const env = { ...process.env, ...sub.builtins };
+  return new Promise((resolve) => {
+    const proc = spawn(argv[0], argv.slice(1), { cwd, env, stdio: ["ignore", "pipe", "pipe"] });
+    let out = "", err = "";
+    proc.stdout.on("data", (d) => { out += d; });
+    proc.stderr.on("data", (d) => { err += d; });
+    proc.on("close", (code) => resolve(code === 0
+      ? { status: "completed", output: out.replace(/\n$/, "") }
+      : { status: "failed", output: out, error: err || `exit ${code}` }));
+    proc.on("error", (e) => resolve({ status: "failed", output: "", error: e.message }));
+    if (deps.signal) deps.signal.addEventListener("abort", () => proc.kill("SIGTERM"), { once: true });
+  });
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add nodes/script.ts nodes/script.test.ts && git commit -m "feat: script node handler"`
+
+---
+
+### Task D5: nodes/loop.ts
+
+**Files:** Create `nodes/loop.ts`, Test `nodes/loop.test.ts`
+**Exports (contract):** `runLoop(rctx, run?)`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// nodes/loop.test.ts
+import { test, expect } from "bun:test";
+import { runLoop } from "./loop.ts";
+import type { RunCtx, PiRunResult } from "../runtime-types.ts";
+
+const ctx = (loop: object): RunCtx => ({
+  node: { id: "n", loop } as RunCtx["node"],
+  state: {} as RunCtx["state"],
+  deps: { defaultProvider: "p", defaultModel: "m", exec: (async () => ({ stdout: "", stderr: "", code: 0, killed: false })) as RunCtx["deps"]["exec"], notify: () => {}, emit: () => {}, home: "/h", bundledDir: "/b", projectDir: "/p" },
+  sub: { builtins: {}, nodeOutputs: {}, nodeStructured: {} },
+  cwd: "/p",
+});
+
+test("loops until signal then completes (strips tags)", async () => {
+  let i = 0;
+  const run = async (): Promise<PiRunResult> => {
+    i++;
+    const out = i < 3 ? "working" : "result\n<promise>COMPLETE</promise>";
+    return { output: out, status: "ok", exitCode: 0, stderr: "", messages: [] };
+  };
+  const r = await runLoop(ctx({ prompt: "go", until: "COMPLETE", max_iterations: 5 }), run);
+  expect(r.status).toBe("completed");
+  expect(r.output).toBe("result");
+  expect(i).toBe(3);
+});
+
+test("fails when max_iterations exceeded", async () => {
+  const run = async (): Promise<PiRunResult> => ({ output: "still going", status: "ok", exitCode: 0, stderr: "", messages: [] });
+  const r = await runLoop(ctx({ prompt: "go", until: "DONE", max_iterations: 2 }), run);
+  expect(r.status).toBe("failed");
+  expect(r.error).toMatch(/exceeded 2/);
+});
+
+test("passes $LOOP_PREV_OUTPUT into the next iteration", async () => {
+  const seen: string[] = [];
+  let i = 0;
+  const run = async (o: { task: string }): Promise<PiRunResult> => {
+    seen.push(o.task); i++;
+    return { output: i < 2 ? "one" : "<promise>DONE</promise>", status: "ok", exitCode: 0, stderr: "", messages: [] };
+  };
+  await runLoop(ctx({ prompt: "prev=$LOOP_PREV_OUTPUT", until: "DONE", max_iterations: 3 }), run as never);
+  expect(seen[0]).toBe("prev=");
+  expect(seen[1]).toBe("prev=one");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// nodes/loop.ts — Run an AI loop until a completion signal, until_bash, or max iterations.
+import { runPi } from "../lib/runner.ts";
+import { substitute } from "../lib/variable-sub.ts";
+import { detectSignal, stripSignalTags } from "../lib/completion.ts";
+import { QUESTION_PROHIBITION } from "../constants.ts";
+import type { RunCtx, NodeResult, SubContext } from "../runtime-types.ts";
+import type { LoopSpec } from "../types.ts";
+
+async function untilBashPasses(script: string, sub: SubContext, rctx: RunCtx): Promise<boolean> {
+  const r = await rctx.deps.exec("bash", ["-c", substitute(script, sub)], { cwd: rctx.cwd, signal: rctx.deps.signal });
+  return r.code === 0;
+}
+
+export async function runLoop(rctx: RunCtx, run = runPi): Promise<NodeResult> {
+  const { node, deps, sub, cwd } = rctx;
+  const spec = node.loop as LoopSpec;
+  const provider = node.provider ?? deps.defaultProvider;
+  const model = node.model ?? deps.defaultModel;
+  if (!provider || !model) return { status: "failed", output: "", error: "No provider/model resolved" };
+  let prev = "";
+  for (let i = 0; i < spec.max_iterations; i++) {
+    const iterSub: SubContext = { ...sub, builtins: { ...sub.builtins, LOOP_PREV_OUTPUT: prev } };
+    const r = await run({
+      provider, model, thinking: node.thinking ?? "medium", tools: node.allowed_tools,
+      system: QUESTION_PROHIBITION, task: substitute(spec.prompt, iterSub), cwd, signal: deps.signal,
+    });
+    if (r.status === "failed") return { status: "failed", output: r.output, error: r.errorMessage ?? r.stderr };
+    prev = stripSignalTags(r.output);
+    if (detectSignal(r.output, spec.until)) return { status: "completed", output: prev };
+    if (spec.until_bash && (await untilBashPasses(spec.until_bash, iterSub, rctx))) {
+      return { status: "completed", output: prev };
+    }
+  }
+  return { status: "failed", output: prev, error: `Loop exceeded ${spec.max_iterations} iterations` };
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add nodes/loop.ts nodes/loop.test.ts && git commit -m "feat: loop node handler"`
+
+### Task D6: nodes/approval.ts
+
+**Files:** Create `nodes/approval.ts`, Test `nodes/approval.test.ts`
+**Exports (contract):** `runApproval(rctx)`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// nodes/approval.test.ts
+import { test, expect } from "bun:test";
+import { runApproval } from "./approval.ts";
+import type { RunCtx } from "../runtime-types.ts";
+
+test("returns paused with substituted message + notifies", () => {
+  const msgs: string[] = [];
+  const ctx: RunCtx = {
+    node: { id: "gate", approval: { message: "Review $ARGUMENTS" } },
+    state: {} as RunCtx["state"],
+    deps: { exec: (async () => ({ stdout: "", stderr: "", code: 0, killed: false })) as RunCtx["deps"]["exec"], notify: (m) => msgs.push(m), emit: () => {}, home: "/h", bundledDir: "/b", projectDir: "/p" },
+    sub: { builtins: { ARGUMENTS: "#42" }, nodeOutputs: {}, nodeStructured: {} },
+    cwd: "/p",
+  };
+  const r = runApproval(ctx);
+  expect(r.status).toBe("paused");
+  expect(r.output).toBe("Review #42");
+  expect(msgs[0]).toContain("Review #42");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// nodes/approval.ts — Signal a non-blocking pause at a human approval gate.
+import { substitute } from "../lib/variable-sub.ts";
+import type { RunCtx, NodeResult } from "../runtime-types.ts";
+import type { ApprovalSpec } from "../types.ts";
+
+export function runApproval(rctx: RunCtx): NodeResult {
+  const spec = rctx.node.approval as ApprovalSpec;
+  const message = substitute(spec.message, rctx.sub);
+  rctx.deps.notify(`Approval required: ${message}`, "info");
+  return { status: "paused", output: message };
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add nodes/approval.ts nodes/approval.test.ts && git commit -m "feat: approval node handler"`
+
+### Task D7: nodes/cancel.ts
+
+**Files:** Create `nodes/cancel.ts`, Test `nodes/cancel.test.ts`
+**Exports (contract):** `runCancel(rctx)`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// nodes/cancel.test.ts
+import { test, expect } from "bun:test";
+import { runCancel } from "./cancel.ts";
+import type { RunCtx } from "../runtime-types.ts";
+
+test("returns cancelled with substituted reason", () => {
+  const ctx: RunCtx = {
+    node: { id: "c", cancel: "Refusing on $BASE_BRANCH" },
+    state: {} as RunCtx["state"],
+    deps: { exec: (async () => ({ stdout: "", stderr: "", code: 0, killed: false })) as RunCtx["deps"]["exec"], notify: () => {}, emit: () => {}, home: "/h", bundledDir: "/b", projectDir: "/p" },
+    sub: { builtins: { BASE_BRANCH: "main" }, nodeOutputs: {}, nodeStructured: {} },
+    cwd: "/p",
+  };
+  const r = runCancel(ctx);
+  expect(r.status).toBe("cancelled");
+  expect(r.output).toBe("Refusing on main");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// nodes/cancel.ts — Cancel the run with a (substituted) reason.
+import { substitute } from "../lib/variable-sub.ts";
+import type { RunCtx, NodeResult } from "../runtime-types.ts";
+
+export function runCancel(rctx: RunCtx): NodeResult {
+  return { status: "cancelled", output: substitute(rctx.node.cancel ?? "", rctx.sub) };
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add nodes/cancel.ts nodes/cancel.test.ts && git commit -m "feat: cancel node handler"`
+
+### Task D8: nodes/dispatch.ts
+
+**Files:** Create `nodes/dispatch.ts`, Test `nodes/dispatch.test.ts`
+**Exports (contract):** `nodeType(node)`, `dispatchNode(rctx)`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// nodes/dispatch.test.ts
+import { test, expect } from "bun:test";
+import { nodeType, dispatchNode } from "./dispatch.ts";
+import type { RunCtx } from "../runtime-types.ts";
+
+test("identifies node type", () => {
+  expect(nodeType({ id: "a", bash: "x" })).toBe("bash");
+  expect(nodeType({ id: "a", cancel: "r" })).toBe("cancel");
+});
+
+test("throws on typeless node", () => {
+  expect(() => nodeType({ id: "a" })).toThrow(/no type/);
+});
+
+test("routes cancel node to runCancel", async () => {
+  const ctx: RunCtx = {
+    node: { id: "c", cancel: "stop" },
+    state: {} as RunCtx["state"],
+    deps: { exec: (async () => ({ stdout: "", stderr: "", code: 0, killed: false })) as RunCtx["deps"]["exec"], notify: () => {}, emit: () => {}, home: "/h", bundledDir: "/b", projectDir: "/p" },
+    sub: { builtins: {}, nodeOutputs: {}, nodeStructured: {} },
+    cwd: "/p",
+  };
+  expect((await dispatchNode(ctx)).status).toBe("cancelled");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// nodes/dispatch.ts — Route a node to its type handler.
+import type { RunCtx, NodeResult } from "../runtime-types.ts";
+import type { NodeType, NodeDef } from "../types.ts";
+import { runPrompt } from "./prompt.ts";
+import { runCommand } from "./command.ts";
+import { runBash } from "./bash.ts";
+import { runScript } from "./script.ts";
+import { runLoop } from "./loop.ts";
+import { runApproval } from "./approval.ts";
+import { runCancel } from "./cancel.ts";
+
+const ORDER: NodeType[] = ["prompt", "command", "bash", "script", "loop", "approval", "cancel"];
+
+export function nodeType(node: NodeDef): NodeType {
+  for (const k of ORDER) if ((node as Record<string, unknown>)[k] !== undefined) return k;
+  throw new Error(`Node "${node.id}" has no type field`);
+}
+
+export function dispatchNode(rctx: RunCtx): Promise<NodeResult> | NodeResult {
+  switch (nodeType(rctx.node)) {
+    case "prompt": return runPrompt(rctx);
+    case "command": return runCommand(rctx);
+    case "bash": return runBash(rctx);
+    case "script": return runScript(rctx);
+    case "loop": return runLoop(rctx);
+    case "approval": return runApproval(rctx);
+    case "cancel": return runCancel(rctx);
+  }
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add nodes/dispatch.ts nodes/dispatch.test.ts && git commit -m "feat: node dispatch router"`
+
+---
