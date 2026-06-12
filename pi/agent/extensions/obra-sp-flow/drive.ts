@@ -41,7 +41,7 @@ export async function driveCurrentPhase(
   record: RecordMetric,
 ): Promise<void> {
   switch (state.phase) {
-    case "BRAINSTORM": return driveBrainstorm(state, pi, ctx, advance);
+    case "BRAINSTORM": return driveBrainstorm(state, pi, ctx, advance, record);
     case "PLAN": return drivePlan(state, pi, ctx, advance, record);
     case "BRANCH": return driveBranch(state, pi, ctx, advance);
     case "IMPLEMENT": return driveImplement(state, pi, ctx, advance, record);

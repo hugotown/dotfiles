@@ -10,7 +10,11 @@ import { loadConfig } from "./lib/config-load.ts";
 import { driveCurrentPhase } from "./drive.ts";
 import { registerTools } from "./tools/index.ts";
 import { registerInit } from "./commands/init.ts";
-import { handleBrainstormEnd } from "./phases/brainstorm.ts";
+import { handleBrainstormEnd, handleBrainstormToolResult } from "./phases/brainstorm.ts";
+import { compressBrainstorm } from "./phases/brainstorm/compress.ts";
+import { renderLedger } from "./phases/brainstorm/ledger.ts";
+import type { BrainstormScratch } from "./phases/brainstorm/types.ts";
+import { PROGRESS_ENTRY } from "./lib/progress.ts";
 import { appendMetric, type RecordMetric } from "./lib/metrics.ts";
 import { initLogger, logEvent } from "./lib/observability.ts";
 
@@ -78,8 +82,23 @@ export default function obraSpFlow(pi: ExtensionAPI): void {
   registerTools(pi, getState, setState);
 
   pi.on("context", async (event) => {
-    if (!state || state.phase === "IDLE" || state.phase === "COMPLETE") return;
-    return { messages: filterContext(event.messages as unknown[]) as typeof event.messages };
+    // Progress entries are visual-only — never feed them to the LLM. Strip them
+    // ALWAYS, even at IDLE/COMPLETE: otherwise, once the flow ends, the controller
+    // LLM sees a dangling "🔬 …" progress line and treats it as a user instruction.
+    let msgs = (event.messages as unknown[]).filter((m) => (m as { customType?: string }).customType !== PROGRESS_ENTRY);
+    if (state && state.phase !== "IDLE" && state.phase !== "COMPLETE") {
+      const bs = state.scratch.brainstorm as BrainstormScratch | undefined;
+      // Compress to [marker, ledger] ONLY once the question loop has a ledger
+      // (rounds > 0); during grounding keep the window so exploration isn't erased.
+      const compress = state.phase === "BRAINSTORM" && bs?.node === "questions" && bs.rounds > 0;
+      msgs = compress ? compressBrainstorm(msgs, renderLedger(bs as BrainstormScratch)) : filterContext(msgs);
+    }
+    return { messages: msgs as typeof event.messages };
+  });
+
+  pi.on("tool_result", async (event, ctx) => {
+    if (!state || state.phase !== "BRAINSTORM") return;
+    handleBrainstormToolResult(state, pi, ctx, event.toolName, event.input, event.details);
   });
 
   pi.on("agent_end", async (_event, ctx) => {

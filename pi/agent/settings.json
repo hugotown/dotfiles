@@ -56,7 +56,6 @@
     "opencode/deepseek-v4-flash",
     "opencode/gemini-3.5-flash",
     "opencode/claude-haiku-4-5",
-    "opencode/minimax-m3-free",
     "opencode/gemini-3-flash",
     "opencode/qwen3.6-plus",
     "opencode/qwen3.5-plus",
@@ -72,7 +71,10 @@
     "opencode/gpt-5.1",
     "opencode/glm-5.1",
     "opencode/gpt-5",
-    "opencode/glm-5"
+    "opencode/glm-5",
+    "github-copilot/claude-opus-4.6",
+    "github-copilot/gemini-3.5-flash",
+    "github-copilot/gemini-3.1-pro-preview"
   ],
   "packages": [],
   "hideThinkingBlock": false

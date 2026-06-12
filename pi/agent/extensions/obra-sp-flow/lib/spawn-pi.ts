@@ -142,7 +142,11 @@ export async function runChildPi(spec: SpawnSpec, name: string): Promise<SpawnRe
     file = path.join(dir, `system-${name.replace(/[^\w.-]+/g, "_")}.md`);
     await fs.promises.writeFile(file, spec.systemPrompt, { encoding: "utf-8", mode: 0o600 });
     const args = [
-      "--mode", "json", "-p", "--no-session",
+      // --no-skills: the child must follow ONLY the distilled core we inject via
+      // --append-system-prompt. Without it, pi auto-lists every SKILL.md (incl. the
+      // raw writing-plans, with its "REQUIRED SUB-SKILL" header + Execution Handoff),
+      // which competes with — and overrides — our core. Also saves tokens.
+      "--mode", "json", "-p", "--no-session", "--no-skills",
       "--provider", spec.provider, "--model", spec.model,
       "--thinking", spec.thinking ?? "medium",
       "--tools", spec.toolAllowlist.join(","),

@@ -40,15 +40,22 @@ export default function subagent(pi: ExtensionAPI): void {
 		promptSnippet: SUBAGENT_SNIPPET,
 		promptGuidelines: SUBAGENT_GUIDELINES,
 		parameters: SubagentParams,
-		execute: (_id, params, signal, onUpdate, ctx) =>
-			executeSubagent(
-				(params as { agents: AgentSpec[] }).agents,
-				pi.getAllTools().map((t) => t.name),
-				signal,
-				onUpdate,
-				ctx,
-				knownFlags,
-			),
+		execute: async (_id, params, signal, onUpdate, ctx) => {
+			console.error(`[subagent-entry] ctx=${JSON.stringify({ cwd: ctx?.cwd, hasUI: ctx?.hasUI, ctxType: typeof ctx })}`);
+			try {
+				return await executeSubagent(
+					(params as { agents: AgentSpec[] }).agents,
+					pi.getAllTools().map((t) => t.name),
+					signal,
+					onUpdate,
+					ctx,
+					knownFlags,
+				);
+			} catch (err: any) {
+				console.error(`[subagent-entry] CAUGHT ERROR: ${err?.message ?? err}`);
+				return { content: [{ type: "text", text: `subagent error: ${err?.message ?? err}` }] };
+			}
+		},
 		renderCall: (args, theme) => renderCall(args as { agents?: AgentSpec[] }, theme),
 		renderResult: (result, options, theme) => renderResult(result as AgentToolResult<SubagentDetails>, options, theme),
 	});

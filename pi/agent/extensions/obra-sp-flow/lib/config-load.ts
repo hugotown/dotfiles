@@ -55,7 +55,14 @@ function toConfig(raw: Raw): Config {
   return {
     phases: {
       brainstorm: phaseModel(p.brainstorm),
+      // Per-node model routing for brainstorm; each falls back to `brainstorm`.
+      brainstorm_grounding: phaseModel(p.brainstorm_grounding ?? p.brainstorm),
+      brainstorm_questions: phaseModel(p.brainstorm_questions ?? p.brainstorm),
+      brainstorm_stories: phaseModel(p.brainstorm_stories ?? p.brainstorm),
+      brainstorm_spec: phaseModel(p.brainstorm_spec ?? p.brainstorm),
       plan: phaseModel(p.plan),
+      // Research node of the plan phase; falls back to `plan` when omitted.
+      plan_research: phaseModel(p.plan_research ?? p.plan),
       implement: phaseModel(p.implement),
       implement_escalate: phaseModel(p.implement_escalate ?? p.review),
       review: phaseModel(p.review),

@@ -20,7 +20,17 @@ phases:
     thinking: high
     rules: []
     tools: []
-  # Step 2 — autonomous planning with Gemini research grounding gate.
+  # Optional per-node model routing for the brainstorm phase. Each node inherits
+  # `brainstorm` when omitted. Route a cheap model to grounding/questions and a
+  # strong one to spec. Example (uncomment + set your models):
+  #   brainstorm_grounding: { provider: github-copilot, model: <sonnet>, thinking: medium }
+  #   brainstorm_questions: { provider: github-copilot, model: <sonnet>, thinking: low }
+  #   brainstorm_spec:      { provider: github-copilot, model: <opus>,   thinking: high }
+  # Step 2 — autonomous planning, a node machine: research → plandraft → validate.
+  # plan       = the plandraft node (writes the plan). Use a strong reasoning model.
+  # plan_research = the Gemini-grounded research node; inherits `plan` when omitted.
+  # Both need solid tool-calling (Gemini + file tools); avoid models that corrupt
+  # tool calls. Per-node tools are fixed in code (see phases/plan.ts).
   plan:
     provider: opencode
     model: claude-opus-4-8

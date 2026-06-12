@@ -5,7 +5,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import type { FlowState, PhaseKey } from "./types.ts";
 
 const STATE_ENTRY = "obra-sp-flow-state";
-const PHASE_MARKER = "obra-sp-flow-phase-marker";
+export const PHASE_MARKER = "obra-sp-flow-phase-marker";
 
 export function persist(pi: ExtensionAPI, state: FlowState): void {
   pi.appendEntry(STATE_ENTRY, state);

@@ -28,6 +28,10 @@ export async function executeSubagent(
 	ctx: ExtensionContext,
 	knownFlags: ReadonlyMap<string, string>,
 ): Promise<AgentToolResult<SubagentDetails>> {
+	// DEBUG: log ctx shape to diagnose "stale context" in Archon
+	const debugCtx = { cwd: ctx?.cwd, hasUI: ctx?.hasUI, keys: ctx ? Object.keys(ctx) : "NULL" };
+	console.error(`[subagent-debug] ctx=${JSON.stringify(debugCtx)}`);
+
 	const graphError = validateGraph(agents);
 	if (graphError) {
 		return { content: [{ type: "text", text: describeGraphError(graphError) }], details: { results: [] } };

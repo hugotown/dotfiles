@@ -15,7 +15,12 @@ export function getPiInvocation(args: string[]): { command: string; args: string
 	}
 	const execName = path.basename(process.execPath).toLowerCase();
 	const isGenericRuntime = /^(node|bun)(\.exe)?$/.test(execName);
-	return isGenericRuntime ? { command: "pi", args } : { command: process.execPath, args };
+	const isPiBinary = /^pi(\.exe)?$/.test(execName);
+	// If the host process is a compiled pi binary, reuse it; if it's a generic
+	// runtime (node/bun), spawn `pi` from PATH; otherwise (e.g. running inside
+	// archon or another host binary) always fall back to `pi` on PATH.
+	if (isPiBinary) return { command: process.execPath, args };
+	return { command: "pi", args };
 }
 
 /**

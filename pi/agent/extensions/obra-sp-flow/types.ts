@@ -14,7 +14,18 @@ export type Phase =
   | "COMPLETE";
 
 export type Thinking = "low" | "medium" | "high";
-export type PhaseKey = "brainstorm" | "plan" | "implement" | "implement_escalate" | "review" | "debug";
+export type PhaseKey =
+  | "brainstorm"
+  | "brainstorm_grounding"
+  | "brainstorm_questions"
+  | "brainstorm_stories"
+  | "brainstorm_spec"
+  | "plan"
+  | "plan_research"
+  | "implement"
+  | "implement_escalate"
+  | "review"
+  | "debug";
 
 export interface PhaseModel {
   provider: string;
