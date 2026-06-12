@@ -122,16 +122,19 @@ Each row is ONE implementation unit (source + co-located `*.test.ts`). An agent 
 | 4.2 | `lib/dag-executor.ts` | Run layers, handle skip/retry/pause/cancel | `executeDag(def, state, deps): Promise<RunState>` | `topo-sort`, `trigger-rule`, `condition-eval`, `dispatch`, `retry`, `semaphore`, `sub-context`, `state`, `types` |
 | 4.3 | `lib/run-controller.ts` | Start/resume a run end-to-end | `startRun(args, deps): Promise<RunState>`, `resumeRun(id, deps, approval?): Promise<RunState>` | `discovery`, `loader`, `validator`, `wt`, `git-info`, `artifacts`, `state`, `dag-executor`, `branch-name`, `types` |
 
-### Layer 5 — Wiring + UI
+### Layer 5 — Wiring
+
+> The user chose INLINE TEXT (no panel). Tool/command results are returned as plain-text `content` (`buildSummary`); no custom `renderCall`/`renderResult` is used (avoids depending on the unverified `pi-tui` `Component` API). Custom panel rendering is listed in "Deferred".
 
 | # | File | Responsibility | Exports (contract) | Depends on |
 |---|------|----------------|--------------------|------------|
-| 5.1 | `lib/deps.ts` | Build the injected `RunDeps` from pi/ctx | `makeDeps(pi, ctx): RunDeps` | `types` |
-| 5.2 | `lib/config.ts` | Load `config.yml` with defaults | `loadConfig(path): AppConfig`, `parseConfig(text): AppConfig` | `yaml` |
-| 5.3 | `lib/command-router.ts` | Parse `/hugotown-method` subcommands | `parseCommand(args: string): ParsedCommand` | `types` |
-| 5.4 | `ui/shared.ts` | Status icons/labels for inline render | `nodeLine(id, state): string` | `format`, `types` |
-| 5.5 | `ui/render-result.ts` | Tool/command result inline view | `renderRunResult(state, theme): Component` | `pi-tui`, `shared`, `types` |
-| 5.6 | `index.ts` | Entry: registerCommand + registerTool + hooks | `default function (pi): void` | `command-router`, `run-controller`, `deps`, `config`, `schema`, `state`, `constants`, `ui/*` |
+| 5.1 | `lib/deps.ts` | Build the injected `RunDeps` from pi/ctx | `makeDeps(pi, ctx): RunDeps` | `runtime-types` |
+| 5.2 | `lib/config.ts` | Load `config.yml` with defaults | `loadConfig(path): AppConfig`, `parseConfig(text): AppConfig` | `yaml`, `constants` |
+| 5.3 | `lib/command-router.ts` | Parse `/hugotown-method` subcommands | `parseCommand(args: string): ParsedCommand` | — |
+| 5.4 | `lib/handle-command.ts` | Route a `ParsedCommand` to controller/wt + report | `handleCommand(parsed, deps, report, onPause): Promise<void>` | `run-controller`, `discovery`, `state`, `summary`, `wt`, `validator` |
+| 5.5 | `index.ts` | Entry: registerCommand + registerTool + session_start hook | `default function (pi): void` | `command-router`, `handle-command`, `deps`, `run-controller`, `summary`, `schema`, `state`, `constants` |
+
+> **Contract update:** `lib/run-controller.ts` also exports `loadDef(workflow, deps): WorkflowDef` (used by `handle-command` for `validate`).
 
 ### Layer 6 — Bundled assets + integration suites (no new exports)
 
@@ -2695,5 +2698,719 @@ export function dispatchNode(rctx: RunCtx): Promise<NodeResult> | NodeResult {
 
 - [ ] **Step 4: Run → PASS**.
 - [ ] **Step 5: Commit** — `git add nodes/dispatch.ts nodes/dispatch.test.ts && git commit -m "feat: node dispatch router"`
+
+---
+
+## Section E — Orchestration (Layer 4)
+
+> The engine. `sub-context` is pure (unit). `dag-executor` and `run-controller` are tested with deterministic node types (bash/cancel/approval) + a temp `home` + fake `exec` — no `pi` spawn needed for these tests; AI-node integration is in Section G.
+>
+> **Scope note (on_reject):** v1 approval semantics: **approve** → gate output = comment or `"approved"`, DAG continues; **reject** → if `approval.on_reject == "abort"` the run is cancelled, otherwise gate output = `"rejected"` and the DAG continues so `when:` branches (e.g. a `cancel` node) handle routing. Archon's AI-rework `on_reject.prompt` loop is intentionally OUT OF SCOPE for v1 (documented in "Deferred").
+
+### Task E1: lib/sub-context.ts
+
+**Files:** Create `lib/sub-context.ts`, Test `lib/sub-context.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/sub-context.test.ts
+import { test, expect } from "bun:test";
+import { buildSubContext } from "./sub-context.ts";
+import type { RunState, RunDeps } from "../runtime-types.ts";
+
+const deps = { home: "/h" } as RunDeps;
+const state: RunState = {
+  id: "id1", workflow: "w", arguments: "#42", status: "running",
+  artifacts_dir: "/art", base_branch: "main", started_at: "t",
+  nodes: {
+    classify: { status: "completed", output: '{"type":"bug"}', structured: { type: "bug" } },
+    pending1: { status: "pending", output: "" },
+  },
+};
+
+test("builds builtins from state", () => {
+  const sub = buildSubContext(state, deps);
+  expect(sub.builtins.ARGUMENTS).toBe("#42");
+  expect(sub.builtins.ARTIFACTS_DIR).toBe("/art");
+  expect(sub.builtins.WORKFLOW_ID).toBe("id1");
+});
+
+test("exposes only completed node outputs + structured", () => {
+  const sub = buildSubContext(state, deps);
+  expect(sub.nodeOutputs.classify).toBe('{"type":"bug"}');
+  expect(sub.nodeStructured.classify).toEqual({ type: "bug" });
+  expect("pending1" in sub.nodeOutputs).toBe(false);
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/sub-context.ts — Build a SubContext (builtins + completed node outputs) from RunState.
+import type { RunState, SubContext, RunDeps } from "../runtime-types.ts";
+
+export function buildSubContext(state: RunState, deps: RunDeps): SubContext {
+  const builtins: Record<string, string> = {
+    ARGUMENTS: state.arguments,
+    ARTIFACTS_DIR: state.artifacts_dir,
+    BASE_BRANCH: state.base_branch,
+    WORKFLOW_ID: state.id,
+    RUN_DIR: `${deps.home}/runs`,
+    DOCS_DIR: "docs",
+  };
+  const nodeOutputs: Record<string, string> = {};
+  const nodeStructured: Record<string, unknown> = {};
+  for (const [id, n] of Object.entries(state.nodes)) {
+    if (n.status !== "completed") continue;
+    nodeOutputs[id] = n.output;
+    if (n.structured !== undefined) nodeStructured[id] = n.structured;
+  }
+  return { builtins, nodeOutputs, nodeStructured };
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/sub-context.ts lib/sub-context.test.ts && git commit -m "feat: substitution context builder"`
+
+### Task E2: lib/dag-executor.ts
+
+**Files:** Create `lib/dag-executor.ts`, Test `lib/dag-executor.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/dag-executor.test.ts
+import { test, expect } from "bun:test";
+import { executeDag } from "./dag-executor.ts";
+import type { WorkflowDef } from "../types.ts";
+import type { RunState, RunDeps } from "../runtime-types.ts";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+const home = fs.mkdtempSync(path.join(os.tmpdir(), "ht-dag-"));
+const deps: RunDeps = {
+  exec: (async () => ({ stdout: "", stderr: "", code: 0, killed: false })) as RunDeps["exec"],
+  notify: () => {}, emit: () => {}, home, bundledDir: "/b", projectDir: process.cwd(),
+};
+const seed = (def: WorkflowDef): RunState => ({
+  id: "r", workflow: "w", arguments: "", status: "running", artifacts_dir: "/a",
+  base_branch: "main", started_at: "t",
+  nodes: Object.fromEntries(def.nodes.map((n) => [n.id, { status: "pending", output: "" }])),
+});
+
+test("runs a linear bash DAG to completion and passes outputs", async () => {
+  const def: WorkflowDef = { name: "w", description: "d", nodes: [
+    { id: "a", bash: "echo hello" },
+    { id: "b", bash: "echo got $a.output", depends_on: ["a"] },
+  ] };
+  const s = await executeDag(def, seed(def), deps);
+  expect(s.status).toBe("completed");
+  expect(s.nodes.b.output).toBe("got hello");
+});
+
+test("skips a node whose when is false", async () => {
+  const def: WorkflowDef = { name: "w", description: "d", nodes: [
+    { id: "a", bash: "echo bug" },
+    { id: "b", bash: "echo run", depends_on: ["a"], when: "$a.output == 'feature'" },
+  ] };
+  const s = await executeDag(def, seed(def), deps);
+  expect(s.nodes.b.status).toBe("skipped");
+});
+
+test("pauses at an approval node and halts later layers", async () => {
+  const def: WorkflowDef = { name: "w", description: "d", nodes: [
+    { id: "gate", approval: { message: "ok?" } },
+    { id: "after", bash: "echo after", depends_on: ["gate"] },
+  ] };
+  const s = await executeDag(def, seed(def), deps);
+  expect(s.status).toBe("paused");
+  expect(s.paused_node).toBe("gate");
+  expect(s.nodes.after.status).toBe("pending");
+});
+
+test("cancel node cancels the run", async () => {
+  const def: WorkflowDef = { name: "w", description: "d", nodes: [{ id: "c", cancel: "stop" }] };
+  const s = await executeDag(def, seed(def), deps);
+  expect(s.status).toBe("cancelled");
+});
+
+test("resume skips completed nodes", async () => {
+  const def: WorkflowDef = { name: "w", description: "d", nodes: [
+    { id: "a", bash: "echo A" }, { id: "b", bash: "echo B", depends_on: ["a"] },
+  ] };
+  const state = seed(def);
+  state.nodes.a = { status: "completed", output: "cached" };
+  const s = await executeDag(def, state, deps);
+  expect(s.nodes.a.output).toBe("cached"); // not re-run
+  expect(s.nodes.b.status).toBe("completed");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/dag-executor.ts — Execute a workflow DAG: layers, gates, retry, pause/cancel, persistence.
+import { toLayers } from "./topo-sort.ts";
+import { shouldExecute } from "./trigger-rule.ts";
+import { evaluateCondition } from "./condition-eval.ts";
+import { buildSubContext } from "./sub-context.ts";
+import { dispatchNode } from "../nodes/dispatch.ts";
+import { withRetry } from "./retry.ts";
+import { createSemaphore } from "./semaphore.ts";
+import { saveRun } from "./state.ts";
+import { DEFAULT_CONCURRENCY } from "../constants.ts";
+import type { WorkflowDef, NodeDef } from "../types.ts";
+import type { RunState, RunDeps, NodeResult, RunCtx } from "../runtime-types.ts";
+
+const nowIso = () => new Date().toISOString();
+
+async function executeNode(node: NodeDef, state: RunState, deps: RunDeps): Promise<NodeResult> {
+  const rctx: RunCtx = { node, state, deps, sub: buildSubContext(state, deps), cwd: state.worktree?.path ?? deps.projectDir };
+  const retryable = (k: "fatal" | "transient" | "unknown") => (node.retry?.on_error === "all" ? k !== "fatal" : k === "transient");
+  return withRetry(async () => {
+    const r = await dispatchNode(rctx);
+    if (r.status === "failed") throw new Error(r.error ?? "node failed");
+    return r;
+  }, node.retry, retryable).catch((e) => ({ status: "failed", output: "", error: e instanceof Error ? e.message : String(e) }));
+}
+
+function mark(state: RunState, id: string, r: NodeResult): void {
+  state.nodes[id] = { status: r.status, output: r.output, structured: r.structured, error: r.error, completed_at: nowIso() };
+  if (r.status === "paused") { state.status = "paused"; state.paused_node = id; }
+  if (r.status === "cancelled") state.status = "cancelled";
+}
+
+export async function executeDag(def: WorkflowDef, state: RunState, deps: RunDeps): Promise<RunState> {
+  const sem = createSemaphore(def.concurrency ?? DEFAULT_CONCURRENCY);
+  for (const layer of toLayers(def.nodes)) {
+    const toRun: NodeDef[] = [];
+    for (const node of layer) {
+      if (state.nodes[node.id]?.status === "completed" && !node.always_run) continue;
+      if (!shouldExecute(node, state.nodes)) { mark(state, node.id, { status: "skipped", output: "" }); continue; }
+      if (node.when && !evaluateCondition(node.when, buildSubContext(state, deps))) {
+        mark(state, node.id, { status: "skipped", output: "" }); continue;
+      }
+      toRun.push(node);
+    }
+    const results = await Promise.all(toRun.map((node) =>
+      sem.acquire().then(async () => { try { return [node, await executeNode(node, state, deps)] as const; } finally { sem.release(); } })));
+    for (const [node, r] of results) { mark(state, node.id, r); deps.emit(state); }
+    saveRun(deps.home, state);
+    if (state.status === "paused" || state.status === "cancelled") return state;
+  }
+  state.status = Object.values(state.nodes).some((n) => n.status === "failed") ? "failed" : "completed";
+  state.completed_at = nowIso();
+  saveRun(deps.home, state); deps.emit(state);
+  return state;
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/dag-executor.ts lib/dag-executor.test.ts && git commit -m "feat: DAG execution engine"`
+
+### Task E3: lib/run-controller.ts
+
+**Files:** Create `lib/run-controller.ts`, Test `lib/run-controller.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/run-controller.test.ts
+import { test, expect } from "bun:test";
+import { startRun, resumeRun } from "./run-controller.ts";
+import type { RunDeps } from "../runtime-types.ts";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+const bundled = fs.mkdtempSync(path.join(os.tmpdir(), "ht-rc-b-"));
+fs.mkdirSync(path.join(bundled, "workflows"), { recursive: true });
+fs.writeFileSync(path.join(bundled, "workflows", "gated.yaml"),
+  "name: gated\ndescription: d\nnodes:\n" +
+  "  - id: gate\n    approval: { message: review }\n" +
+  "  - id: done\n    bash: echo done\n    depends_on: [gate]\n");
+
+const home = fs.mkdtempSync(path.join(os.tmpdir(), "ht-rc-h-"));
+const deps: RunDeps = {
+  exec: (async (_c, a) => ({ stdout: a.includes("--show-current") ? "main\n" : "", stderr: "", code: a.includes("symbolic-ref") ? 1 : 0, killed: false })) as RunDeps["exec"],
+  notify: () => {}, emit: () => {}, home, bundledDir: bundled, projectDir: process.cwd(),
+};
+
+test("startRun pauses at the gate", async () => {
+  const s = await startRun("gated", "#1", deps);
+  expect(s.status).toBe("paused");
+  expect(s.paused_node).toBe("gate");
+});
+
+test("approve resumes and completes downstream", async () => {
+  const s = await startRun("gated", "#2", deps);
+  const r = await resumeRun(s.id, deps, { decision: "approve", comment: "lgtm" });
+  expect(r.status).toBe("completed");
+  expect(r.nodes.gate.output).toBe("lgtm");
+  expect(r.nodes.done.status).toBe("completed");
+});
+
+test("missing workflow throws", async () => {
+  await expect(startRun("nope", "", deps)).rejects.toThrow(/not found/);
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/run-controller.ts — Start or resume a workflow run end-to-end.
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { findWorkflow } from "./discovery.ts";
+import { parseWorkflow } from "./loader.ts";
+import { validateWorkflow } from "./validator.ts";
+import { detectBaseBranch } from "./git-info.ts";
+import { createArtifactsDir } from "./artifacts.ts";
+import { wtCreate } from "./wt.ts";
+import { makeBranchName } from "./branch-name.ts";
+import { saveRun, loadRun } from "./state.ts";
+import { executeDag } from "./dag-executor.ts";
+import type { WorkflowDef } from "../types.ts";
+import type { RunState, RunDeps } from "../runtime-types.ts";
+
+export interface Approval { decision: "approve" | "reject"; comment?: string; }
+
+const dirsFor = (deps: RunDeps): string[] => [path.join(deps.projectDir, ".hugotown"), deps.bundledDir];
+
+export function loadDef(workflow: string, deps: RunDeps): WorkflowDef {
+  const file = findWorkflow(workflow, dirsFor(deps));
+  if (!file) throw new Error(`Workflow "${workflow}" not found`);
+  const def = parseWorkflow(fs.readFileSync(file, "utf-8"));
+  const err = validateWorkflow(def);
+  if (err) throw new Error(`Invalid workflow: ${err}`);
+  return def;
+}
+
+export async function startRun(flow: string, args: string, deps: RunDeps): Promise<RunState> {
+  const def = loadDef(flow, deps);
+  const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  const state: RunState = {
+    id, workflow: flow, arguments: args, status: "running",
+    artifacts_dir: createArtifactsDir(deps.home, id),
+    base_branch: await detectBaseBranch(deps.exec, deps.projectDir),
+    started_at: new Date().toISOString(),
+    nodes: Object.fromEntries(def.nodes.map((n) => [n.id, { status: "pending", output: "" }])),
+  };
+  if (def.worktree) {
+    const branch = makeBranchName(flow);
+    state.worktree = { branch, ...(await wtCreate(deps.exec, branch, deps.projectDir)) };
+  }
+  saveRun(deps.home, state);
+  return executeDag(def, state, deps);
+}
+
+export async function resumeRun(id: string, deps: RunDeps, approval?: Approval): Promise<RunState> {
+  const state = loadRun(deps.home, id);
+  if (!state) throw new Error(`Run "${id}" not found`);
+  const def = loadDef(state.workflow, deps);
+  if (approval && state.paused_node) {
+    const gate = state.paused_node;
+    const reject = approval.decision === "reject";
+    const onReject = def.nodes.find((n) => n.id === gate)?.approval?.on_reject;
+    if (reject && onReject === "abort") { state.status = "cancelled"; saveRun(deps.home, state); return state; }
+    state.nodes[gate] = { status: "completed", output: reject ? "rejected" : approval.comment || "approved", completed_at: new Date().toISOString() };
+    state.paused_node = undefined;
+  }
+  state.status = "running";
+  return executeDag(def, state, deps);
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/run-controller.ts lib/run-controller.test.ts && git commit -m "feat: run controller (start/resume)"`
+
+---
+
+## Section F — Wiring (Layer 5)
+
+> `deps`, `config`, `command-router`, `handle-command` are unit-tested with fakes/temp dirs. `index.ts` is wiring; its co-located test asserts registrations against a fake `ExtensionAPI`; true end-to-end is Section G.
+
+### Task F1: lib/deps.ts
+
+**Files:** Create `lib/deps.ts`, Test `lib/deps.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/deps.test.ts
+import { test, expect } from "bun:test";
+import { makeDeps } from "./deps.ts";
+
+const fakePi = { exec: async () => ({ stdout: "", stderr: "", code: 0, killed: false }) };
+const fakeCtx = {
+  cwd: "/proj",
+  ui: { notify: () => {}, setStatus: () => {} },
+  model: { provider: "anthropic", id: "claude-sonnet-4" },
+};
+
+test("maps pi/ctx into RunDeps", () => {
+  const d = makeDeps(fakePi as never, fakeCtx as never);
+  expect(d.projectDir).toBe("/proj");
+  expect(d.home).toBe("/proj/.hugotown");
+  expect(d.defaultProvider).toBe("anthropic");
+  expect(d.defaultModel).toBe("claude-sonnet-4");
+  expect(typeof d.exec).toBe("function");
+});
+
+test("tolerates missing model", () => {
+  const d = makeDeps(fakePi as never, { ...fakeCtx, model: undefined } as never);
+  expect(d.defaultModel).toBeUndefined();
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/deps.ts — Build the injected RunDeps from the pi API and context.
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import type { RunDeps, RunState } from "../runtime-types.ts";
+
+interface PiLike { exec: RunDeps["exec"]; }
+interface CtxLike {
+  cwd: string;
+  ui: { notify: (m: string, l?: "info" | "warning" | "error") => void; setStatus: (k: string, t: string | undefined) => void };
+  model?: { provider: string; id: string };
+}
+
+export function makeDeps(pi: PiLike, ctx: CtxLike): RunDeps {
+  return {
+    exec: pi.exec,
+    notify: (m, l) => ctx.ui.notify(m, l),
+    emit: (s: RunState) => ctx.ui.setStatus("hugotown", `${s.workflow}: ${s.status}`),
+    home: path.join(ctx.cwd, ".hugotown"),
+    bundledDir: fileURLToPath(new URL("..", import.meta.url)),
+    projectDir: ctx.cwd,
+    defaultProvider: ctx.model?.provider,
+    defaultModel: ctx.model?.id,
+  };
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/deps.ts lib/deps.test.ts && git commit -m "feat: dependency injection builder"`
+
+### Task F2: lib/config.ts
+
+**Files:** Create `lib/config.ts`, Test `lib/config.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/config.test.ts
+import { test, expect } from "bun:test";
+import { parseConfig } from "./config.ts";
+
+test("defaults when empty", () => {
+  const c = parseConfig("");
+  expect(c.concurrency).toBe(4);
+  expect(c.nodeTimeoutMs).toBe(600000);
+});
+
+test("reads engine overrides", () => {
+  const c = parseConfig("engine:\n  concurrency: 8\n  node_timeout_ms: 1000");
+  expect(c.concurrency).toBe(8);
+  expect(c.nodeTimeoutMs).toBe(1000);
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/config.ts — Load config.yml into AppConfig, merging over defaults.
+import * as fs from "node:fs";
+import { parse as parseYaml } from "yaml";
+import { DEFAULT_CONCURRENCY } from "../constants.ts";
+
+export interface AppConfig { concurrency: number; nodeTimeoutMs: number; loopIdleMs: number; }
+
+const DEFAULTS: AppConfig = { concurrency: DEFAULT_CONCURRENCY, nodeTimeoutMs: 600000, loopIdleMs: 1800000 };
+
+export function parseConfig(text: string): AppConfig {
+  const raw = (parseYaml(text) ?? {}) as { engine?: { concurrency?: number; node_timeout_ms?: number; loop_idle_ms?: number } };
+  const e = raw.engine ?? {};
+  return {
+    concurrency: e.concurrency ?? DEFAULTS.concurrency,
+    nodeTimeoutMs: e.node_timeout_ms ?? DEFAULTS.nodeTimeoutMs,
+    loopIdleMs: e.loop_idle_ms ?? DEFAULTS.loopIdleMs,
+  };
+}
+
+export function loadConfig(path: string): AppConfig {
+  try { return parseConfig(fs.readFileSync(path, "utf-8")); } catch { return parseConfig(""); }
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/config.ts lib/config.test.ts && git commit -m "feat: config loader"`
+
+### Task F3: lib/command-router.ts
+
+**Files:** Create `lib/command-router.ts`, Test `lib/command-router.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/command-router.test.ts
+import { test, expect } from "bun:test";
+import { parseCommand } from "./command-router.ts";
+
+test("parses flow=name with args", () => {
+  expect(parseCommand("flow=fix-issue resolve #42")).toEqual({ kind: "run", flow: "fix-issue", args: "resolve #42" });
+});
+
+test("parses approve with comment", () => {
+  expect(parseCommand("approve looks good")).toEqual({ kind: "approve", comment: "looks good" });
+});
+
+test("parses resume with id", () => {
+  expect(parseCommand("resume abc123")).toEqual({ kind: "resume", id: "abc123" });
+});
+
+test("parses bare subcommands", () => {
+  expect(parseCommand("list").kind).toBe("list");
+  expect(parseCommand("merge").kind).toBe("merge");
+});
+
+test("unknown subcommand", () => {
+  expect(parseCommand("frobnicate").kind).toBe("unknown");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/command-router.ts — Parse the raw /hugotown-method argument string into a command.
+export type ParsedCommand =
+  | { kind: "run"; flow: string; args: string }
+  | { kind: "list" } | { kind: "status" }
+  | { kind: "resume"; id: string }
+  | { kind: "approve"; comment: string } | { kind: "reject"; reason: string }
+  | { kind: "merge" } | { kind: "remove" } | { kind: "keep" }
+  | { kind: "validate"; name: string }
+  | { kind: "unknown"; raw: string };
+
+export function parseCommand(args: string): ParsedCommand {
+  const trimmed = args.trim();
+  const flow = trimmed.match(/^flow=(\S+)\s*([\s\S]*)$/);
+  if (flow) return { kind: "run", flow: flow[1], args: flow[2].trim() };
+  const [word, ...rest] = trimmed.split(/\s+/);
+  const tail = trimmed.slice(word.length).trim();
+  switch (word) {
+    case "list": return { kind: "list" };
+    case "status": return { kind: "status" };
+    case "resume": return { kind: "resume", id: rest[0] ?? "" };
+    case "approve": return { kind: "approve", comment: tail };
+    case "reject": return { kind: "reject", reason: tail };
+    case "merge": return { kind: "merge" };
+    case "remove": return { kind: "remove" };
+    case "keep": return { kind: "keep" };
+    case "validate": return { kind: "validate", name: rest[0] ?? "" };
+    default: return { kind: "unknown", raw: trimmed };
+  }
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/command-router.ts lib/command-router.test.ts && git commit -m "feat: command argument parser"`
+
+### Task F4: lib/handle-command.ts
+
+**Files:** Create `lib/handle-command.ts`, Test `lib/handle-command.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// lib/handle-command.test.ts
+import { test, expect } from "bun:test";
+import { handleCommand } from "./handle-command.ts";
+import type { RunDeps } from "../runtime-types.ts";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+const bundled = fs.mkdtempSync(path.join(os.tmpdir(), "ht-hc-b-"));
+fs.mkdirSync(path.join(bundled, "workflows"), { recursive: true });
+fs.writeFileSync(path.join(bundled, "workflows", "demo.yaml"), "name: demo\ndescription: a demo\nnodes:\n  - id: a\n    bash: echo hi\n");
+const home = fs.mkdtempSync(path.join(os.tmpdir(), "ht-hc-h-"));
+const deps: RunDeps = {
+  exec: (async () => ({ stdout: "", stderr: "", code: 0, killed: false })) as RunDeps["exec"],
+  notify: () => {}, emit: () => {}, home, bundledDir: bundled, projectDir: process.cwd(),
+};
+
+test("list reports bundled workflows", async () => {
+  let out = "";
+  await handleCommand({ kind: "list" }, deps, (t) => { out = t; }, () => {});
+  expect(out).toContain("demo: a demo");
+});
+
+test("validate reports validity", async () => {
+  let out = "";
+  await handleCommand({ kind: "validate", name: "demo" }, deps, (t) => { out = t; }, () => {});
+  expect(out).toContain("valid");
+});
+
+test("run executes and reports summary", async () => {
+  let out = "";
+  await handleCommand({ kind: "run", flow: "demo", args: "" }, deps, (t) => { out = t; }, () => {});
+  expect(out).toContain('Workflow "demo"');
+});
+
+test("unknown reports help", async () => {
+  let out = "";
+  await handleCommand({ kind: "unknown", raw: "x" }, deps, (t) => { out = t; }, () => {});
+  expect(out).toContain("Unknown subcommand");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// lib/handle-command.ts — Route a ParsedCommand to controller/wt actions and report results.
+import * as path from "node:path";
+import { startRun, resumeRun, loadDef } from "./run-controller.ts";
+import { listWorkflows } from "./discovery.ts";
+import { listRuns } from "./state.ts";
+import { buildSummary } from "./summary.ts";
+import { wtMerge, wtRemove } from "./wt.ts";
+import type { ParsedCommand } from "./command-router.ts";
+import type { RunDeps, RunState } from "../runtime-types.ts";
+
+type Report = (text: string) => void;
+type OnPause = (s: RunState) => void;
+
+async function settle(s: RunState, report: Report, onPause: OnPause): Promise<void> {
+  report(buildSummary(s));
+  if (s.status === "paused") onPause(s);
+}
+
+export async function handleCommand(p: ParsedCommand, deps: RunDeps, report: Report, onPause: OnPause): Promise<void> {
+  const dirs = [path.join(deps.projectDir, ".hugotown"), deps.bundledDir];
+  switch (p.kind) {
+    case "run": return settle(await startRun(p.flow, p.args, deps), report, onPause);
+    case "resume": return settle(await resumeRun(p.id, deps), report, onPause);
+    case "approve": case "reject": {
+      const active = listRuns(deps.home).find((r) => r.status === "paused");
+      if (!active) return report("No paused run to act on.");
+      const comment = p.kind === "approve" ? p.comment : p.reason;
+      return settle(await resumeRun(active.id, deps, { decision: p.kind, comment }), report, onPause);
+    }
+    case "list": return report(listWorkflows(dirs).map((w) => `- ${w.name}: ${w.description}`).join("\n") || "No workflows.");
+    case "status": return report(listRuns(deps.home).map((r) => `${r.id} ${r.workflow} ${r.status}`).join("\n") || "No runs.");
+    case "validate": { try { loadDef(p.name, deps); report(`Workflow "${p.name}" is valid.`); } catch (e) { report(e instanceof Error ? e.message : String(e)); } return; }
+    case "merge": await wtMerge(deps.exec, deps.projectDir); return report("Worktree merged.");
+    case "remove": { const r = listRuns(deps.home).reverse().find((x) => x.worktree); if (r?.worktree) await wtRemove(deps.exec, r.worktree.branch, deps.projectDir); return report("Worktree removed."); }
+    case "keep": return report("Worktree kept.");
+    case "unknown": return report(`Unknown subcommand: ${p.raw}. Try: flow=<name> <args>, list, status, approve, reject, resume <id>, merge, remove, keep, validate <name>.`);
+  }
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add lib/handle-command.ts lib/handle-command.test.ts && git commit -m "feat: command handler routing"`
+
+### Task F5: index.ts
+
+**Files:** Create `index.ts`, Test `index.test.ts`
+
+- [ ] **Step 1: Failing test**
+
+```typescript
+// index.test.ts
+import { test, expect } from "bun:test";
+import hugotownMethod from "./index.ts";
+
+function fakePi() {
+  const reg = { commands: [] as string[], tools: [] as string[], events: [] as string[] };
+  const pi = {
+    registerCommand: (name: string) => reg.commands.push(name),
+    registerTool: (t: { name: string }) => reg.tools.push(t.name),
+    on: (e: string) => reg.events.push(e),
+    sendMessage: () => {}, appendEntry: () => {},
+    exec: async () => ({ stdout: "", stderr: "", code: 0, killed: false }),
+  };
+  return { pi, reg };
+}
+
+test("registers command, tool, and session_start hook", () => {
+  const { pi, reg } = fakePi();
+  hugotownMethod(pi as never);
+  expect(reg.commands).toContain("hugotown-method");
+  expect(reg.tools).toContain("hugotown_method");
+  expect(reg.events).toContain("session_start");
+});
+```
+
+- [ ] **Step 2: Run → FAIL**.
+
+- [ ] **Step 3: Implement**
+
+```typescript
+// index.ts — Entry point: wire the /hugotown-method command, the tool, and resume notice.
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { CMD_NAME, STATE_ENTRY } from "./constants.ts";
+import { parseCommand } from "./lib/command-router.ts";
+import { handleCommand } from "./lib/handle-command.ts";
+import { makeDeps } from "./lib/deps.ts";
+import { startRun } from "./lib/run-controller.ts";
+import { buildSummary } from "./lib/summary.ts";
+import { listRuns } from "./lib/state.ts";
+import { RunWorkflowParams } from "./schema.ts";
+import type { RunState } from "./runtime-types.ts";
+
+export default function hugotownMethod(pi: ExtensionAPI): void {
+  const onPause = (s: RunState) => pi.appendEntry(STATE_ENTRY, { id: s.id, paused_node: s.paused_node });
+  const report = (text: string) => pi.sendMessage({ customType: CMD_NAME, content: text, display: true });
+
+  pi.registerCommand(CMD_NAME, {
+    description: "Run/resume a hugotown-method workflow DAG (flow=<name>, approve, reject, resume, list, status, merge, remove, validate)",
+    handler: async (args, ctx) => {
+      try { await handleCommand(parseCommand(args), makeDeps(pi, ctx), report, onPause); }
+      catch (e) { ctx.ui.notify(`hugotown-method: ${e instanceof Error ? e.message : e}`, "error"); }
+    },
+  });
+
+  pi.registerTool({
+    name: "hugotown_method",
+    label: "Hugotown Method",
+    description: "Run a hugotown-method workflow DAG by name; returns a per-node summary.",
+    parameters: RunWorkflowParams,
+    execute: async (_id, params, _signal, _onUpdate, ctx) => {
+      const p = params as { flow: string; arguments?: string };
+      const s = await startRun(p.flow, p.arguments ?? "", makeDeps(pi, ctx));
+      return { content: [{ type: "text", text: buildSummary(s) }], details: s };
+    },
+  });
+
+  pi.on("session_start", (_e, ctx: ExtensionContext) => {
+    const paused = listRuns(makeDeps(pi, ctx).home).find((r) => r.status === "paused");
+    if (paused) ctx.ui.notify(`hugotown-method: run ${paused.id} paused at "${paused.paused_node}". /${CMD_NAME} approve|reject`, "info");
+  });
+}
+```
+
+- [ ] **Step 4: Run → PASS**.
+- [ ] **Step 5: Commit** — `git add index.ts index.test.ts && git commit -m "feat: wire hugotown-method entry point"`
 
 ---
