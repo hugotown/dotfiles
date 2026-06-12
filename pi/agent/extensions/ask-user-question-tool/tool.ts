@@ -14,6 +14,7 @@ export function registerAskUserQuestion(pi: ExtensionAPI): void {
 		label: "Ask User Question",
 		description:
 			"Present the user with assumptions you inferred plus structured questions, and RETURN their answers. " +
+			"You MUST provide a `title`, state AT LEAST ONE `assumption`, and ask AT LEAST ONE `question` (these are required). " +
 			"EVERY question MUST be self-explanatory for a non-expert: fill `context` with a rich explanation in the user's language covering WHAT is asked, WHY it matters / what it affects, HOW the answer is used, WHEN/WHERE it applies, and a short flow of what must be decided (several sentences, do not be terse). " +
 			"EVERY question MUST also include a pre-selected recommendation (`default`) and a thorough `reasoning` explaining WHY that recommendation, with its tradeoffs. " +
 			"For option-based types, EVERY option MUST have a detailed `description` of what choosing it means and its tradeoffs. " +
