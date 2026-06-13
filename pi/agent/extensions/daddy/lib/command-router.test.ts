@@ -22,3 +22,7 @@ test("parses bare subcommands", () => {
 test("unknown subcommand", () => {
   expect(parseCommand("frobnicate").kind).toBe("unknown");
 });
+
+test("parses observer command", () => {
+  expect(parseCommand("observer")).toEqual({ kind: "observer" });
+});

@@ -1,7 +1,7 @@
 // lib/command-router.ts — Parse the raw /daddy argument string into a command.
 export type ParsedCommand =
   | { kind: "run"; flow: string; args: string }
-  | { kind: "list" } | { kind: "status" }
+  | { kind: "list" } | { kind: "status" } | { kind: "observer" }
   | { kind: "resume"; id: string }
   | { kind: "approve"; comment: string } | { kind: "reject"; reason: string }
   | { kind: "merge" } | { kind: "remove" } | { kind: "keep" }
@@ -17,6 +17,7 @@ export function parseCommand(args: string): ParsedCommand {
   switch (word) {
     case "list": return { kind: "list" };
     case "status": return { kind: "status" };
+    case "observer": return { kind: "observer" };
     case "resume": return { kind: "resume", id: rest[0] ?? "" };
     case "approve": return { kind: "approve", comment: tail };
     case "reject": return { kind: "reject", reason: tail };
