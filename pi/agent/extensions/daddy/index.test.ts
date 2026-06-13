@@ -1,5 +1,8 @@
 // index.test.ts
 import { test, expect } from "bun:test";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import daddy from "./index.ts";
 
 function fakePi() {
@@ -20,4 +23,27 @@ test("registers command, tool, and session_start hook", () => {
   expect(reg.commands).toContain("daddy");
   expect(reg.tools).toContain("daddy");
   expect(reg.events).toContain("session_start");
+});
+
+test("observer command opens a panel overlay", async () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "daddy-idx-"));
+  let customCalled = false;
+  const pi = {
+    registerCommand: (_n: string, opts: { handler: (a: string, c: unknown) => Promise<void> }) => { (pi as any)._handler = opts.handler; },
+    registerTool: () => {},
+    on: () => {},
+    sendMessage: () => {}, appendEntry: () => {},
+    exec: async () => ({ stdout: "", stderr: "", code: 0, killed: false }),
+  };
+  const ctx = {
+    cwd,
+    hasUI: true,
+    ui: {
+      notify: () => {}, setStatus: () => {}, setWorkingMessage: () => {},
+      custom: () => { customCalled = true; return Promise.resolve(); },
+    },
+  };
+  daddy(pi as never);
+  await (pi as any)._handler("observer", ctx);
+  expect(customCalled).toBe(true);
 });
