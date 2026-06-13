@@ -10,6 +10,7 @@ export interface StreamEntry {
 export interface PanelState {
   run: RunState | null;
   streams: Record<string, StreamEntry[]>;
+  live: Record<string, string>;
   waitingForInput: string | null;
   inputPrompt: string | null;
 }
@@ -18,7 +19,7 @@ export type PanelListener = () => void;
 
 export function createStore() {
   let state: PanelState = {
-    run: null, streams: {}, waitingForInput: null, inputPrompt: null,
+    run: null, streams: {}, live: {}, waitingForInput: null, inputPrompt: null,
   };
   const listeners = new Set<PanelListener>();
 
@@ -42,6 +43,15 @@ export function createStore() {
           [nodeId]: [...(state.streams[nodeId] ?? []), entry],
         },
       };
+      notify();
+    },
+    setLive: (nodeId: string, text: string) => {
+      state = { ...state, live: { ...state.live, [nodeId]: text } };
+      notify();
+    },
+    clearLive: (nodeId: string) => {
+      const { [nodeId]: _omit, ...rest } = state.live;
+      state = { ...state, live: rest };
       notify();
     },
     setWaiting: (nodeId: string | null, prompt: string | null) => {

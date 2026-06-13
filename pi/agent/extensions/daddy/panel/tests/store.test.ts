@@ -60,4 +60,30 @@ describe("createStore", () => {
     store.setState((s) => ({ ...s, inputPrompt: "custom" }));
     expect(store.getState().inputPrompt).toBe("custom");
   });
+
+  test("initial state has empty live map", () => {
+    expect(createStore().getState().live).toEqual({});
+  });
+
+  test("setLive replaces live text per node", () => {
+    const store = createStore();
+    store.setLive("a", "partial 1");
+    store.setLive("a", "partial 2");
+    expect(store.getState().live.a).toBe("partial 2");
+  });
+
+  test("setLive notifies subscribers", () => {
+    const store = createStore();
+    let calls = 0;
+    store.subscribe(() => calls++);
+    store.setLive("a", "x");
+    expect(calls).toBe(1);
+  });
+
+  test("clearLive removes the node's live text", () => {
+    const store = createStore();
+    store.setLive("a", "x");
+    store.clearLive("a");
+    expect(store.getState().live.a).toBeUndefined();
+  });
 });
