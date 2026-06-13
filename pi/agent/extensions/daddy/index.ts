@@ -27,7 +27,7 @@ export default function daddy(pi: ExtensionAPI): void {
     description: "Run/resume a daddy workflow DAG (flow=<name>, approve, reject, resume, list, status, merge, remove, validate, observer)",
     handler: async (args, ctx) => {
       try {
-        await handleCommand(parseCommand(args), makeDeps(pi, ctx), report, onPause, () => openPanel(ctx));
+        await handleCommand(parseCommand(args), makeDeps(pi, ctx), report, onPause, () => openPanel(ctx), activeStore ?? undefined);
       } catch (e) { ctx.ui.notify(`daddy: ${e instanceof Error ? e.message : e}`, "error"); }
     },
   });
