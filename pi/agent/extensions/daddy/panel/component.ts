@@ -83,7 +83,12 @@ export class DaddyPanel implements Component {
     const rightWidth = Math.max(1, width - leftWidth - GAP.length);
     const nodes = this.getNodeEntries();
     const selectedNodeId = nodes[this.selected]?.id;
-    const streams = selectedNodeId ? (this.store.getState().streams[selectedNodeId] ?? []) : [];
+    const state = this.store.getState();
+    const history = selectedNodeId ? (state.streams[selectedNodeId] ?? []) : [];
+    const liveText = selectedNodeId ? state.live[selectedNodeId] : undefined;
+    const streams = liveText
+      ? [...history, { type: "text" as const, content: liveText, timestamp: 0 }]
+      : history;
     const editorLines = this.editor.isActive() ? this.editor.render(rightWidth) : [];
     const streamHeight = height - editorLines.length;
     const left = renderNodeList(nodes, this.selected, leftWidth, height);

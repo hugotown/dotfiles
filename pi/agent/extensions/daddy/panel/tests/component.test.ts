@@ -56,4 +56,11 @@ describe("DaddyPanel", () => {
     const lines = panel.render(80);
     expect(lines.some((l) => l.includes(">") && l.includes("summary"))).toBe(true);
   });
+
+  test("renders live streaming text for the selected node", () => {
+    const { panel, store } = makePanel();
+    store.setLive("interview", "streaming tokens now");
+    const lines = panel.render(80);
+    expect(lines.some((l) => l.includes("streaming tokens now"))).toBe(true);
+  });
 });
