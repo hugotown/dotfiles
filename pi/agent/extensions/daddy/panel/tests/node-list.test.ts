@@ -33,4 +33,17 @@ describe("renderNodeList", () => {
     expect(lines).toHaveLength(4);
     expect(lines.some((l) => l.includes("node-8"))).toBe(true);
   });
+
+  test("applies status color to node rows via truecolor ANSI", () => {
+    const lines = renderNodeList(nodes(["running"]), 0, 20, 1);
+    expect(lines[0]).toContain("\x1b[38;2;");   // truecolor foreground opener
+    expect(lines[0]).toContain("\x1b[39m");      // foreground reset
+    expect(lines[0]).toContain("●");             // plain content preserved
+    expect(lines[0]).toContain("node-0");
+  });
+
+  test("empty padding rows are not colored", () => {
+    const lines = renderNodeList(nodes(["running"]), 0, 20, 3);
+    expect(lines[1]).not.toContain("\x1b[");
+  });
 });

@@ -16,6 +16,12 @@ function pad(text: string, width: number): string {
   return text + " ".repeat(width - text.length);
 }
 
+function paintFg(hex: string, text: string): string {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return `\x1b[38;2;${r};${g};${b}m${text}\x1b[39m`;
+}
+
 export function renderNodeList(
   nodes: NodeEntry[],
   selectedIndex: number,
@@ -30,7 +36,8 @@ export function renderNodeList(
     if (!node) { lines.push(" ".repeat(width)); continue; }
     const marker = idx === selectedIndex ? ">" : " ";
     const icon = iconFor(node.status);
-    lines.push(pad(`${marker} ${icon} ${node.id}`, width));
+    const plain = pad(`${marker} ${icon} ${node.id}`, width);
+    lines.push(paintFg(colorFor(node.status), plain));
   }
   return lines;
 }
