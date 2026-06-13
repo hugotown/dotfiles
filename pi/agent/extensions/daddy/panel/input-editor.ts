@@ -1,8 +1,6 @@
 // panel/input-editor.ts — Inline editor wrapper for user input in the panel.
-import type { TUI } from "@earendil-works/pi-tui";
 
 export interface InlineEditorOpts {
-  tui: TUI;
   placeholder: string;
   onSubmit: (text: string) => void;
 }

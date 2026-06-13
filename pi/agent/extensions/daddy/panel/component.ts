@@ -31,7 +31,6 @@ export class DaddyPanel implements Component {
     this.deps = opts.deps;
     this.done = opts.done;
     this.editor = new InlineEditor({
-      tui: {} as any,
       placeholder: "",
       onSubmit: (text) => this.submitInput(text),
     });

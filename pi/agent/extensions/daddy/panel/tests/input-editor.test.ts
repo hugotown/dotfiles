@@ -2,13 +2,9 @@
 import { describe, test, expect } from "bun:test";
 import { InlineEditor } from "../input-editor.ts";
 
-// Mock TUI that satisfies the Editor constructor
-const mockTui = { requestRender: () => {} } as any;
-
 describe("InlineEditor", () => {
   test("isActive returns false initially", () => {
     const editor = new InlineEditor({
-      tui: mockTui,
       placeholder: "type here",
       onSubmit: () => {},
     });
@@ -17,7 +13,6 @@ describe("InlineEditor", () => {
 
   test("activate makes isActive true", () => {
     const editor = new InlineEditor({
-      tui: mockTui,
       placeholder: "type here",
       onSubmit: () => {},
     });
@@ -27,7 +22,6 @@ describe("InlineEditor", () => {
 
   test("deactivate makes isActive false", () => {
     const editor = new InlineEditor({
-      tui: mockTui,
       placeholder: "type here",
       onSubmit: () => {},
     });
@@ -38,7 +32,6 @@ describe("InlineEditor", () => {
 
   test("render returns placeholder line when inactive", () => {
     const editor = new InlineEditor({
-      tui: mockTui,
       placeholder: "What is your name?",
       onSubmit: () => {},
     });
@@ -48,7 +41,6 @@ describe("InlineEditor", () => {
 
   test("setPlaceholder updates the display text", () => {
     const editor = new InlineEditor({
-      tui: mockTui,
       placeholder: "old",
       onSubmit: () => {},
     });
