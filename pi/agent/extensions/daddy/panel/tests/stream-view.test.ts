@@ -1,6 +1,6 @@
 // panel/tests/stream-view.test.ts
 import { describe, test, expect } from "bun:test";
-import { renderStreamView } from "../stream-view.ts";
+import { renderStreamView, toLines } from "../stream-view.ts";
 import type { StreamEntry } from "../store.ts";
 
 const entry = (content: string, type: StreamEntry["type"] = "text"): StreamEntry =>
@@ -40,5 +40,23 @@ describe("renderStreamView", () => {
 
   test("returns an empty array when height is zero", () => {
     expect(renderStreamView([entry("x")], 20, 0)).toEqual([]);
+  });
+
+  test("toLines returns the wrapped lines for entries", () => {
+    const lines = toLines([entry("a"), entry("b")], 40);
+    expect(lines).toEqual(["a", "b"]);
+  });
+
+  test("bottomOffset scrolls the window up into history", () => {
+    const entries = Array.from({ length: 20 }, (_, i) => entry(`line ${i}`));
+    const scrolled = renderStreamView(entries, 40, 5, 3);
+    expect(scrolled[4]).toContain("line 16");
+    expect(scrolled.some((l) => l.includes("line 19"))).toBe(false);
+  });
+
+  test("bottomOffset is clamped so it never scrolls past the top", () => {
+    const entries = Array.from({ length: 6 }, (_, i) => entry(`line ${i}`));
+    const scrolled = renderStreamView(entries, 40, 3, 999);
+    expect(scrolled[0]).toContain("line 0");
   });
 });

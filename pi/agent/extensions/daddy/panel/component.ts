@@ -4,7 +4,7 @@ import { Key, matchesKey } from "@earendil-works/pi-tui";
 import type { Store } from "./store.ts";
 import type { RunDeps } from "../runtime-types.ts";
 import { renderNodeList } from "./node-list.ts";
-import { renderStreamView } from "./stream-view.ts";
+import { renderStreamView, toLines } from "./stream-view.ts";
 import { InlineEditor } from "./input-editor.ts";
 import { resumeRun } from "../lib/run-controller.ts";
 
@@ -20,6 +20,7 @@ export interface DaddyPanelOpts {
 
 export class DaddyPanel implements Component {
   private selected = 0;
+  private scrollOffset = 0;
   private unsubscribe: () => void;
   private editor: InlineEditor;
   private readonly store: Store;
@@ -69,10 +70,13 @@ export class DaddyPanel implements Component {
   handleInput(data: string): void {
     if (matchesKey(data, Key.escape)) { this.done(); return; }
     if (this.editor.isActive()) { this.editor.handleInput(data); return; }
-    if (matchesKey(data, Key.up)) this.selected = Math.max(0, this.selected - 1);
+    if (matchesKey(data, Key.pageUp)) { this.scrollOffset += 1; return; }
+    if (matchesKey(data, Key.pageDown)) { this.scrollOffset = Math.max(0, this.scrollOffset - 1); return; }
+    if (matchesKey(data, Key.up)) { this.selected = Math.max(0, this.selected - 1); this.scrollOffset = 0; }
     else if (matchesKey(data, Key.down)) {
       const max = this.getNodeEntries().length - 1;
       this.selected = Math.min(max, this.selected + 1);
+      this.scrollOffset = 0;
     }
   }
 
@@ -91,7 +95,9 @@ export class DaddyPanel implements Component {
     const editorLines = this.editor.isActive() ? this.editor.render(rightWidth) : [];
     const streamHeight = height - editorLines.length;
     const left = renderNodeList(nodes, this.selected, leftWidth, height);
-    const right = renderStreamView(streams, rightWidth, streamHeight);
+    const maxOffset = Math.max(0, toLines(streams, rightWidth).length - streamHeight);
+    this.scrollOffset = Math.min(this.scrollOffset, maxOffset);
+    const right = renderStreamView(streams, rightWidth, streamHeight, this.scrollOffset);
     const title = TITLE.length >= width ? TITLE.slice(0, width) : TITLE + " ".repeat(width - TITLE.length);
     const rows = [title];
     for (let i = 0; i < height; i++) {

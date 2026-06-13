@@ -63,4 +63,27 @@ describe("DaddyPanel", () => {
     const lines = panel.render(80);
     expect(lines.some((l) => l.includes("streaming tokens now"))).toBe(true);
   });
+
+  test("Page Up scrolls the stream up into history", () => {
+    const { panel, store } = makePanel();
+    for (let i = 0; i < 60; i++) {
+      store.appendStream("interview", { type: "text", content: `entry ${i}`, timestamp: i });
+    }
+    const before = panel.render(80);
+    panel.handleInput("\x1b[5~");
+    const after = panel.render(80);
+    expect(after).not.toEqual(before);
+  });
+
+  test("node navigation resets the scroll offset", () => {
+    const { panel, store } = makePanel();
+    for (let i = 0; i < 60; i++) {
+      store.appendStream("interview", { type: "text", content: `entry ${i}`, timestamp: i });
+    }
+    panel.handleInput("\x1b[5~");
+    panel.handleInput("\x1b[B");
+    panel.handleInput("\x1b[A");
+    const lines = panel.render(80);
+    expect(lines.some((l) => l.includes("entry 59"))).toBe(true);
+  });
 });

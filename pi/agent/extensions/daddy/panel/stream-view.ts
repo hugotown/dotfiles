@@ -30,19 +30,28 @@ function pad(text: string, width: number): string {
   return text + " ".repeat(width - text.length);
 }
 
+export function toLines(entries: StreamEntry[], width: number): string[] {
+  const out: string[] = [];
+  for (const e of entries) {
+    for (const line of wordWrap(formatEntry(e), width)) out.push(line);
+  }
+  return out;
+}
+
 export function renderStreamView(
   entries: StreamEntry[],
   width: number,
   height: number,
+  bottomOffset = 0,
 ): string[] {
   if (height <= 0) return [];
-  const allLines: string[] = [];
-  for (const e of entries) {
-    const formatted = formatEntry(e);
-    for (const line of wordWrap(formatted, width)) allLines.push(line);
-  }
-  const tail = allLines.slice(-height);
-  const padded = tail.map((l) => pad(l, width));
+  const all = toLines(entries, width);
+  const maxOffset = Math.max(0, all.length - height);
+  const off = Math.min(Math.max(0, bottomOffset), maxOffset);
+  const end = all.length - off;
+  const start = Math.max(0, end - height);
+  const win = all.slice(start, end);
+  const padded = win.map((l) => pad(l, width));
   while (padded.length < height) padded.unshift(" ".repeat(width));
   return padded;
 }
