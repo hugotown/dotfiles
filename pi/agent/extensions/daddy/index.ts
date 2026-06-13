@@ -11,6 +11,7 @@ import { RunWorkflowParams } from "./schema.ts";
 import type { RunState } from "./runtime-types.ts";
 import { createStore } from "./panel/store.ts";
 import { openDaddyPanel } from "./panel/open.ts";
+import { wrapDeps } from "./panel/wire.ts";
 
 export default function daddy(pi: ExtensionAPI): void {
   const onPause = (s: RunState) => pi.appendEntry(STATE_ENTRY, { id: s.id, paused_node: s.paused_node });
@@ -27,7 +28,7 @@ export default function daddy(pi: ExtensionAPI): void {
     description: "Run/resume a daddy workflow DAG (flow=<name>, approve, reject, resume, list, status, merge, remove, validate, observer)",
     handler: async (args, ctx) => {
       try {
-        await handleCommand(parseCommand(args), makeDeps(pi, ctx), report, onPause, () => openPanel(ctx), activeStore ?? undefined);
+        await handleCommand(parseCommand(args), wrapDeps(activeStore!, makeDeps(pi, ctx)), report, onPause, () => openPanel(ctx));
       } catch (e) { ctx.ui.notify(`daddy: ${e instanceof Error ? e.message : e}`, "error"); }
     },
   });

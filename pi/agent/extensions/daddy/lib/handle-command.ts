@@ -16,17 +16,10 @@ async function settle(s: RunState, report: Report, onPause: OnPause): Promise<vo
   if (s.status === "paused") onPause(s);
 }
 
-export async function handleCommand(p: ParsedCommand, deps: RunDeps, report: Report, onPause: OnPause, onObserver?: () => void, store?: import("../panel/store.ts").Store): Promise<void> {
+export async function handleCommand(p: ParsedCommand, deps: RunDeps, report: Report, onPause: OnPause, onObserver?: () => void): Promise<void> {
   const dirs = [path.join(deps.projectDir, ".daddy"), deps.bundledDir];
   switch (p.kind) {
-    case "run": {
-      const runDeps = store ? {
-        ...deps,
-        onStream: (nodeId: string, text: string) => store.appendStream(nodeId, { type: "text", content: text, timestamp: Date.now() }),
-        emit: (state: RunState) => { deps.emit(state); store.setRun(state); },
-      } : deps;
-      return settle(await startRun(p.flow, p.args, runDeps), report, onPause);
-    }
+    case "run": return settle(await startRun(p.flow, p.args, deps), report, onPause);
     case "resume": return settle(await resumeRun(p.id, deps), report, onPause);
     case "approve": case "reject": {
       const active = listRuns(deps.home).find((r) => r.status === "paused");
