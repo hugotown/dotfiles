@@ -48,7 +48,7 @@ export async function executeDag(def: WorkflowDef, state: RunState, deps: RunDep
     }
     const results = await Promise.all(toRun.map((node) =>
       sem.acquire().then(async () => { try { return [node, await executeNode(node, state, deps)] as const; } finally { sem.release(); } })));
-    for (const [node, r] of results) { mark(state, node.id, r); deps.emit(state); }
+    for (const [node, r] of results) { mark(state, node.id, r); if (deps.onStream && r.output) deps.onStream(node.id, r.output); deps.emit(state); }
     saveRun(deps.home, state);
     if (state.status === "paused" || state.status === "cancelled") return state;
   }

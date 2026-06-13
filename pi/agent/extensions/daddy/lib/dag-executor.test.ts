@@ -64,3 +64,17 @@ test("resume skips completed nodes", async () => {
   expect(s.nodes.a.output).toBe("cached");
   expect(s.nodes.b.status).toBe("completed");
 });
+
+test("onStream is called with node progress when provided", async () => {
+  const streamCalls: Array<{ nodeId: string; text: string }> = [];
+  const streamDeps: RunDeps = {
+    ...deps,
+    onStream: (nodeId, text) => streamCalls.push({ nodeId, text }),
+  };
+  const def: WorkflowDef = { name: "w", description: "d", nodes: [
+    { id: "a", bash: "echo streamed" },
+  ] };
+  await executeDag(def, seed(def), streamDeps);
+  expect(streamCalls.length).toBeGreaterThan(0);
+  expect(streamCalls[0].nodeId).toBe("a");
+});

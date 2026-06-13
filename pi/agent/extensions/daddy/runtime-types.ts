@@ -67,6 +67,7 @@ export interface RunDeps {
   notify: (msg: string, level?: "info" | "warning" | "error") => void;
   emit: (state: RunState) => void;
   progress?: (nodeId: string, text: string) => void;
+  onStream?: (nodeId: string, text: string) => void;
   home: string;
   bundledDir: string;
   projectDir: string;
