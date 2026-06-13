@@ -72,3 +72,15 @@ test("approve with no paused run reports so", async () => {
   await handleCommand({ kind: "approve", comment: "x" }, deps, (t) => { out = t; }, () => {});
   expect(out).toContain("No paused run");
 });
+
+test("observer kind calls onObserver callback", async () => {
+  let observerCalled = false;
+  await handleCommand(
+    { kind: "observer" },
+    deps,
+    () => {},
+    () => {},
+    () => { observerCalled = true; },
+  );
+  expect(observerCalled).toBe(true);
+});

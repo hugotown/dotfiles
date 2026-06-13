@@ -16,7 +16,7 @@ async function settle(s: RunState, report: Report, onPause: OnPause): Promise<vo
   if (s.status === "paused") onPause(s);
 }
 
-export async function handleCommand(p: ParsedCommand, deps: RunDeps, report: Report, onPause: OnPause): Promise<void> {
+export async function handleCommand(p: ParsedCommand, deps: RunDeps, report: Report, onPause: OnPause, onObserver?: () => void): Promise<void> {
   const dirs = [path.join(deps.projectDir, ".daddy"), deps.bundledDir];
   switch (p.kind) {
     case "run": return settle(await startRun(p.flow, p.args, deps), report, onPause);
@@ -29,6 +29,7 @@ export async function handleCommand(p: ParsedCommand, deps: RunDeps, report: Rep
     }
     case "list": return report(listWorkflows(dirs).map((w) => `- ${w.name}: ${w.description}`).join("\n") || "No workflows.");
     case "status": return report(listRuns(deps.home).map((r) => `${r.id} ${r.workflow} ${r.status}`).join("\n") || "No runs.");
+    case "observer": { if (onObserver) onObserver(); return; }
     case "validate": { try { loadDef(p.name, deps); report(`Workflow "${p.name}" is valid.`); } catch (e) { report(e instanceof Error ? e.message : String(e)); } return; }
     case "merge": await wtMerge(deps.exec, deps.projectDir); return report("Worktree merged.");
     case "remove": { const r = listRuns(deps.home).reverse().find((x) => x.worktree); if (r?.worktree) await wtRemove(deps.exec, r.worktree.branch, deps.projectDir); return report("Worktree removed."); }
