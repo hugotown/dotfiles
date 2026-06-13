@@ -37,4 +37,8 @@ describe("renderStreamView", () => {
     // At least one line should contain "word"
     expect(lines.some((l) => l.includes("word"))).toBe(true);
   });
+
+  test("returns an empty array when height is zero", () => {
+    expect(renderStreamView([entry("x")], 20, 0)).toEqual([]);
+  });
 });

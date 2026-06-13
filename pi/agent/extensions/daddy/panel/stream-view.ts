@@ -35,6 +35,7 @@ export function renderStreamView(
   width: number,
   height: number,
 ): string[] {
+  if (height <= 0) return [];
   const allLines: string[] = [];
   for (const e of entries) {
     const formatted = formatEntry(e);
