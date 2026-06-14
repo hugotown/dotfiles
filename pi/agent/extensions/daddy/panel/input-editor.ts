@@ -5,6 +5,23 @@ export interface InlineEditorOpts {
   onSubmit: (text: string) => void;
 }
 
+function wrapText(text: string, width: number): string[] {
+  if (width <= 0) return [];
+  const lines: string[] = [];
+  for (const raw of text.split("\n")) {
+    let rest = raw;
+    do {
+      lines.push(rest.slice(0, width));
+      rest = rest.slice(width);
+    } while (rest.length > 0);
+  }
+  return lines;
+}
+
+function pad(line: string, width: number): string {
+  return line.length >= width ? line.slice(0, width) : line + " ".repeat(width - line.length);
+}
+
 export class InlineEditor {
   private active = false;
   private placeholder: string;
@@ -44,14 +61,15 @@ export class InlineEditor {
     const separator = "─".repeat(width);
     if (!this.active) {
       const hint = `  ${this.placeholder}`;
-      const padded = hint.length >= width ? hint.slice(0, width) : hint + " ".repeat(width - hint.length);
-      return [separator, padded];
+      return [separator, pad(hint, width)];
     }
-    const prompt = `> ${this.buffer}_`;
+    const question = `Question: ${this.placeholder}`;
+    const questionLines = wrapText(question, width).map((line) => pad(line, width));
+    const prompt = `Answer: > ${this.buffer}_`;
     const hint = "[Enter to send]";
     const line = prompt.length + hint.length >= width
       ? prompt.slice(0, width)
       : prompt + " ".repeat(width - prompt.length - hint.length) + hint;
-    return [separator, line];
+    return [separator, ...questionLines, line, separator];
   }
 }

@@ -23,6 +23,27 @@ test("openDaddyPanel calls ctx.ui.custom with overlay options", async () => {
   await openDaddyPanel(mockCtx, store, mockDeps);
   expect(customCalled).toBe(true);
   expect(overlayOpts.overlay).toBe(true);
-  expect(overlayOpts.overlayOptions.width).toBe("85%");
+  expect(overlayOpts.overlayOptions.width).toBe("100%");
+  expect(overlayOpts.overlayOptions.maxHeight).toBe("100%");
   expect(overlayOpts.overlayOptions.anchor).toBe("center");
+});
+
+test("openDaddyPanel passes full terminal rows as height to the panel", async () => {
+  const store = createStore();
+  let capturedHeight: number | undefined;
+  const mockCtx = {
+    ui: {
+      custom: (factory: any) => {
+        const fakeTui = { terminal: { rows: 100 }, requestRender: () => {} };
+        const panel = factory(fakeTui, {}, {}, () => {});
+        capturedHeight = (panel as any).height;
+        return Promise.resolve();
+      },
+    },
+  } as any;
+  const mockDeps = { exec: async () => ({ stdout: "", stderr: "", code: 0, killed: false }),
+    notify: () => {}, emit: () => {}, home: "/h", bundledDir: "/b", projectDir: "/p" } as any;
+
+  await openDaddyPanel(mockCtx, store, mockDeps);
+  expect(capturedHeight).toBe(100);
 });

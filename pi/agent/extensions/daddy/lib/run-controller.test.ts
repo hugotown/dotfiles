@@ -1,7 +1,7 @@
 // lib/run-controller.test.ts
 import { test, expect } from "bun:test";
-import { startRun, resumeRun } from "./run-controller.ts";
-import type { RunDeps } from "../runtime-types.ts";
+import { preparePausedNodeResume, startRun, resumeRun } from "./run-controller.ts";
+import type { RunDeps, RunState } from "../runtime-types.ts";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -35,4 +35,22 @@ test("approve resumes and completes downstream", async () => {
 
 test("missing workflow throws", async () => {
   await expect(startRun("nope", "", deps)).rejects.toThrow(/not found/);
+});
+
+test("resume stores interview answers without completing the interview node", () => {
+  const state: RunState = {
+    id: "r",
+    workflow: "w",
+    arguments: "",
+    status: "paused",
+    paused_node: "interview",
+    artifacts_dir: "/a",
+    base_branch: "main",
+    started_at: "now",
+    nodes: { interview: { status: "paused", output: "Name?", structured: { iteration: 1, answers: [], last_output: "Name?" } } },
+  };
+  preparePausedNodeResume({ name: "w", description: "d", nodes: [{ id: "interview", interview: { prompt: "p", max_iterations: 3 } }] }, state, { decision: "approve", comment: "Hugo" });
+  expect(state.paused_node).toBeUndefined();
+  expect(state.nodes.interview.status).toBe("paused");
+  expect(state.nodes.interview.structured).toEqual({ iteration: 1, answers: [], last_output: "Name?", pending_answer: "Hugo" });
 });

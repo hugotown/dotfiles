@@ -1,22 +1,35 @@
 // panel/stream-view.ts — Right column: streaming output renderer, tailed to height.
-import type { StreamEntry } from "./store.ts";
+import { paintMuted, type StreamEntry } from "./store.ts";
 
+function visibleLength(text: string): number {
+  return text.replace(/\x1b\[[0-9;]*m/g, "").length;
+}
+
+// Hard line breaks (\n) are preserved so structured output (JSON, code) keeps its
+// shape; lines that already fit are kept verbatim so indentation survives; only
+// over-long lines are word-wrapped.
 function wordWrap(text: string, width: number): string[] {
-  if (text.length <= width) return [text];
+  if (width <= 0) return [];
   const out: string[] = [];
-  const words = text.split(/\s+/);
-  let current = "";
-  for (const w of words) {
-    const candidate = current.length === 0 ? w : `${current} ${w}`;
-    if (candidate.length > width) {
-      if (current) out.push(current);
-      current = w.length > width ? w.slice(0, width) : w;
-    } else {
-      current = candidate;
+  for (const raw of text.split("\n")) {
+    if (visibleLength(raw) <= width) {
+      out.push(raw);
+      continue;
     }
+    const words = raw.split(/\s+/);
+    let current = "";
+    for (const w of words) {
+      const candidate = current.length === 0 ? w : `${current} ${w}`;
+      if (visibleLength(candidate) > width) {
+        if (current) out.push(current);
+        current = w;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) out.push(current);
   }
-  if (current) out.push(current);
-  return out.length > 0 ? out : [""];
+  return out;
 }
 
 function formatEntry(e: StreamEntry): string {
@@ -26,14 +39,22 @@ function formatEntry(e: StreamEntry): string {
 }
 
 function pad(text: string, width: number): string {
-  if (text.length >= width) return text.slice(0, width);
-  return text + " ".repeat(width - text.length);
+  if (width <= 0) return "";
+  const visible = visibleLength(text);
+  if (visible >= width) {
+    return text.slice(0, Math.max(0, text.length - (visible - width)));
+  }
+  return text + " ".repeat(width - visible);
 }
 
 export function toLines(entries: StreamEntry[], width: number): string[] {
   const out: string[] = [];
   for (const e of entries) {
-    for (const line of wordWrap(formatEntry(e), width)) out.push(line);
+    // Color is applied per wrapped line so multi-line thinking stays muted on
+    // every row (a block-level ANSI wrap would lose color after the first \n).
+    for (const line of wordWrap(formatEntry(e), width)) {
+      out.push(e.type === "thinking" ? paintMuted(line) : line);
+    }
   }
   return out;
 }

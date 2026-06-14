@@ -1,9 +1,22 @@
 // panel/wire.ts — Single bridge from dag-executor emissions to the panel store.
 import type { RunDeps, RunState } from "../runtime-types.ts";
-import type { Store } from "./store.ts";
+import type { Store, StreamEntry } from "./store.ts";
 
 function baseNodeId(id: string): string {
   return id.replace(/ #\d+$/, "");
+}
+
+function appendOrCollapseThinking(store: Store, nodeId: string, text: string): void {
+  const current = store.getState().streams[nodeId] ?? [];
+  const last = current[current.length - 1];
+  if (last && last.type === "thinking") {
+    if (last.content === text) return;
+    const next: StreamEntry[] = current.slice(0, -1);
+    next.push({ type: "thinking", content: text, timestamp: Date.now() });
+    store.setState((s) => ({ ...s, streams: { ...s.streams, [nodeId]: next } }));
+    return;
+  }
+  store.appendStream(nodeId, { type: "thinking", content: text, timestamp: Date.now() });
 }
 
 export function wrapDeps(store: Store, base: RunDeps): RunDeps {
@@ -22,6 +35,10 @@ export function wrapDeps(store: Store, base: RunDeps): RunDeps {
       base.onStream?.(nodeId, text);
       store.appendStream(nodeId, { type: "text", content: text, timestamp: Date.now() });
       store.clearLive(nodeId);
+    },
+    onThinking: (nodeId: string, text: string) => {
+      base.onThinking?.(nodeId, text);
+      appendOrCollapseThinking(store, nodeId, text);
     },
     progress: (nodeId: string, text: string) => {
       base.progress?.(nodeId, text);

@@ -24,12 +24,15 @@ export async function runLoop(rctx: RunCtx, run = runPi): Promise<NodeResult> {
       provider, model, thinking: node.thinking ?? "medium", tools: node.allowed_tools,
       system: QUESTION_PROHIBITION, task: substitute(spec.prompt, iterSub), cwd, signal: deps.signal,
       onUpdate: (p) => deps.progress?.(`${node.id} #${i + 1}`, p),
+      onThinking: (p) => deps.onThinking?.(`${node.id} #${i + 1}`, p),
     });
     if (r.status === "failed") return { status: "failed", output: r.output, error: r.errorMessage ?? r.stderr };
     prev = stripSignalTags(r.output);
-    if (detectSignal(r.output, spec.until)) return { status: "completed", output: prev };
+    if (detectSignal(r.output, spec.until)) {
+      return { status: "completed", output: prev, thinking: r.thinking, structured: r.thinking ? { thinking: r.thinking } : undefined };
+    }
     if (spec.until_bash && (await untilBashPasses(spec.until_bash, iterSub, rctx))) {
-      return { status: "completed", output: prev };
+      return { status: "completed", output: prev, thinking: r.thinking, structured: r.thinking ? { thinking: r.thinking } : undefined };
     }
   }
   return { status: "failed", output: prev, error: `Loop exceeded ${spec.max_iterations} iterations` };

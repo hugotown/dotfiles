@@ -15,14 +15,16 @@ export async function runAiTask(rctx: RunCtx, task: string, run = runPi): Promis
     provider, model, thinking: node.thinking ?? "medium",
     tools, system: QUESTION_PROHIBITION, task, cwd, signal: deps.signal,
     onUpdate: (p) => deps.progress?.(node.id, p),
+    onThinking: (p) => deps.onThinking?.(node.id, p),
   });
   if (r.status === "failed") return { status: "failed", output: r.output, error: r.errorMessage ?? r.stderr };
+  const structured = { ...(node.output_format ? undefined : {}), ...(r.thinking ? { thinking: r.thinking } : {}) } as Record<string, unknown>;
   if (node.output_format) {
     const v = enforceOutput(r.output, node.output_format);
     if (!v.ok) return { status: "failed", output: r.output, error: v.error };
-    return { status: "completed", output: r.output, structured: v.data };
+    return { status: "completed", output: r.output, structured: { ...(v.data as object), ...structured } };
   }
-  return { status: "completed", output: r.output };
+  return { status: "completed", output: r.output, structured: Object.keys(structured).length > 0 ? structured : undefined };
 }
 
 export function runPrompt(rctx: RunCtx, run = runPi): Promise<NodeResult> {

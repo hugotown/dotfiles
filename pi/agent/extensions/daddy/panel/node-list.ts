@@ -1,6 +1,7 @@
 // panel/node-list.ts — Left column: node tree renderer with windowed scrolling.
 import type { NodeStatus } from "../runtime-types.ts";
-import { iconFor, colorFor } from "./icons.ts";
+import { iconFor } from "./icons.ts";
+import { colorFor } from "./palette.ts";
 
 export interface NodeEntry {
   id: string;

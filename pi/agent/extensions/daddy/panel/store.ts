@@ -2,7 +2,7 @@
 import type { RunState } from "../runtime-types.ts";
 
 export interface StreamEntry {
-  type: "text" | "tool_call" | "status";
+  type: "text" | "thinking" | "tool_call" | "status";
   content: string;
   timestamp: number;
 }
@@ -63,6 +63,13 @@ export function createStore() {
       notify();
     },
   };
+}
+
+export const MUTED_HEX = "#565f89";
+
+export function paintMuted(text: string): string {
+  const r = 0x56, g = 0x5f, b = 0x89;
+  return `\x1b[38;2;${r};${g};${b}m${text}\x1b[39m`;
 }
 
 export type Store = ReturnType<typeof createStore>;

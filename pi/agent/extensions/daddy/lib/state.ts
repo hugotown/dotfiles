@@ -2,6 +2,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { RunState } from "../runtime-types.ts";
+import type { StreamEntry } from "../panel/store.ts";
 
 function runsDir(home: string): string { return path.join(home, "runs"); }
 
@@ -20,4 +21,16 @@ export function listRuns(home: string): RunState[] {
     return fs.readdirSync(runsDir(home)).filter((f) => f.endsWith(".json"))
       .map((f) => JSON.parse(fs.readFileSync(path.join(runsDir(home), f), "utf-8")));
   } catch { return []; }
+}
+
+export function saveStreams(home: string, id: string, streams: Record<string, StreamEntry[]>): void {
+  try {
+    fs.mkdirSync(runsDir(home), { recursive: true });
+    fs.writeFileSync(path.join(runsDir(home), `${id}.streams.json`), JSON.stringify(streams));
+  } catch { /* best-effort persistence */ }
+}
+
+export function loadStreams(home: string, id: string): Record<string, StreamEntry[]> {
+  try { return JSON.parse(fs.readFileSync(path.join(runsDir(home), `${id}.streams.json`), "utf-8")); }
+  catch { return {}; }
 }

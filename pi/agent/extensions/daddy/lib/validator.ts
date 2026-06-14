@@ -1,7 +1,7 @@
 // lib/validator.ts — Validate node shape + DAG integrity. Returns error message or null.
 import type { WorkflowDef, NodeDef, NodeType } from "../types.ts";
 
-const TYPE_KEYS: NodeType[] = ["prompt", "command", "bash", "script", "loop", "approval", "cancel"];
+const TYPE_KEYS: NodeType[] = ["prompt", "command", "bash", "script", "loop", "interview", "approval", "cancel"];
 
 function typeCount(node: NodeDef): number {
   return TYPE_KEYS.filter((k) => (node as unknown as Record<string, unknown>)[k] !== undefined).length;

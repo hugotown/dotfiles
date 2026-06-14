@@ -38,6 +38,29 @@ describe("renderStreamView", () => {
     expect(lines.some((l) => l.includes("word"))).toBe(true);
   });
 
+  test("preserves newlines and indentation in multi-line content (JSON summary)", () => {
+    const json = '```json\n{\n  "name": "hugo",\n  "project": "dag workflow"\n}\n```';
+    expect(toLines([entry(json)], 80)).toEqual([
+      "```json",
+      "{",
+      '  "name": "hugo",',
+      '  "project": "dag workflow"',
+      "}",
+      "```",
+    ]);
+  });
+
+  test("preserves blank lines between blocks", () => {
+    expect(toLines([entry("a\n\nb")], 80)).toEqual(["a", "", "b"]);
+  });
+
+  test("word-wraps long lines while keeping short lines verbatim", () => {
+    const text = "short\n" + "word ".repeat(30).trim();
+    const lines = toLines([entry(text)], 20);
+    expect(lines[0]).toBe("short");
+    expect(lines.length).toBeGreaterThan(2);
+  });
+
   test("returns an empty array when height is zero", () => {
     expect(renderStreamView([entry("x")], 20, 0)).toEqual([]);
   });

@@ -8,7 +8,23 @@ export interface RunPiOpts {
   provider: string; model: string; thinking: string;
   tools?: string[]; system: string; task: string; cwd: string; signal?: AbortSignal;
   onUpdate?: (partial: string) => void;
+  onThinking?: (partial: string) => void;
 }
+
+interface StreamProcess {
+  stdout: { on: (event: "data", cb: (chunk: Buffer | string) => void) => void };
+  stderr: { on: (event: "data", cb: (chunk: Buffer | string) => void) => void };
+  on: {
+    (event: "close", cb: (code: number | null) => void): void;
+    (event: "error", cb: () => void): void;
+  };
+  kill: (signal?: NodeJS.Signals) => unknown;
+  killed: boolean;
+}
+
+type SpawnLike = (command: string, args: string[], options: { cwd: string; shell: false; stdio: ["ignore", "pipe", "pipe"] }) => StreamProcess;
+
+const spawnProcess: SpawnLike = (command, args, options) => spawn(command, args, options) as unknown as StreamProcess;
 
 export function buildBaseArgs(o: RunPiOpts): string[] {
   const a = ["--mode", "json", "-p", "--no-session", "--provider", o.provider, "--model", o.model, "--thinking", o.thinking];
@@ -16,23 +32,43 @@ export function buildBaseArgs(o: RunPiOpts): string[] {
   return a;
 }
 
-function stream(command: string, args: string[], o: RunPiOpts, result: PiRunResult): Promise<{ exitCode: number; aborted: boolean }> {
+export function stream(
+  command: string,
+  args: string[],
+  o: RunPiOpts,
+  result: PiRunResult,
+  spawnFn: SpawnLike = spawnProcess,
+): Promise<{ exitCode: number; aborted: boolean }> {
   return new Promise((resolve) => {
-    const proc = spawn(command, args, { cwd: o.cwd, shell: false, stdio: ["ignore", "pipe", "pipe"] });
-    let buffer = "", aborted = false, lastEmit = 0;
+    const proc = spawnFn(command, args, { cwd: o.cwd, shell: false, stdio: ["ignore", "pipe", "pipe"] });
+    let buffer = "", aborted = false, lastEmit = 0, lastOutput = "", lastThinking = "";
+    const emitUpdate = () => {
+      if (o.onUpdate && result.output !== lastOutput) {
+        lastOutput = result.output;
+        o.onUpdate(result.output);
+      }
+      if (o.onThinking && (result.thinking ?? "") !== lastThinking) {
+        lastThinking = result.thinking ?? "";
+        o.onThinking(lastThinking);
+      }
+    };
     proc.stdout.on("data", (d) => {
       buffer += d.toString();
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
       let changed = false;
       for (const line of lines) if (applyJsonLine(result, line)) changed = true;
-      if (changed && o.onUpdate && Date.now() - lastEmit > 150) {
+      if (changed && Date.now() - lastEmit > 150) {
         lastEmit = Date.now();
-        o.onUpdate(result.output);
+        emitUpdate();
       }
     });
     proc.stderr.on("data", (d) => { result.stderr += d.toString(); });
-    proc.on("close", (code) => { if (buffer.trim()) applyJsonLine(result, buffer); resolve({ exitCode: code ?? 0, aborted }); });
+    proc.on("close", (code) => {
+      if (buffer.trim()) applyJsonLine(result, buffer);
+      emitUpdate();
+      resolve({ exitCode: code ?? 0, aborted });
+    });
     proc.on("error", () => resolve({ exitCode: 1, aborted }));
     if (o.signal) {
       const kill = () => { aborted = true; proc.kill("SIGTERM"); setTimeout(() => !proc.killed && proc.kill("SIGKILL"), 5000); };

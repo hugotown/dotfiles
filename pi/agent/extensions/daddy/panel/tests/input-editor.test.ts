@@ -48,4 +48,28 @@ describe("InlineEditor", () => {
     const lines = editor.render(40);
     expect(lines.some((l) => l.includes("new prompt"))).toBe(true);
   });
+
+  test("active render shows the question and a clear answer field", () => {
+    const editor = new InlineEditor({
+      placeholder: "What is your name?",
+      onSubmit: () => {},
+    });
+    editor.activate();
+    const lines = editor.render(60);
+    expect(lines.some((l) => l.includes("Question: What is your name?"))).toBe(true);
+    expect(lines.some((l) => l.includes("Answer: > _"))).toBe(true);
+    expect(lines.some((l) => l.includes("Enter to send"))).toBe(true);
+  });
+
+  test("active render wraps long and multiline questions", () => {
+    const editor = new InlineEditor({
+      placeholder: "First line\nSecond line with enough text to wrap clearly",
+      onSubmit: () => {},
+    });
+    editor.activate();
+    const lines = editor.render(30);
+    expect(lines.some((l) => l.includes("Question: First line"))).toBe(true);
+    expect(lines.some((l) => l.includes("Second line"))).toBe(true);
+    expect(lines.length).toBeGreaterThan(4);
+  });
 });

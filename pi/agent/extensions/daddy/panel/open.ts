@@ -11,17 +11,19 @@ export function openDaddyPanel(
 ): Promise<void> {
   return ctx.ui.custom<void>(
     (tui, _theme, _kb, done) => {
+      const terminalRows = tui.terminal.rows ?? process.stdout.rows ?? 24;
       const panel = new DaddyPanel({
         store,
         deps,
         done: () => done(),
         requestRender: () => tui.requestRender(),
+        height: terminalRows,
       });
       return Object.assign(panel, { dispose: () => panel.dispose() });
     },
     {
       overlay: true,
-      overlayOptions: { width: "85%", maxHeight: "85%", anchor: "center" },
+      overlayOptions: { width: "100%", maxHeight: "100%", anchor: "center" },
     },
   );
 }

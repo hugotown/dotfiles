@@ -44,18 +44,32 @@ export async function startRun(flow: string, args: string, deps: RunDeps): Promi
   return executeDag(def, state, deps);
 }
 
+export function preparePausedNodeResume(def: WorkflowDef, state: RunState, approval?: Approval): void {
+  if (!approval || !state.paused_node) return;
+  const gate = state.paused_node;
+  const node = def.nodes.find((n) => n.id === gate);
+  if (node?.interview) {
+    state.nodes[gate] = {
+      ...state.nodes[gate],
+      structured: { ...(state.nodes[gate]?.structured as object ?? {}), pending_answer: approval.comment ?? "" },
+    };
+    state.paused_node = undefined;
+    return;
+  }
+
+  const reject = approval.decision === "reject";
+  const onReject = node?.approval?.on_reject;
+  if (reject && onReject === "abort") { state.status = "cancelled"; return; }
+  state.nodes[gate] = { status: "completed", output: reject ? "rejected" : approval.comment || "approved", completed_at: new Date().toISOString() };
+  state.paused_node = undefined;
+}
+
 export async function resumeRun(id: string, deps: RunDeps, approval?: Approval): Promise<RunState> {
   const state = loadRun(deps.home, id);
   if (!state) throw new Error(`Run "${id}" not found`);
   const def = loadDef(state.workflow, deps);
-  if (approval && state.paused_node) {
-    const gate = state.paused_node;
-    const reject = approval.decision === "reject";
-    const onReject = def.nodes.find((n) => n.id === gate)?.approval?.on_reject;
-    if (reject && onReject === "abort") { state.status = "cancelled"; saveRun(deps.home, state); return state; }
-    state.nodes[gate] = { status: "completed", output: reject ? "rejected" : approval.comment || "approved", completed_at: new Date().toISOString() };
-    state.paused_node = undefined;
-  }
+  preparePausedNodeResume(def, state, approval);
+  if (state.status === "cancelled") { saveRun(deps.home, state); return state; }
   state.status = "running";
   return executeDag(def, state, deps);
 }

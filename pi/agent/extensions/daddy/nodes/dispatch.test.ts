@@ -5,6 +5,7 @@ import type { RunCtx } from "../runtime-types.ts";
 
 test("identifies node type", () => {
   expect(nodeType({ id: "a", bash: "x" })).toBe("bash");
+  expect(nodeType({ id: "a", interview: { prompt: "x", max_iterations: 1 } })).toBe("interview");
   expect(nodeType({ id: "a", cancel: "r" })).toBe("cancel");
 });
 

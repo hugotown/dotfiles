@@ -8,11 +8,13 @@ export type RunStatus = "running" | "completed" | "failed" | "cancelled" | "paus
 export interface NodeState {
   status: NodeStatus;
   output: string;
+  thinking?: string;
   structured?: unknown;
   started_at?: string;
   completed_at?: string;
   session_id?: string;
   attempts?: number;
+  model?: string;
   error?: string;
 }
 
@@ -33,6 +35,7 @@ export interface RunState {
 export interface NodeResult {
   status: NodeStatus;
   output: string;
+  thinking?: string;
   structured?: unknown;
   sessionId?: string;
   error?: string;
@@ -46,6 +49,7 @@ export interface SubContext {
 
 export interface PiRunResult {
   output: string;
+  thinking?: string;
   status: "ok" | "failed";
   exitCode: number;
   stderr: string;
@@ -68,6 +72,7 @@ export interface RunDeps {
   emit: (state: RunState) => void;
   progress?: (nodeId: string, text: string) => void;
   onStream?: (nodeId: string, text: string) => void;
+  onThinking?: (nodeId: string, text: string) => void;
   home: string;
   bundledDir: string;
   projectDir: string;

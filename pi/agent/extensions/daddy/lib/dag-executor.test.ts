@@ -65,6 +65,61 @@ test("resume skips completed nodes", async () => {
   expect(s.nodes.b.status).toBe("completed");
 });
 
+test("preserves structured state when restarting a paused node", async () => {
+  const emitted: RunState[] = [];
+  const streamDeps: RunDeps = {
+    ...deps,
+    emit: (state) => emitted.push(structuredClone(state)),
+  };
+  const def: WorkflowDef = { name: "w", description: "d", nodes: [
+    { id: "a", bash: "echo A" },
+  ] };
+  const state = seed(def);
+  state.nodes.a = { status: "paused", output: "Question?", structured: { pending_answer: "Answer" } };
+
+  await executeDag(def, state, streamDeps);
+
+  expect(emitted[0]?.nodes.a).toMatchObject({
+    status: "running",
+    structured: { pending_answer: "Answer" },
+  });
+});
+
+test("stores resolved LLM model on running nodes", async () => {
+  const emitted: RunState[] = [];
+  const streamDeps: RunDeps = {
+    ...deps,
+    defaultModel: "default-model",
+    emit: (state) => emitted.push(structuredClone(state)),
+  };
+  const def: WorkflowDef = { name: "w", description: "d", nodes: [
+    { id: "a", prompt: "say hi", model: "node-model" },
+  ] };
+
+  await executeDag(def, seed(def), streamDeps);
+
+  expect(emitted[0]?.nodes.a).toMatchObject({
+    status: "running",
+    model: "node-model",
+  });
+});
+
+test("does not store an LLM model for non-LLM nodes", async () => {
+  const emitted: RunState[] = [];
+  const streamDeps: RunDeps = {
+    ...deps,
+    defaultModel: "default-model",
+    emit: (state) => emitted.push(structuredClone(state)),
+  };
+  const def: WorkflowDef = { name: "w", description: "d", nodes: [
+    { id: "a", bash: "echo hi" },
+  ] };
+
+  await executeDag(def, seed(def), streamDeps);
+
+  expect(emitted[0]?.nodes.a.model).toBeUndefined();
+});
+
 test("onStream is called with node progress when provided", async () => {
   const streamCalls: Array<{ nodeId: string; text: string }> = [];
   const streamDeps: RunDeps = {

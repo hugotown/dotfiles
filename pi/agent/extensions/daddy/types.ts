@@ -1,5 +1,5 @@
 // types.ts — Workflow and node DEFINITION types (parsed from YAML).
-export type NodeType = "prompt" | "command" | "bash" | "script" | "loop" | "approval" | "cancel";
+export type NodeType = "prompt" | "command" | "bash" | "script" | "loop" | "interview" | "approval" | "cancel";
 export type TriggerRule = "all_success" | "one_success" | "all_done" | "none_failed_min_one_success";
 export type ContextMode = "fresh" | "shared";
 export type Thinking = "low" | "medium" | "high";
@@ -24,6 +24,12 @@ export interface LoopSpec {
   until_bash?: string;
   max_iterations: number;
   fresh_context?: boolean;
+}
+
+export interface InterviewSpec {
+  prompt: string;
+  until?: string;
+  max_iterations: number;
 }
 
 export interface ApprovalSpec {
@@ -60,6 +66,7 @@ export interface NodeDef {
   bash?: string;
   script?: ScriptSpec;
   loop?: LoopSpec;
+  interview?: InterviewSpec;
   approval?: ApprovalSpec;
   cancel?: string;
 }

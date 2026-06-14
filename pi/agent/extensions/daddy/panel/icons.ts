@@ -1,32 +1,20 @@
-// panel/icons.ts — Node state → icon and color mapping.
+// panel/icons.ts — Node state → icon mapping. All glyphs are ASCII/Latin-1 so they
+// render in every monospace font (Tokyo Night, JetBrains Mono, Fira, etc.).
+// Visual differentiation leans on the colored background from palette.ts.
 import type { NodeStatus } from "../runtime-types.ts";
 
-export type NodeIcon = "○" | "●" | "◉" | "✓" | "✗" | "⊘";
+export type NodeIcon = "·" | ">" | "?" | "+" | "!" | "~" | "x";
 
 const ICONS: Record<NodeStatus, NodeIcon> = {
-  pending: "○",
-  running: "●",
-  paused: "◉",
-  completed: "✓",
-  failed: "✗",
-  skipped: "⊘",
-  cancelled: "⊘",
-};
-
-const COLORS: Record<NodeStatus, string> = {
-  pending: "#565f89",
-  running: "#e0af68",
-  paused: "#bb9af7",
-  completed: "#9ece6a",
-  failed: "#f7768e",
-  skipped: "#565f89",
-  cancelled: "#565f89",
+  pending: "·",
+  running: ">",
+  paused: "?",
+  completed: "+",
+  failed: "!",
+  skipped: "~",
+  cancelled: "x",
 };
 
 export function iconFor(status: NodeStatus): NodeIcon {
   return ICONS[status];
-}
-
-export function colorFor(status: NodeStatus): string {
-  return COLORS[status];
 }

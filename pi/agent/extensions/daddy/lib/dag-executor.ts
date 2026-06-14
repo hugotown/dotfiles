@@ -12,6 +12,12 @@ import type { WorkflowDef, NodeDef } from "../types.ts";
 import type { RunState, RunDeps, NodeResult, RunCtx } from "../runtime-types.ts";
 
 const nowIso = () => new Date().toISOString();
+const LLM_NODE_TYPES = new Set(["prompt", "command", "loop", "interview"]);
+
+function resolvedModel(node: NodeDef, deps: RunDeps): string | undefined {
+  if (!LLM_NODE_TYPES.has(Object.keys(node).find((k) => LLM_NODE_TYPES.has(k)) ?? "")) return undefined;
+  return node.model ?? deps.defaultModel;
+}
 
 async function executeNode(node: NodeDef, state: RunState, deps: RunDeps): Promise<NodeResult> {
   const rctx: RunCtx = { node, state, deps, sub: buildSubContext(state, deps), cwd: state.worktree?.path ?? deps.projectDir };
@@ -24,7 +30,11 @@ async function executeNode(node: NodeDef, state: RunState, deps: RunDeps): Promi
 }
 
 function mark(state: RunState, id: string, r: NodeResult): void {
-  state.nodes[id] = { status: r.status, output: r.output, structured: r.structured, error: r.error, completed_at: nowIso() };
+  const previous = state.nodes[id];
+  const thinking = r.thinking
+    ?? (r.structured && typeof r.structured === "object" && "thinking" in r.structured ? String((r.structured as Record<string, unknown>).thinking ?? "") : "")
+    ?? previous?.thinking;
+  state.nodes[id] = { status: r.status, output: r.output, thinking: thinking || undefined, structured: r.structured, model: previous?.model, error: r.error, completed_at: nowIso() };
   if (r.status === "paused") { state.status = "paused"; state.paused_node = id; }
   if (r.status === "cancelled") state.status = "cancelled";
 }
@@ -42,7 +52,10 @@ export async function executeDag(def: WorkflowDef, state: RunState, deps: RunDep
       toRun.push(node);
     }
     if (toRun.length > 0) {
-      for (const node of toRun) state.nodes[node.id] = { status: "running", output: "", started_at: nowIso() };
+      for (const node of toRun) {
+        const previous = state.nodes[node.id];
+        state.nodes[node.id] = { status: "running", output: "", structured: previous?.structured, model: resolvedModel(node, deps), started_at: nowIso() };
+      }
       deps.emit(state);
       saveRun(deps.home, state);
     }

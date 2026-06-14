@@ -59,3 +59,25 @@ test("preserves the base callbacks (delegates through)", () => {
   wrapDeps(store, { ...base, emit: () => { emitted = true; } }).emit(run());
   expect(emitted).toBe(true);
 });
+
+test("collapses consecutive thinking updates into the latest snapshot", () => {
+  const store = createStore();
+  const d = wrapDeps(store, base);
+  d.onThinking!("a", "Plan step 1");
+  d.onThinking!("a", "Plan step 1 and 2");
+  d.onThinking!("a", "Plan step 1 and 2");
+  const entries = (store.getState().streams.a ?? []).filter((e) => e.type === "thinking");
+  expect(entries).toHaveLength(1);
+  expect(entries[0].content).toBe("Plan step 1 and 2");
+});
+
+test("opens a new thinking entry after an interleaved text stream", () => {
+  const store = createStore();
+  const d = wrapDeps(store, base);
+  d.onThinking!("a", "Reason 1");
+  d.onStream!("a", "Final answer 1");
+  d.onThinking!("a", "Reason 2");
+  const entries = store.getState().streams.a ?? [];
+  expect(entries.map((e) => e.type)).toEqual(["thinking", "text", "thinking"]);
+  expect(entries.filter((e) => e.type === "thinking").map((e) => e.content)).toEqual(["Reason 1", "Reason 2"]);
+});

@@ -34,3 +34,9 @@ test("rejects retry on loop node", () => {
     { id: "a", loop: { prompt: "p", max_iterations: 1 }, retry: { max_attempts: 2 } },
   ]))).toMatch(/Loop/);
 });
+
+test("accepts an interview node", () => {
+  expect(validateWorkflow(wf([
+    { id: "a", interview: { prompt: "p", max_iterations: 1 } },
+  ]))).toBeNull();
+});

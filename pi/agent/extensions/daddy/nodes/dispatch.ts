@@ -6,10 +6,11 @@ import { runCommand } from "./command.ts";
 import { runBash } from "./bash.ts";
 import { runScript } from "./script.ts";
 import { runLoop } from "./loop.ts";
+import { runInterview } from "./interview.ts";
 import { runApproval } from "./approval.ts";
 import { runCancel } from "./cancel.ts";
 
-const ORDER: NodeType[] = ["prompt", "command", "bash", "script", "loop", "approval", "cancel"];
+const ORDER: NodeType[] = ["prompt", "command", "bash", "script", "loop", "interview", "approval", "cancel"];
 
 export function nodeType(node: NodeDef): NodeType {
   for (const k of ORDER) if ((node as unknown as Record<string, unknown>)[k] !== undefined) return k;
@@ -23,6 +24,7 @@ export function dispatchNode(rctx: RunCtx): Promise<NodeResult> | NodeResult {
     case "bash": return runBash(rctx);
     case "script": return runScript(rctx);
     case "loop": return runLoop(rctx);
+    case "interview": return runInterview(rctx);
     case "approval": return runApproval(rctx);
     case "cancel": return runCancel(rctx);
   }
