@@ -52,6 +52,8 @@ describe("BUILT_IN_RULES", () => {
     expect(matches("// eslint-disable-next-line react-hooks/exhaustive-deps")).toBe(true);
     expect(matches("// eslint-disable-line no-console")).toBe(true);
     expect(matches("/* eslint-disable @typescript-eslint/no-explicit-any */")).toBe(true);
+    expect(matches("@phpstan-ignore-line")).toBe(true);
+    expect(matches("@psalm-suppress PropertyNotSetInConstructor")).toBe(true);
     expect(matches("// I disabled the lint warning")).toBe(false);
   });
 
