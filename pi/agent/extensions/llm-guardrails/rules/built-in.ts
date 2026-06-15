@@ -9,7 +9,9 @@ export const BUILT_IN_RULES: readonly Rule[] = Object.freeze([
     description: "Linter suppressions hide problems instead of fixing them.",
     filePatterns: ["**/*.{js,ts,jsx,tsx,vue,svelte,rb,php,css,scss}"],
     patterns: [
-      /\/\/\s*eslint\s*-?\s*(disable|enable)(?:\s*-?\s*next\s*-?\s*line|\s*-?\s*line)?\b[^\n]*/gi,
+      /\/\/\s*eslint\s*-?\s*(disable|enable)\s*-?\s*next\s*-?\s*line\b[^\n]*/gi,
+      /\/\/\s*eslint\s*-?\s*(disable|enable)\s*-?\s*line\b[^\n]*/gi,
+      /\/\/\s*eslint\s*-?\s*(disable|enable)\b[^\n]*/gi,
       /\/\*\s*eslint\s*-?\s*(disable|enable)\b[\s\S]*?\*\//gi,
       /\/\*\s*stylelint\s*-?\s*disable\b[\s\S]*?\*\//gi,
       /#\s*rubocop:disable\b[^\n]*/gi,
@@ -50,7 +52,7 @@ export const BUILT_IN_RULES: readonly Rule[] = Object.freeze([
     description: "Compiler suppressions hide compiler diagnostics instead of fixing them.",
     filePatterns: ["**/*.{java,cs,c,cpp,h,hpp}"],
     patterns: [
-      /\/\/\s*@SuppressWarnings\b[^\n]*/gi,
+      /@SuppressWarnings\b[^\n]*/gi,
       /#pragma\s+warning\s+disable\b[^\n]*/gi,
       /#pragma\s+GCC\s+diagnostic\b[^\n]*/gi,
     ],
