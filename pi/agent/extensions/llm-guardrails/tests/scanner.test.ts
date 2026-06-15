@@ -82,6 +82,33 @@ describe("scan", () => {
     ]);
   });
 
+  test("returns one-based line and column for a match at line 42 column 13", () => {
+    const content = `${Array.from({ length: 41 }, () => "ok").join("\n")}\n            // @ts-ignore`;
+    const matches = scan("foo.ts", content, BUILT_IN_RULES);
+
+    expect(matches.map((match) => [match.ruleId, match.line, match.column])).toEqual([
+      ["no-type-suppressions", 42, 13],
+    ]);
+  });
+
+  test("detects same-line real comments after mixed quote string literals", () => {
+    const matches = scan("foo.ts", `const quote = '"'; // @ts-ignore`, BUILT_IN_RULES);
+
+    expect(matches.map((match) => [match.ruleId, match.line, match.column])).toEqual([
+      ["no-type-suppressions", 1, 20],
+    ]);
+  });
+
+  test("keeps position calculation fast across many matches", () => {
+    const content = Array.from({ length: 5000 }, (_, index) => `const value${index} = ${index}; // @ts-ignore`).join("\n");
+    const started = performance.now();
+    const matches = scan("foo.ts", content, BUILT_IN_RULES);
+
+    expect(matches).toHaveLength(5000);
+    expect(matches.at(-1)).toMatchObject({ line: 5000, column: 25 });
+    expect(performance.now() - started).toBeLessThan(250);
+  });
+
   test("scans a one megabyte file with a match at the end quickly", () => {
     const content = `${"x".repeat(1024 * 1024)}\n// @ts-ignore`;
     const started = performance.now();

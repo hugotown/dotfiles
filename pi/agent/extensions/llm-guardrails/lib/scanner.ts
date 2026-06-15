@@ -1,53 +1,74 @@
 import micromatch from "micromatch";
 import type { Match, Rule } from "./types.ts";
 
-function lineStart(content: string, offset: number): number {
-  return content.lastIndexOf("\n", offset - 1) + 1;
+function lineStarts(content: string): number[] {
+  const starts = [0];
+
+  for (let i = 0; i < content.length; i += 1) {
+    if (content.charCodeAt(i) === 10) starts.push(i + 1);
+  }
+
+  return starts;
 }
 
-function lineEnd(content: string, offset: number): number {
-  const end = content.indexOf("\n", offset);
-  return end === -1 ? content.length : end;
+function lineIndexForOffset(starts: readonly number[], offset: number): number {
+  let low = 0;
+  let high = starts.length - 1;
+
+  while (low <= high) {
+    const middle = Math.floor((low + high) / 2);
+    const start = starts[middle];
+    const nextStart = starts[middle + 1] ?? Infinity;
+
+    if (offset < start) {
+      high = middle - 1;
+    } else if (offset >= nextStart) {
+      low = middle + 1;
+    } else {
+      return middle;
+    }
+  }
+
+  return starts.length - 1;
 }
 
-function insideStringLiteralOnLine(content: string, offset: number): boolean {
-  const start = lineStart(content, offset);
-  const before = content.slice(start, offset);
+function lineEnd(content: string, starts: readonly number[], lineIndex: number): number {
+  return starts[lineIndex + 1] === undefined ? content.length : starts[lineIndex + 1] - 1;
+}
 
-  for (const quote of ['"', "'", "`"] as const) {
-    let open = false;
-    for (let i = 0; i < before.length; i += 1) {
-      if (before[i] === "\\") {
+function insideStringLiteralOnLine(content: string, lineStart: number, offset: number): boolean {
+  type Quote = '"' | "'" | "`";
+
+  let open: Quote | undefined;
+  const quoteChars = new Set<string>(['"', "'", "`"]);
+  const before = content.slice(lineStart, offset);
+
+  for (let i = 0; i < before.length; i += 1) {
+    const char = before[i];
+
+    if (open !== undefined) {
+      if (char === "\\") {
         i += 1;
         continue;
       }
-      if (before[i] === quote) open = !open;
+      if (char === open) open = undefined;
+      continue;
     }
-    if (open) return true;
+
+    if (quoteChars.has(char)) open = char as Quote;
   }
 
-  return false;
+  return open !== undefined;
 }
 
-function insideUrlOnLine(content: string, offset: number): boolean {
-  const start = lineStart(content, offset);
-  const before = content.slice(start, offset);
+function insideUrlOnLine(content: string, lineStart: number, offset: number): boolean {
+  const before = content.slice(lineStart, offset);
 
   return /\b[A-Za-z][A-Za-z0-9+.-]*:$/.test(before);
 }
 
-function lineAndColumn(content: string, offset: number): { line: number; column: number } {
-  let line = 1;
-  let lastNewline = -1;
-
-  for (let i = 0; i < offset; i += 1) {
-    if (content.charCodeAt(i) === 10) {
-      line += 1;
-      lastNewline = i;
-    }
-  }
-
-  return { line, column: offset - lastNewline };
+function lineAndColumn(starts: readonly number[], lineIndex: number, offset: number): { line: number; column: number } {
+  return { line: lineIndex + 1, column: offset - starts[lineIndex] + 1 };
 }
 
 function cloneGlobal(pattern: RegExp): RegExp {
@@ -59,6 +80,7 @@ function cloneGlobal(pattern: RegExp): RegExp {
 export function scan(file: string, content: string, rules: readonly Rule[]): Match[] {
   const matches: Match[] = [];
   const seen = new Set<string>();
+  const starts = lineStarts(content);
 
   for (const rule of rules) {
     if (!micromatch.isMatch(file, [...rule.filePatterns])) continue;
@@ -74,19 +96,21 @@ export function scan(file: string, content: string, rules: readonly Rule[]): Mat
         }
 
         const offset = found.index;
-        if (insideStringLiteralOnLine(content, offset) || insideUrlOnLine(content, offset)) continue;
+        const lineIndex = lineIndexForOffset(starts, offset);
+        const start = starts[lineIndex];
+        if (insideStringLiteralOnLine(content, start, offset) || insideUrlOnLine(content, start, offset)) continue;
 
         const key = `${rule.id}:${offset}`;
         if (seen.has(key)) continue;
         seen.add(key);
 
-        const { line, column } = lineAndColumn(content, offset);
+        const { line, column } = lineAndColumn(starts, lineIndex, offset);
         matches.push({
           ruleId: rule.id,
           file,
           line,
           column,
-          matchedText: content.slice(offset, Math.min(lineEnd(content, offset), offset + found[0].length)),
+          matchedText: content.slice(offset, Math.min(lineEnd(content, starts, lineIndex), offset + found[0].length)),
         });
       }
     }
