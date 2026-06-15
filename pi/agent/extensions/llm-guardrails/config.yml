@@ -1,0 +1,21 @@
+mode: "$LLM_GUARDRAILS_MODE:warn"
+
+watch:
+  include:
+    - "**/*"
+  ignore:
+    - "**/*.log"
+    - "**/*.lock"
+    - "**/tmp/**"
+  max_size_kb: "$LLM_GUARDRAILS_MAX_SIZE_KB:500"
+
+debounce_ms: "$LLM_GUARDRAILS_DEBOUNCE_MS:200"
+cooldown_ms: "$LLM_GUARDRAILS_COOLDOWN_MS:30000"
+
+built_in_rules:
+  no-linter-suppressions: "$LLM_GUARDRAILS_RULE_LINTER:true"
+  no-type-suppressions: "$LLM_GUARDRAILS_RULE_TYPE:true"
+  no-runtime-suppressions: "$LLM_GUARDRAILS_RULE_RUNTIME:true"
+  no-compiler-suppressions: "$LLM_GUARDRAILS_RULE_COMPILER:true"
+
+custom_rules: []
