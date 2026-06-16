@@ -35,9 +35,16 @@ const { default: extension } = await import("../index.ts");
 
 function createPi() {
   const handlers = new Map<string, Handler[]>();
+  const eventHandlers = new Map<string, Handler[]>();
   return {
     handlers,
-    events: { on: mock((_event: string, _handler: Handler) => {}) },
+    eventHandlers,
+    events: {
+      on: mock((event: string, handler: Handler) => {
+        eventHandlers.set(event, [...(eventHandlers.get(event) ?? []), handler]);
+        return () => eventHandlers.set(event, (eventHandlers.get(event) ?? []).filter((candidate) => candidate !== handler));
+      }),
+    },
     sendUserMessage: mock((_message: string, _options?: { deliverAs?: "followUp" }) => {}),
     on: mock((event: string, handler: Handler) => {
       handlers.set(event, [...(handlers.get(event) ?? []), handler]);
@@ -124,5 +131,41 @@ describe("llm-guardrails extension", () => {
 
     await pi.handlers.get("session_shutdown")?.[0]?.({}, {});
     expect(watchers[0]?.close).toHaveBeenCalledTimes(1);
+  });
+
+  test("duplicate session_start cleans up the previous watcher and listener", async () => {
+    const pi = createPi();
+    extension(pi as never);
+
+    await pi.handlers.get("session_start")?.[0]?.({}, { cwd: dir, isIdle: () => true });
+    const firstWatcher = watchers[0];
+    const firstUnsubscribe = pi.events.on.mock.results[0]?.value as (() => void) | undefined;
+    await pi.handlers.get("session_start")?.[0]?.({}, { cwd: dir, isIdle: () => true });
+
+    expect(watchers).toHaveLength(2);
+    expect(firstWatcher?.close).toHaveBeenCalledTimes(1);
+    expect(pi.eventHandlers.get("llm-guardrail:register")).toHaveLength(1);
+    firstUnsubscribe?.();
+    expect(pi.eventHandlers.get("llm-guardrail:register")).toHaveLength(1);
+  });
+
+  test("stale watcher callback after restart does not send warnings", async () => {
+    const pi = createPi();
+    const staleFile = path.join(dir, "stale.ts");
+    const currentFile = path.join(dir, "current.ts");
+    await fs.writeFile(staleFile, "// @ts-ignore\nconst stale = 1;\n");
+    await fs.writeFile(currentFile, "// @ts-ignore\nconst current = 1;\n");
+
+    extension(pi as never);
+    await pi.handlers.get("session_start")?.[0]?.({}, { cwd: dir, isIdle: () => true });
+    await pi.handlers.get("session_start")?.[0]?.({}, { cwd: dir, isIdle: () => true });
+
+    watchers[0]?.emit("change", staleFile);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(pi.sendUserMessage).toHaveBeenCalledTimes(0);
+
+    watchers[1]?.emit("change", currentFile);
+    await waitFor(() => pi.sendUserMessage.mock.calls.length === 1);
+    expect(pi.sendUserMessage.mock.calls[0]?.[0]).toContain(`File: ${currentFile}:1:1`);
   });
 });

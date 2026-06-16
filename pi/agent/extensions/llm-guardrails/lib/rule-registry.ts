@@ -96,14 +96,16 @@ export function createRuleRegistry(logger: Logger) {
     rules.clear();
   }
 
-  function subscribe(bus: EventBus): void {
-    bus.on("llm-guardrail:register", (rule) => {
+  function subscribe(bus: EventBus): () => void {
+    const unsubscribe = bus.on("llm-guardrail:register", (rule) => {
       try {
         register(rule);
       } catch (error) {
         logger.warn(`llm-guardrail: register listener failed: ${(error as Error).message}`);
       }
     });
+
+    return typeof unsubscribe === "function" ? unsubscribe : () => {};
   }
 
   return { register, unregister, getAll, clear, subscribe };

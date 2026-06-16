@@ -137,7 +137,11 @@ describe("createRuleRegistry", () => {
 
   test("event bus registration takes effect immediately and catches listener errors", () => {
     const handlers = new Map<string, (payload: unknown) => void>();
-    const bus: EventBus = { on: (event, handler) => handlers.set(event, handler) };
+    const bus: EventBus = {
+      on: (event, handler) => {
+        handlers.set(event, handler);
+      },
+    };
     const warn = mock(() => {});
     const registry = createRuleRegistry({ warn, info: mock(() => {}) });
 
@@ -156,5 +160,26 @@ describe("createRuleRegistry", () => {
     };
     expect(() => handlers.get("llm-guardrail:register")?.(throwingRule)).not.toThrow();
     expect(warn).toHaveBeenCalledWith("llm-guardrail: register listener failed: boom");
+  });
+
+  test("subscribe returns an unsubscribe function that removes the listener", () => {
+    const handlers = new Map<string, (payload: unknown) => void>();
+    const remove = mock(() => handlers.delete("llm-guardrail:register"));
+    const bus: EventBus = {
+      on: (event, handler) => {
+        handlers.set(event, handler);
+        return remove;
+      },
+    };
+    const registry = createRuleRegistry({ warn: mock(() => {}), info: mock(() => {}) });
+
+    const unsubscribe = registry.subscribe(bus);
+    handlers.get("llm-guardrail:register")?.(validRule);
+    expect(registry.getAll()).toHaveLength(1);
+
+    unsubscribe();
+    expect(remove).toHaveBeenCalledTimes(1);
+    handlers.get("llm-guardrail:register")?.({ ...validRule, id: "after-unsubscribe" });
+    expect(registry.getAll().map((rule) => rule.id)).toEqual(["no-empty-catch"]);
   });
 });

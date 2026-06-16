@@ -32,7 +32,7 @@ export interface Config {
 }
 
 export interface EventBus {
-  on(event: string, handler: (payload: unknown) => void): void;
+  on(event: string, handler: (payload: unknown) => void): void | (() => void);
 }
 
 export interface GuardrailsPi {

@@ -239,5 +239,10 @@ export function configPath(): string {
 export function loadConfig(path = configPath(), logger: Logger = console): Config {
   if (!fs.existsSync(path)) return DEFAULT_CONFIG;
 
-  return parseConfig(fs.readFileSync(path, "utf8"), logger);
+  try {
+    return parseConfig(fs.readFileSync(path, "utf8"), logger);
+  } catch (error) {
+    logger.warn(`llm-guardrail: failed reading config; using default config: ${(error as Error).message}`);
+    return DEFAULT_CONFIG;
+  }
 }

@@ -307,4 +307,11 @@ describe("loadConfig", () => {
       if (existsSync(path)) rmSync(path);
     }
   });
+
+  test("read errors return DEFAULT_CONFIG and log a warning", () => {
+    const warn = mock(() => {});
+
+    expect(loadConfig(tmpdir(), { warn })).toBe(DEFAULT_CONFIG);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("failed reading config"));
+  });
 });
