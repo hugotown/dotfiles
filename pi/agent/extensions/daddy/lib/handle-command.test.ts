@@ -1,6 +1,7 @@
 // lib/handle-command.test.ts
 import { test, expect } from "bun:test";
 import { handleCommand } from "./handle-command.ts";
+import { saveRun } from "./state.ts";
 import type { RunDeps } from "../runtime-types.ts";
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -43,8 +44,16 @@ test("status reports no runs when home is empty", async () => {
   const freshHome = fs.mkdtempSync(path.join(os.tmpdir(), "ht-hc-status-"));
   const freshDeps = { ...deps, home: freshHome };
   let out = "";
-  await handleCommand({ kind: "status" }, freshDeps, (t) => { out = t; }, () => {});
+  await handleCommand({ kind: "status", id: "" }, freshDeps, (t) => { out = t; }, () => {});
   expect(out).toBe("No runs.");
+});
+
+test("status with id reports detailed run", async () => {
+  const statusHome = fs.mkdtempSync(path.join(os.tmpdir(), "ht-hc-status-id-"));
+  saveRun(statusHome, { id: "r-status", workflow: "demo", arguments: "", status: "completed", artifacts_dir: "/a", base_branch: "main", started_at: "t", nodes: {} });
+  let out = "";
+  await handleCommand({ kind: "status", id: "r-status" }, { ...deps, home: statusHome }, (t) => { out = t; }, () => {});
+  expect(out).toContain("Run r-status");
 });
 
 test("list reports no workflows when dir is empty", async () => {

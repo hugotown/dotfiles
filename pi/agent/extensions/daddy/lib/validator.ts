@@ -2,6 +2,7 @@
 import type { WorkflowDef, NodeDef, NodeType } from "../types.ts";
 
 const TYPE_KEYS: NodeType[] = ["prompt", "command", "bash", "script", "loop", "interview", "approval", "cancel"];
+const ACCEPTANCE_LEVELS = new Set(["none", "attested", "checked", "verified", "reviewed"]);
 
 function typeCount(node: NodeDef): number {
   return TYPE_KEYS.filter((k) => (node as unknown as Record<string, unknown>)[k] !== undefined).length;
@@ -24,7 +25,24 @@ function findCycle(nodes: NodeDef[]): string[] | null {
   return null;
 }
 
+function validateAcceptance(owner: string, acceptance: unknown): string | null {
+  if (!acceptance) return null;
+  if (typeof acceptance !== "object") return `Acceptance for ${owner} must be an object`;
+  const a = acceptance as { level?: unknown; verify?: unknown };
+  if (typeof a.level !== "string" || !ACCEPTANCE_LEVELS.has(a.level)) return `Invalid acceptance level for ${owner}`;
+  if (a.verify !== undefined) {
+    if (!Array.isArray(a.verify)) return `Acceptance verify for ${owner} must be a list`;
+    for (const item of a.verify) {
+      const v = item as { id?: unknown; command?: unknown };
+      if (!v || typeof v.id !== "string" || typeof v.command !== "string") return `Acceptance verify entry for ${owner} must include id and command`;
+    }
+  }
+  return null;
+}
+
 export function validateWorkflow(def: WorkflowDef): string | null {
+  const workflowAcceptance = validateAcceptance("workflow", def.acceptance);
+  if (workflowAcceptance) return workflowAcceptance;
   const ids = new Set<string>();
   for (const n of def.nodes) {
     if (!n.id) return "Every node needs an 'id'";
@@ -33,6 +51,8 @@ export function validateWorkflow(def: WorkflowDef): string | null {
     const tc = typeCount(n);
     if (tc !== 1) return `Node "${n.id}" must have exactly one type field (has ${tc})`;
     if (n.loop && n.retry) return `Loop node "${n.id}" cannot use retry`;
+    const nodeAcceptance = validateAcceptance(`node "${n.id}"`, n.acceptance);
+    if (nodeAcceptance) return nodeAcceptance;
   }
   for (const n of def.nodes) for (const dep of n.depends_on ?? []) {
     if (dep === n.id) return `Node "${n.id}" cannot depend on itself"`;

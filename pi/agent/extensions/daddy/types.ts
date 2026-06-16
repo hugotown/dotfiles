@@ -18,6 +18,22 @@ export interface RetryConfig {
   on_error?: "transient" | "all";
 }
 
+export type AcceptanceLevel = "none" | "attested" | "checked" | "verified" | "reviewed";
+
+export interface AcceptanceVerifyCommand {
+  id: string;
+  command: string;
+  timeout_ms?: number;
+}
+
+export interface AcceptanceConfig {
+  level: AcceptanceLevel;
+  reason?: string;
+  criteria?: string[];
+  evidence?: string[];
+  verify?: AcceptanceVerifyCommand[];
+}
+
 export interface LoopSpec {
   prompt: string;
   until?: string;
@@ -59,6 +75,7 @@ export interface NodeDef {
   allowed_tools?: string[];
   denied_tools?: string[];
   retry?: RetryConfig;
+  acceptance?: AcceptanceConfig;
   always_run?: boolean;
   timeout?: number;
   prompt?: string;
@@ -79,5 +96,6 @@ export interface WorkflowDef {
   provider?: string;
   concurrency?: number;
   persist_sessions?: boolean;
+  acceptance?: AcceptanceConfig;
   nodes: NodeDef[];
 }

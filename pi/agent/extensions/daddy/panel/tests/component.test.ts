@@ -86,6 +86,13 @@ describe("DaddyPanel", () => {
     expect(lines.some((l) => l.includes("Model: gpt-5.5"))).toBe(true);
   });
 
+  test("renders contextual actions for paused runs", () => {
+    const { panel, store } = makePanel(20);
+    store.setRun({ id: "r1", workflow: "w", arguments: "", status: "paused", paused_node: "gate", artifacts_dir: "/a", base_branch: "main", started_at: "t", nodes: { gate: { status: "paused", output: "Approve?" } } });
+    const lines = panel.render(100).join("\n");
+    expect(lines).toContain("Actions: approve | reject | cancel");
+  });
+
   test("keeps the frame right edge at the requested width when left column has ANSI colors", () => {
     const { panel, store } = makePanel(10);
     store.appendStream("interview", { type: "text", content: "x", timestamp: 1 });

@@ -40,3 +40,26 @@ test("accepts an interview node", () => {
     { id: "a", interview: { prompt: "p", max_iterations: 1 } },
   ]))).toBeNull();
 });
+
+test("accepts valid acceptance config", () => {
+  expect(validateWorkflow({
+    name: "w", description: "w",
+    acceptance: { level: "verified", verify: [{ id: "unit", command: "bun test", timeout_ms: 1000 }] },
+    nodes: [{ id: "a", bash: "echo hi" }],
+  })).toBeNull();
+});
+
+test("rejects invalid acceptance level", () => {
+  expect(validateWorkflow({
+    name: "w", description: "w",
+    acceptance: { level: "magic" },
+    nodes: [{ id: "a", bash: "echo hi" }],
+  } as never)).toContain("Invalid acceptance level");
+});
+
+test("rejects verify entries without command", () => {
+  expect(validateWorkflow({
+    name: "w", description: "w",
+    nodes: [{ id: "a", bash: "echo hi", acceptance: { level: "verified", verify: [{ id: "unit" }] } }],
+  } as never)).toContain("Acceptance verify entry");
+});

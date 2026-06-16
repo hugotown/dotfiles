@@ -5,6 +5,14 @@ export type NodeStatus =
   | "pending" | "running" | "completed" | "failed" | "skipped" | "cancelled" | "paused";
 export type RunStatus = "running" | "completed" | "failed" | "cancelled" | "paused";
 
+export type AcceptanceProvenance = "claimed" | "attested" | "checked" | "verified" | "reviewed" | "rejected";
+
+export interface AcceptanceState {
+  level: string;
+  provenance: AcceptanceProvenance;
+  summary: string;
+}
+
 export interface NodeState {
   status: NodeStatus;
   output: string;
@@ -16,6 +24,7 @@ export interface NodeState {
   attempts?: number;
   model?: string;
   error?: string;
+  acceptance?: AcceptanceState;
 }
 
 export interface RunState {
@@ -39,6 +48,7 @@ export interface NodeResult {
   structured?: unknown;
   sessionId?: string;
   error?: string;
+  acceptance?: AcceptanceState;
 }
 
 export interface SubContext {

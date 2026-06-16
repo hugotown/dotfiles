@@ -26,3 +26,32 @@ test("unknown subcommand", () => {
 test("parses observer command", () => {
   expect(parseCommand("observer")).toEqual({ kind: "observer" });
 });
+
+test("parses status with optional id", () => {
+  expect(parseCommand("status")).toEqual({ kind: "status", id: "" });
+  expect(parseCommand("status abc123")).toEqual({ kind: "status", id: "abc123" });
+});
+
+test("parses doctor", () => {
+  expect(parseCommand("doctor")).toEqual({ kind: "doctor" });
+});
+
+test("parses cancel with id and reason", () => {
+  expect(parseCommand("cancel r1 because stuck")).toEqual({ kind: "cancel", id: "r1", reason: "because stuck" });
+});
+
+test("parses recover", () => {
+  expect(parseCommand("recover r1")).toEqual({ kind: "recover", id: "r1" });
+});
+
+test("parses retry node", () => {
+  expect(parseCommand("retry r1 test-node")).toEqual({ kind: "retry", id: "r1", node: "test-node" });
+});
+
+test("parses cleanup", () => {
+  expect(parseCommand("cleanup")).toEqual({ kind: "cleanup" });
+});
+
+test("parses preflight", () => {
+  expect(parseCommand("preflight fix-issue #42")).toEqual({ kind: "preflight", flow: "fix-issue", args: "#42" });
+});

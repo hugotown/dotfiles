@@ -99,10 +99,16 @@ Syntax: `/daddy <subcommand> [args]`
 | -------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `flow=<name> [args]` | `/daddy flow=fix-issue #42` | Start a workflow. `args` becomes `$ARGUMENTS`.                                                         |
 | `list`               | `/daddy list`               | List discoverable workflows (name + description).                                                      |
-| `status`             | `/daddy status`             | List runs and their state.                                                                             |
+| `status [id]`        | `/daddy status mqb…`        | List runs, or show a detailed run report when an id is provided.                                        |
+| `doctor`             | `/daddy doctor`             | Diagnose workflows, runs, artifacts, dependencies, and stale state.                                     |
+| `preflight <name>`   | `/daddy preflight fix-issue #42` | Preview a workflow DAG, side effects, and warnings without running it.                            |
 | `resume <id>`        | `/daddy resume mqb…`        | Resume a paused/failed run by id.                                                                      |
 | `approve [comment]`  | `/daddy approve lgtm`       | Approve the paused gate; `comment` becomes the gate output (default `approved`).                       |
 | `reject [reason]`    | `/daddy reject not yet`     | Reject the paused gate (gate output `rejected`, or aborts the run if the gate has `on_reject: abort`). |
+| `cancel [id] [why]`  | `/daddy cancel mqb stuck`   | Mark a run cancelled and preserve artifacts.                                                           |
+| `recover <id>`       | `/daddy recover mqb…`       | Reconcile stale running state into an inspectable failed run.                                           |
+| `retry <id> <node>`  | `/daddy retry mqb test`     | Reset a failed node and downstream nodes so the run can resume from there.                              |
+| `cleanup`            | `/daddy cleanup`            | List old terminal runs/artifacts that are safe cleanup candidates.                                      |
 | `validate <name>`    | `/daddy validate fix-issue` | Parse + validate a workflow without running it.                                                        |
 | `merge`              | `/daddy merge`              | `wt merge --yes` the current worktree.                                                                 |
 | `remove`             | `/daddy remove`             | `wt remove` the most recent run's worktree.                                                            |
@@ -287,6 +293,36 @@ never blocks on the UI). A later `/daddy approve|reject` reloads state and conti
 
 On the next pi startup, a paused run is announced via a notification.
 
+## Acceptance provenance
+
+Workflows and nodes may define `acceptance` to distinguish model claims from runtime evidence:
+
+```yaml
+acceptance:
+  level: verified
+  criteria:
+    - "Bug fixed without widening scope"
+  evidence:
+    - changed-files
+    - tests-run
+  verify:
+    - id: unit
+      command: "bun test"
+      timeout_ms: 120000
+```
+
+Levels:
+
+- `none` explicitly disables acceptance checks, usually with a `reason`.
+- `attested` records that the node provided structured evidence.
+- `checked` records that runtime structural checks passed.
+- `verified` runs configured `verify` commands and fails the node when any command fails.
+- `reviewed` records independent review or approval-gate validation.
+
+Runtime summaries show provenance per node. AI nodes with no configured acceptance are marked
+`claimed`, which means the model said it was done but the runtime did not verify it. Failed
+verification is marked `rejected`.
+
 ## Retries
 
 Non-loop nodes accept a `retry` policy. Errors are classified `fatal` (auth/permission),
@@ -405,7 +441,8 @@ pi's full default toolset.
 - **`on_reject` AI-rework loop**: v1 reject is a `rejected` branch or `abort`; no automatic
   rework prompt.
 - **Reserved builtins** `REJECTION_REASON` / `LOOP_USER_INPUT` are declared but not populated.
-- **Custom TUI panel**: results are plain-text summaries; no custom render component.
+- **Panel preflight editing**: the custom TUI panel exists and shows contextual status/actions,
+  but it does not yet provide full preflight editing.
 
 ## Development
 

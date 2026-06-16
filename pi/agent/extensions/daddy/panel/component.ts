@@ -83,6 +83,16 @@ function emptyStateMessage(node: NodeState | undefined): string {
   }
 }
 
+function actionHint(status: string | undefined): string {
+  switch (status) {
+    case "paused": return "Actions: approve | reject | cancel";
+    case "failed": return "Actions: status | retry | recover | cancel";
+    case "completed": return "Actions: status | merge/remove if worktree";
+    case "running": return "Actions: status | cancel";
+    default: return "Actions: status";
+  }
+}
+
 function emptyStateFor(node: NodeState | undefined, width: number, height: number): string[] {
   const msg = node?.status === "paused" && node.output
     ? `Question: ${node.output}\nAwaiting your answer below.`
@@ -245,7 +255,7 @@ export class DaddyPanel implements Component {
     const fittedEditor = fitEditorLines(editorLines, editorRows, rightWidth);
     const rows: string[] = [topBorder(TITLE, width)];
     if (headerRows > 0) {
-      rows.push(frameRow(pad("Nodes", leftWidth) + GAP + pad(`Output: ${selectedNodeId ?? "none"} · Model: ${selectedModel}`, rightWidth), width));
+      rows.push(frameRow(pad("Nodes", leftWidth) + GAP + pad(`Output: ${selectedNodeId ?? "none"} · Model: ${selectedModel} · ${actionHint(state.run?.status)}`, rightWidth), width));
     }
     for (let i = 0; i < contentRows; i++) {
       const l = left[i] ?? " ".repeat(leftWidth);

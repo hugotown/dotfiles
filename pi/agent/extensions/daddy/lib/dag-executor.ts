@@ -7,6 +7,7 @@ import { dispatchNode } from "../nodes/dispatch.ts";
 import { withRetry } from "./retry.ts";
 import { createSemaphore } from "./semaphore.ts";
 import { saveRun } from "./state.ts";
+import { applyAcceptance } from "./acceptance.ts";
 import { DEFAULT_CONCURRENCY } from "../constants.ts";
 import type { WorkflowDef, NodeDef } from "../types.ts";
 import type { RunState, RunDeps, NodeResult, RunCtx } from "../runtime-types.ts";
@@ -19,13 +20,13 @@ function resolvedModel(node: NodeDef, deps: RunDeps): string | undefined {
   return node.model ?? deps.defaultModel;
 }
 
-async function executeNode(node: NodeDef, state: RunState, deps: RunDeps): Promise<NodeResult> {
+async function executeNode(def: WorkflowDef, node: NodeDef, state: RunState, deps: RunDeps): Promise<NodeResult> {
   const rctx: RunCtx = { node, state, deps, sub: buildSubContext(state, deps), cwd: state.worktree?.path ?? deps.projectDir };
   const retryable = (k: "fatal" | "transient" | "unknown") => (node.retry?.on_error === "all" ? k !== "fatal" : k === "transient");
   return withRetry(async () => {
     const r = await dispatchNode(rctx);
     if (r.status === "failed") throw new Error(r.error ?? "node failed");
-    return r;
+    return applyAcceptance(def, node, r, deps);
   }, node.retry, retryable).catch((e) => ({ status: "failed", output: "", error: e instanceof Error ? e.message : String(e) }));
 }
 
@@ -34,7 +35,7 @@ function mark(state: RunState, id: string, r: NodeResult): void {
   const thinking = r.thinking
     ?? (r.structured && typeof r.structured === "object" && "thinking" in r.structured ? String((r.structured as Record<string, unknown>).thinking ?? "") : "")
     ?? previous?.thinking;
-  state.nodes[id] = { status: r.status, output: r.output, thinking: thinking || undefined, structured: r.structured, model: previous?.model, error: r.error, completed_at: nowIso() };
+  state.nodes[id] = { status: r.status, output: r.output, thinking: thinking || undefined, structured: r.structured, model: previous?.model, error: r.error, acceptance: r.acceptance, completed_at: nowIso() };
   if (r.status === "paused") { state.status = "paused"; state.paused_node = id; }
   if (r.status === "cancelled") state.status = "cancelled";
 }
@@ -60,7 +61,7 @@ export async function executeDag(def: WorkflowDef, state: RunState, deps: RunDep
       saveRun(deps.home, state);
     }
     const results = await Promise.all(toRun.map((node) =>
-      sem.acquire().then(async () => { try { return [node, await executeNode(node, state, deps)] as const; } finally { sem.release(); } })));
+      sem.acquire().then(async () => { try { return [node, await executeNode(def, node, state, deps)] as const; } finally { sem.release(); } })));
     for (const [node, r] of results) { mark(state, node.id, r); if (deps.onStream && r.output) deps.onStream(node.id, r.output); deps.emit(state); }
     saveRun(deps.home, state);
     if (state.status === "paused" || state.status === "cancelled") return state;
