@@ -23,7 +23,9 @@ describe("scan", () => {
       ["foo.c", '#pragma GCC diagnostic ignored "-Wunused"', "no-compiler-suppressions"],
       ["foo.css", "/* stylelint-disable */", "no-linter-suppressions"],
       ["foo.php", "// @phpstan-ignore-line", "no-linter-suppressions"],
+      ["foo.php", "$x = foo(); // @phpstan-ignore-line", "no-linter-suppressions"],
       ["foo.php", "// @psalm-suppress PropertyNotSetInConstructor", "no-linter-suppressions"],
+      ["foo.php", "/**\n * @psalm-suppress InvalidReturnType\n */", "no-linter-suppressions"],
       ["foo.rb", "# rubocop:disable Style/Documentation", "no-linter-suppressions"],
     ];
 

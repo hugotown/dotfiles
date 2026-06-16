@@ -64,7 +64,9 @@ describe("BUILT_IN_RULES", () => {
     expect(matches("@phpstan-ignore-line")).toBe(true);
     expect(matches("@psalm-suppress PropertyNotSetInConstructor")).toBe(true);
     expect(matches("// @phpstan-ignore-line")).toBe(true);
+    expect(matches("$x = foo(); // @phpstan-ignore-line")).toBe(true);
     expect(matches("// @psalm-suppress PropertyNotSetInConstructor")).toBe(true);
+    expect(matches("/**\n * @psalm-suppress InvalidReturnType\n */")).toBe(true);
     expect(matches("// docs mention @phpstan-ignore-line")).toBe(false);
     expect(matches("// docs mention @psalm-suppress PropertyNotSetInConstructor")).toBe(false);
   });
