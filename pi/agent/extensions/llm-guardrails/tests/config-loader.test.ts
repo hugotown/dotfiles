@@ -138,6 +138,23 @@ built_in_rules:
     expect(warn).toHaveBeenCalled();
   });
 
+  test("unresolved env refs in watch string arrays fall back and log", () => {
+    const warn = mock(() => {});
+    const config = parseConfig(
+      `
+watch:
+  include: ["$MISSING_INCLUDE"]
+  ignore: ["$MISSING_IGNORE"]
+`,
+      { warn },
+    );
+
+    expect(config.watch.include).toEqual(DEFAULT_CONFIG.watch.include);
+    expect(config.watch.ignore).toEqual(DEFAULT_CONFIG.watch.ignore);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("watch.include"));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("watch.ignore"));
+  });
+
   test("rejects invalid modes and negative numbers", () => {
     const warn = mock(() => {});
     const config = parseConfig(
@@ -197,6 +214,21 @@ custom_rules:
     filePatterns: ["**/*.ts"]
     patterns: ["["]
     message: "bad"
+  - id: 123
+    name: "Bad Type"
+    filePatterns: ["**/*.ts"]
+    patterns: ["// Bad"]
+    message: "bad"
+  - id: "bad-file-pattern"
+    name: "Bad File Pattern"
+    filePatterns: [123]
+    patterns: ["// Bad"]
+    message: "bad"
+  - id: "bad-pattern-type"
+    name: "Bad Pattern Type"
+    filePatterns: ["**/*.ts"]
+    patterns: [123]
+    message: "bad"
   - id: "good"
     name: "Good"
     filePatterns: ["**/*.ts"]
@@ -210,7 +242,36 @@ custom_rules:
     expect(warn).toHaveBeenCalled();
   });
 
-  test("custom rule ids may collide with built-in ids", () => {
+  test("unresolved env refs in custom rules skip the rule and log", () => {
+    const warn = mock(() => {});
+    const config = parseConfig(
+      `
+custom_rules:
+  - id: "$MISSING_RULE_ID"
+    name: "Missing ID"
+    filePatterns: ["**/*.ts"]
+    patterns: ["// Missing"]
+    message: "bad"
+  - id: "missing-pattern"
+    name: "Missing Pattern"
+    filePatterns: ["**/*.ts"]
+    patterns: ["$MISSING_PATTERN"]
+    message: "bad"
+  - id: "good"
+    name: "Good"
+    filePatterns: ["**/*.ts"]
+    patterns: ["// Good"]
+    message: "good"
+`,
+      { warn },
+    );
+
+    expect(config.customRules.map((rule) => rule.id)).toEqual(["good"]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("unresolved env ref"));
+  });
+
+  test("custom rule ids may collide with built-in ids and log a warning", () => {
+    const warn = mock(() => {});
     const config = parseConfig(
       `
 custom_rules:
@@ -220,10 +281,11 @@ custom_rules:
     patterns: ["@ts-ignore"]
     message: "Use the project-specific fix."
 `,
-      { warn: mock(() => {}) },
+      { warn },
     );
 
     expect(config.customRules.map((rule) => rule.id)).toEqual(["no-type-suppressions"]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("overrides built-in rule"));
   });
 });
 

@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
-import { deepResolve, resolveValue } from "./env-resolver.ts";
+import { deepResolve, isEnvRef, resolveValue } from "./env-resolver.ts";
 import { validateRule } from "./rule-registry.ts";
 import type { Config, Mode, Rule } from "./types.ts";
 
@@ -72,7 +72,7 @@ function readNumber(raw: unknown, fallback: number, field: string, logger: Logge
 }
 
 function readStrings(raw: unknown, fallback: readonly string[], field: string, logger: Logger): readonly string[] {
-  if (!Array.isArray(raw) || raw.some((value) => typeof value !== "string" || value.length === 0)) {
+  if (!Array.isArray(raw) || raw.some((value) => typeof value !== "string" || value.length === 0 || isEnvRef(value))) {
     if (raw !== undefined) warnInvalid(field, logger);
     return fallback;
   }
@@ -114,8 +114,18 @@ function toRegexes(raw: unknown, logger: Logger): RegExp[] | undefined {
 
   const patterns: RegExp[] = [];
   for (const pattern of raw) {
+    if (typeof pattern !== "string") {
+      logger.warn("llm-guardrail: custom rule skipped: patterns must contain only strings");
+      return undefined;
+    }
+
+    if (isEnvRef(pattern)) {
+      logger.warn(`llm-guardrail: custom rule skipped: unresolved env ref ${pattern}`);
+      return undefined;
+    }
+
     try {
-      patterns.push(new RegExp(String(pattern), "gi"));
+      patterns.push(new RegExp(pattern, "gi"));
     } catch (error) {
       logger.warn(`llm-guardrail: invalid custom rule regex skipped: ${(error as Error).message}`);
       return undefined;
@@ -123,6 +133,38 @@ function toRegexes(raw: unknown, logger: Logger): RegExp[] | undefined {
   }
 
   return patterns;
+}
+
+function readRequiredString(candidate: Raw, field: string, logger: Logger): string | undefined {
+  const value = candidate[field];
+  if (typeof value !== "string") {
+    logger.warn(`llm-guardrail: custom rule skipped: ${field} must be a string`);
+    return undefined;
+  }
+
+  if (isEnvRef(value)) {
+    logger.warn(`llm-guardrail: custom rule skipped: unresolved env ref ${value}`);
+    return undefined;
+  }
+
+  return value;
+}
+
+function readRuleFilePatterns(candidate: Raw, logger: Logger): readonly string[] | undefined {
+  const value = candidate.filePatterns;
+  if (!Array.isArray(value)) return [];
+
+  if (value.some((pattern) => typeof pattern !== "string")) {
+    logger.warn("llm-guardrail: custom rule skipped: filePatterns must contain only strings");
+    return undefined;
+  }
+
+  if (value.some(isEnvRef)) {
+    logger.warn("llm-guardrail: custom rule skipped: unresolved env ref in filePatterns");
+    return undefined;
+  }
+
+  return value;
 }
 
 function readCustomRules(raw: unknown, logger: Logger): readonly Rule[] {
@@ -135,16 +177,24 @@ function readCustomRules(raw: unknown, logger: Logger): readonly Rule[] {
   const rules: Rule[] = [];
   for (const entry of raw) {
     const candidate = asRaw(entry);
+    const id = readRequiredString(candidate, "id", logger);
+    const name = readRequiredString(candidate, "name", logger);
+    const message = readRequiredString(candidate, "message", logger);
+    const filePatterns = readRuleFilePatterns(candidate, logger);
     const patterns = toRegexes(candidate.patterns, logger);
-    if (!patterns) continue;
+    if (id === undefined || name === undefined || message === undefined || filePatterns === undefined || !patterns) continue;
+
+    if (BUILT_IN_RULE_IDS.includes(id as (typeof BUILT_IN_RULE_IDS)[number])) {
+      logger.warn(`llm-guardrail: custom rule ${id} overrides built-in rule`);
+    }
 
     const rule: Rule = {
-      id: String(candidate.id ?? ""),
-      name: String(candidate.name ?? ""),
+      id,
+      name,
       description: typeof candidate.description === "string" ? candidate.description : undefined,
-      filePatterns: Array.isArray(candidate.filePatterns) ? candidate.filePatterns.map(String) : [],
+      filePatterns,
       patterns,
-      message: String(candidate.message ?? ""),
+      message,
       severity: candidate.severity === "error" || candidate.severity === "warning" ? candidate.severity : undefined,
     };
     const result = validateRule(rule);

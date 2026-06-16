@@ -1,5 +1,9 @@
 const ENV_REF = /^\$([A-Z_][A-Z0-9_]*)(?::(.*))?$/s;
 
+export function isEnvRef(value: unknown): value is string {
+  return typeof value === "string" && ENV_REF.test(value);
+}
+
 export function resolveValue<T>(value: T): T | string {
   if (typeof value !== "string") return value;
 
