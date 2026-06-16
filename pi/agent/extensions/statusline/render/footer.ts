@@ -2,21 +2,15 @@ import type { Component, TUI } from "@earendil-works/pi-tui";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type { ExtensionContext, ReadonlyFooterDataProvider, Theme } from "@earendil-works/pi-coding-agent";
 import type { ModelMeta } from "../types";
-import { activeIcons, activeLabels, formatKnowledge, formatPrice, formatTokenLimit } from "./format";
+import { activeIcons, formatKnowledge, formatPrice, formatTokenLimit } from "./format";
 import { providerEmoji } from "./icons";
 
-// Fixed card width in cells. Matches the previously-approved design.
-const CARD_WIDTH = 44;
+const PANEL_MAX_WIDTH = 56;
+const PANEL_MIN_WIDTH = 24;
+const INDENT = "  ";
+const BAR_WIDTH = 8;
 
-// Box-drawing characters
-const TL = "┌";
-const TR = "┐";
-const BL = "└";
-const BR = "┘";
-const ML = "├";
-const MR = "┤";
-const H = "─";
-const V = "│";
+type UsageTone = "success" | "warning" | "error";
 
 /** Compact token formatter mirroring pi's native footer (formatTokens in footer.js). */
 function fmtTokens(n: number): string {
@@ -35,67 +29,86 @@ function formatCwd(cwd: string, home: string | undefined): string {
   return cwd;
 }
 
-/** Header row: ┌─ <emoji> <name> ──────┐ */
-function buildHeader(meta: ModelMeta): string {
+function panelWidth(width: number): number {
+  if (width <= 0) return PANEL_MIN_WIDTH;
+  if (width < PANEL_MIN_WIDTH) return width;
+  return Math.min(width, PANEL_MAX_WIDTH);
+}
+
+function padLine(text: string, width: number): string {
+  const truncated = truncateToWidth(text, width, "…", false);
+  const pad = Math.max(0, width - visibleWidth(truncated));
+  return truncated + " ".repeat(pad);
+}
+
+function border(theme: Theme, width: number): string {
+  return theme.fg("accent", "─".repeat(width));
+}
+
+function row(text: string, width: number): string {
+  return padLine(`${INDENT}${text}`, width);
+}
+
+function label(theme: Theme, text: string): string {
+  return theme.fg("muted", text);
+}
+
+function usageTone(percent: number): UsageTone {
+  if (percent >= 85) return "error";
+  if (percent >= 60) return "warning";
+  return "success";
+}
+
+function buildUsageBar(theme: Theme, percent: number): string {
+  const clamped = Math.max(0, Math.min(100, percent));
+  const filled = Math.round((clamped / 100) * BAR_WIDTH);
+  const tone = usageTone(clamped);
+  return theme.fg(tone, "█".repeat(filled)) + theme.fg("dim", "░".repeat(BAR_WIDTH - filled));
+}
+
+function buildTitleRow(meta: ModelMeta, theme: Theme): string {
   const emoji = providerEmoji(meta.modelsDevProvider ?? meta.piProvider);
   const name = meta.model?.name ?? meta.piId ?? "no-model";
-  const title = ` ${emoji} ${name} `;
-  const inner = CARD_WIDTH - 2;
-  const trimmedTitle = truncateToWidth(title, inner - 1, "…", false);
-  const remaining = inner - 1 - visibleWidth(trimmedTitle);
-  const trailing = H.repeat(Math.max(0, remaining));
-  return `${TL}${H}${trimmedTitle}${trailing}${TR}`;
+  return theme.fg("accent", theme.bold(`${emoji} ${name}`));
 }
 
-/** Mid separator: ├──────┤  */
-function buildMidSeparator(): string {
-  return `${ML}${H.repeat(CARD_WIDTH - 2)}${MR}`;
+function buildCapabilitiesRow(meta: ModelMeta): string {
+  if (!meta.ok || !meta.model) return "(capabilities unavailable)";
+  return activeIcons(meta.model).join(" ");
 }
 
-/** Bottom border: └──────┘ */
-function buildBottomBorder(): string {
-  return `${BL}${H.repeat(CARD_WIDTH - 2)}${BR}`;
-}
-
-/** Content row: │ <text padded to inner width> │ */
-function buildRow(text: string): string {
-  const inner = CARD_WIDTH - 2;
-  const padded = truncateToWidth(` ${text}`, inner, "…", true);
-  return `${V}${padded}${V}`;
-}
-
-/** Four model-info rows (icons, labels, price, limits+knowledge). */
-function buildModelRows(meta: ModelMeta): string[] {
+function buildSpecRow(meta: ModelMeta, theme: Theme): string {
   if (!meta.ok || !meta.model) {
-    return ["(not found in models.dev)"];
+    return `${label(theme, "spec")}  ${theme.fg("dim", "unresolved in models.dev")}`;
   }
+
   const m = meta.model;
-  return [
-    activeIcons(m).join(" "),
-    activeLabels(m).join(" · "),
-    `${formatPrice(m.cost?.input)} in / ${formatPrice(m.cost?.output)} out per 1M`,
-    (() => {
-      const ctx = `ctx ${formatTokenLimit(m.limit?.context)}`;
-      const out = `out ${formatTokenLimit(m.limit?.output)}`;
-      const k = formatKnowledge(m);
-      return k ? `${ctx} · ${out} · ${k}` : `${ctx} · ${out}`;
-    })(),
+  const parts = [
+    `${formatPrice(m.cost?.input)} in`,
+    `${formatPrice(m.cost?.output)} out`,
+    `ctx ${formatTokenLimit(m.limit?.context)}`,
+    `out ${formatTokenLimit(m.limit?.output)}`,
   ];
+  const knowledge = formatKnowledge(m);
+  if (knowledge) parts.push(knowledge.replace(/^knowledge\s+/, "k "));
+
+  return `${label(theme, "spec")}  ${theme.fg("dim", parts.join(" · "))}`;
 }
 
-/** Two session-info rows: pwd(+branch) and ctx%/cost — live from ctx. */
-function buildSessionRows(ctx: ExtensionContext, footerData: ReadonlyFooterDataProvider): string[] {
-  // Row A: pwd (+git branch)
+function buildRepoRow(ctx: ExtensionContext, footerData: ReadonlyFooterDataProvider, theme: Theme): string {
   const home = process.env.HOME ?? process.env.USERPROFILE;
   let pwd = formatCwd(ctx.cwd, home);
   const branch = footerData.getGitBranch();
   if (branch) pwd += ` (${branch})`;
+  return `${label(theme, "repo")}  ${theme.fg("dim", pwd)}`;
+}
 
-  // Row B: ctx% / window  ·  $cost
+function buildLiveRow(ctx: ExtensionContext, theme: Theme): string {
   const usage = ctx.getContextUsage();
-  const pct = usage?.percent != null ? usage.percent.toFixed(1) : "?";
+  const pct = usage?.percent ?? 0;
+  const pctText = `${pct.toFixed(1)}%`;
+  const tone = usageTone(pct);
   const window = usage?.contextWindow ?? ctx.model?.contextWindow ?? 0;
-  const ctxPart = `ctx ${pct}%/${fmtTokens(window)}`;
 
   let totalCost = 0;
   for (const entry of ctx.sessionManager.getEntries()) {
@@ -105,7 +118,9 @@ function buildSessionRows(ctx: ExtensionContext, footerData: ReadonlyFooterDataP
   }
   const costPart = totalCost > 0 ? `$${totalCost.toFixed(3)}` : "$0";
 
-  return [pwd, `${ctxPart} · ${costPart}`];
+  const bar = buildUsageBar(theme, pct);
+  const coloredPct = theme.fg(tone, pctText);
+  return `${label(theme, "live")}  ${bar} ${coloredPct}${theme.fg("dim", ` / ${fmtTokens(window)} · ${costPart}`)}`;
 }
 
 /**
@@ -117,20 +132,23 @@ export function buildFooterFactory(
   ctxRef: { current: ExtensionContext | null },
   metaRef: { current: ModelMeta | null },
 ) {
-  return (_tui: TUI, _theme: Theme, footerData: ReadonlyFooterDataProvider): Component => {
+  return (_tui: TUI, theme: Theme, footerData: ReadonlyFooterDataProvider): Component => {
     return {
-      render(_width: number): string[] {
+      render(width: number): string[] {
         const ctx = ctxRef.current;
         const meta = metaRef.current;
         if (!ctx || !meta) return [];
 
-        const lines: string[] = [];
-        lines.push(buildHeader(meta));
-        for (const row of buildModelRows(meta)) lines.push(buildRow(row));
-        lines.push(buildMidSeparator());
-        for (const row of buildSessionRows(ctx, footerData)) lines.push(buildRow(row));
-        lines.push(buildBottomBorder());
-        return lines;
+        const w = panelWidth(width);
+        return [
+          border(theme, w),
+          row(buildTitleRow(meta, theme), w),
+          row(buildCapabilitiesRow(meta), w),
+          row(buildSpecRow(meta, theme), w),
+          row(buildRepoRow(ctx, footerData, theme), w),
+          row(buildLiveRow(ctx, theme), w),
+          border(theme, w),
+        ];
       },
       invalidate(): void {
         // No internal cache; render reads ctx/meta refs live each frame.

@@ -1,21 +1,20 @@
 {
-  "lastChangelogVersion": "0.79.1",
-  "defaultProvider": "minimax",
-  "defaultModel": "MiniMax-M3",
+  "lastChangelogVersion": "0.79.4",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.4",
   "defaultThinkingLevel": "high",
   "extensions": [
-    "~/.pi/agent/extensions/"
+    "~/.pi/agent/extensions/",
+    "-extensions/llm-guardrails/index.ts"
   ],
   "enabledModels": [
     "opencode-go/deepseek-v4-flash",
     "opencode-go/deepseek-v4-pro",
     "opencode-go/glm-5",
     "opencode-go/glm-5.1",
-    "opencode-go/kimi-k2.5",
     "opencode-go/kimi-k2.6",
     "opencode-go/mimo-v2.5",
     "opencode-go/mimo-v2.5-pro",
-    "opencode-go/minimax-m2.5",
     "opencode-go/minimax-m2.7",
     "opencode-go/minimax-m3",
     "opencode-go/qwen3.6-plus",
@@ -60,11 +59,9 @@
     "opencode/qwen3.6-plus",
     "opencode/qwen3.5-plus",
     "opencode/minimax-m2.7",
-    "opencode/minimax-m2.5",
     "opencode/gpt-5.4-mini",
     "opencode/big-pickle",
     "opencode/kimi-k2.6",
-    "opencode/kimi-k2.5",
     "opencode/gpt-5.5",
     "opencode/gpt-5.4",
     "opencode/gpt-5.2",
@@ -78,5 +75,6 @@
     "openai-codex/gpt-5.3-codex-spark"
   ],
   "packages": [],
-  "hideThinkingBlock": false
+  "hideThinkingBlock": false,
+  "theme": "dark"
 }

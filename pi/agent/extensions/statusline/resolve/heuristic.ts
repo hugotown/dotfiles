@@ -4,6 +4,7 @@ import { directLookup, type DirectHit } from "./direct";
 export const PROVIDER_ALIASES: Record<string, string[]> = {
   "google-vertex-anthropic": ["anthropic"],
   "amazon-bedrock-anthropic": ["anthropic"],
+  "openai-codex": ["openai"],
 };
 
 const DATE_SUFFIX = /-\d{8}$/;

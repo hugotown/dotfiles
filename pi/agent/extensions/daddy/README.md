@@ -1,6 +1,6 @@
 # daddy
 
-Run **Archon-style YAML workflow graphs (DAGs) entirely inside pi.dev**: a `/daddy`
+Run a `/daddy`
 command (and a `daddy` tool) load a workflow file, validate the dependency graph, and
 execute its nodes layer by layer — AI steps run as isolated `pi` subprocesses, deterministic
 steps run in-process. Supports parallelism, approval gates with pause/resume, structured
@@ -42,7 +42,7 @@ output, retries, conditional branching, loops, and optional `wt` worktree isolat
 
 ## What it is
 
-`daddy` is a native pi.dev extension. A workflow is a YAML file describing **nodes** (steps)
+`daddy` (Respectfully inspired by coleam00/archon and nicobailon/pi-subagents ) is a native pi.dev extension. A workflow is a YAML file describing **nodes** (steps)
 and their **dependencies**. The engine:
 
 1. Parses and validates the workflow (duplicate ids, unknown deps, cycles, node shape).
@@ -95,18 +95,18 @@ List everything available:
 
 Syntax: `/daddy <subcommand> [args]`
 
-| Subcommand | Example | What it does |
-|---|---|---|
-| `flow=<name> [args]` | `/daddy flow=fix-issue #42` | Start a workflow. `args` becomes `$ARGUMENTS`. |
-| `list` | `/daddy list` | List discoverable workflows (name + description). |
-| `status` | `/daddy status` | List runs and their state. |
-| `resume <id>` | `/daddy resume mqb…` | Resume a paused/failed run by id. |
-| `approve [comment]` | `/daddy approve lgtm` | Approve the paused gate; `comment` becomes the gate output (default `approved`). |
-| `reject [reason]` | `/daddy reject not yet` | Reject the paused gate (gate output `rejected`, or aborts the run if the gate has `on_reject: abort`). |
-| `validate <name>` | `/daddy validate fix-issue` | Parse + validate a workflow without running it. |
-| `merge` | `/daddy merge` | `wt merge --yes` the current worktree. |
-| `remove` | `/daddy remove` | `wt remove` the most recent run's worktree. |
-| `keep` | `/daddy keep` | No-op acknowledgement (keep the worktree). |
+| Subcommand           | Example                     | What it does                                                                                           |
+| -------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `flow=<name> [args]` | `/daddy flow=fix-issue #42` | Start a workflow. `args` becomes `$ARGUMENTS`.                                                         |
+| `list`               | `/daddy list`               | List discoverable workflows (name + description).                                                      |
+| `status`             | `/daddy status`             | List runs and their state.                                                                             |
+| `resume <id>`        | `/daddy resume mqb…`        | Resume a paused/failed run by id.                                                                      |
+| `approve [comment]`  | `/daddy approve lgtm`       | Approve the paused gate; `comment` becomes the gate output (default `approved`).                       |
+| `reject [reason]`    | `/daddy reject not yet`     | Reject the paused gate (gate output `rejected`, or aborts the run if the gate has `on_reject: abort`). |
+| `validate <name>`    | `/daddy validate fix-issue` | Parse + validate a workflow without running it.                                                        |
+| `merge`              | `/daddy merge`              | `wt merge --yes` the current worktree.                                                                 |
+| `remove`             | `/daddy remove`             | `wt remove` the most recent run's worktree.                                                            |
+| `keep`               | `/daddy keep`               | No-op acknowledgement (keep the worktree).                                                             |
 
 `approve`/`reject` with no id act on the most recent **paused** run.
 
@@ -116,7 +116,7 @@ The extension also registers a `daddy` tool so the main agent can start a workfl
 
 ```jsonc
 // parameters
-{ "flow": "fix-issue", "arguments": "#42" }   // arguments is optional
+{ "flow": "fix-issue", "arguments": "#42" } // arguments is optional
 ```
 
 It returns a plain-text per-node summary and the full run state in `details`.
@@ -138,44 +138,44 @@ nodes:
 
 ### Top-level fields
 
-| Field | Type | Default | Notes |
-|---|---|---|---|
-| `name` | string | — | **Required.** |
-| `description` | string | — | **Required.** Shown by `list`. |
-| `nodes` | list | — | **Required**, non-empty. |
-| `worktree` | bool | `false` | Create an isolated `wt` worktree for the run. |
-| `concurrency` | number | `4` | Max parallel nodes per layer. |
-| `model` / `provider` | string | — | Reserved (see [Limitations](#limitations--deferred) — not yet wired). |
-| `persist_sessions` | bool | `false` | Reserved (deferred). |
+| Field                | Type   | Default | Notes                                                                 |
+| -------------------- | ------ | ------- | --------------------------------------------------------------------- |
+| `name`               | string | —       | **Required.**                                                         |
+| `description`        | string | —       | **Required.** Shown by `list`.                                        |
+| `nodes`              | list   | —       | **Required**, non-empty.                                              |
+| `worktree`           | bool   | `false` | Create an isolated `wt` worktree for the run.                         |
+| `concurrency`        | number | `4`     | Max parallel nodes per layer.                                         |
+| `model` / `provider` | string | —       | Reserved (see [Limitations](#limitations--deferred) — not yet wired). |
+| `persist_sessions`   | bool   | `false` | Reserved (deferred).                                                  |
 
 ### Node types
 
 Every node has exactly **one** type field:
 
-| Type | Field | Runs as | Purpose |
-|---|---|---|---|
-| prompt | `prompt: <text>` | isolated `pi` subprocess | Free-form AI task. |
-| command | `command: <name>` | isolated `pi` subprocess | Loads a `.md` command template, then runs it as an AI task. |
-| bash | `bash: <script>` | in-process `bash -c` | Deterministic shell. |
-| script | `script: {…}` | in-process `bun`/`uv` | Run a `bun` (JS/TS) or `uv` (Python) script. |
-| loop | `loop: {…}` | repeated AI subprocess | Iterate an AI task until a completion signal. |
-| approval | `approval: {…}` | in-process | Pause the run for a human decision. |
-| cancel | `cancel: <reason>` | in-process | Cancel the run with a reason. |
+| Type     | Field              | Runs as                  | Purpose                                                     |
+| -------- | ------------------ | ------------------------ | ----------------------------------------------------------- |
+| prompt   | `prompt: <text>`   | isolated `pi` subprocess | Free-form AI task.                                          |
+| command  | `command: <name>`  | isolated `pi` subprocess | Loads a `.md` command template, then runs it as an AI task. |
+| bash     | `bash: <script>`   | in-process `bash -c`     | Deterministic shell.                                        |
+| script   | `script: {…}`      | in-process `bun`/`uv`    | Run a `bun` (JS/TS) or `uv` (Python) script.                |
+| loop     | `loop: {…}`        | repeated AI subprocess   | Iterate an AI task until a completion signal.               |
+| approval | `approval: {…}`    | in-process               | Pause the run for a human decision.                         |
+| cancel   | `cancel: <reason>` | in-process               | Cancel the run with a reason.                               |
 
 ### Common node fields
 
-| Field | Applies to | Notes |
-|---|---|---|
-| `id` | all | **Required**, unique. |
-| `depends_on` | all | List of node ids that must run first. |
-| `when` | all | Skip the node unless the expression is true (see [Conditions](#conditions-when)). |
-| `trigger_rule` | all | Join semantics over deps (see [Trigger rules](#trigger-rules-join-semantics)). |
-| `always_run` | all | Re-run even if previously completed (e.g. on resume). |
-| `model` / `provider` | AI nodes | Override the session model for this node. |
-| `thinking` | AI nodes | `low` \| `medium` (default) \| `high`. |
-| `output_format` | prompt/command | JSON schema to validate the output (see [Structured output](#structured-output)). |
-| `allowed_tools` | AI nodes | Allowlist of pi tools the node may use (see [Tool names](#tool-names)). |
-| `retry` | non-loop nodes | Retry policy (see [Retries](#retries)). |
+| Field                | Applies to     | Notes                                                                             |
+| -------------------- | -------------- | --------------------------------------------------------------------------------- |
+| `id`                 | all            | **Required**, unique.                                                             |
+| `depends_on`         | all            | List of node ids that must run first.                                             |
+| `when`               | all            | Skip the node unless the expression is true (see [Conditions](#conditions-when)). |
+| `trigger_rule`       | all            | Join semantics over deps (see [Trigger rules](#trigger-rules-join-semantics)).    |
+| `always_run`         | all            | Re-run even if previously completed (e.g. on resume).                             |
+| `model` / `provider` | AI nodes       | Override the session model for this node.                                         |
+| `thinking`           | AI nodes       | `low` \| `medium` (default) \| `high`.                                            |
+| `output_format`      | prompt/command | JSON schema to validate the output (see [Structured output](#structured-output)). |
+| `allowed_tools`      | AI nodes       | Allowlist of pi tools the node may use (see [Tool names](#tool-names)).           |
+| `retry`              | non-loop nodes | Retry policy (see [Retries](#retries)).                                           |
 
 ## Variable substitution
 
@@ -184,15 +184,15 @@ command templates, inline scripts) is substituted before running.
 
 **Built-in variables:**
 
-| Variable | Value |
-|---|---|
-| `$ARGUMENTS` | The `args` passed to `flow=…`. |
-| `$ARTIFACTS_DIR` | Per-run shared scratch dir (`.daddy/artifacts/<id>`). |
-| `$BASE_BRANCH` | Detected repository base branch. |
-| `$WORKFLOW_ID` | The run id. |
-| `$RUN_DIR` | `.daddy/runs`. |
-| `$DOCS_DIR` | `docs`. |
-| `$LOOP_PREV_OUTPUT` | (loop nodes) the previous iteration's output. |
+| Variable            | Value                                                 |
+| ------------------- | ----------------------------------------------------- |
+| `$ARGUMENTS`        | The `args` passed to `flow=…`.                        |
+| `$ARTIFACTS_DIR`    | Per-run shared scratch dir (`.daddy/artifacts/<id>`). |
+| `$BASE_BRANCH`      | Detected repository base branch.                      |
+| `$WORKFLOW_ID`      | The run id.                                           |
+| `$RUN_DIR`          | `.daddy/runs`.                                        |
+| `$DOCS_DIR`         | `docs`.                                               |
+| `$LOOP_PREV_OUTPUT` | (loop nodes) the previous iteration's output.         |
 
 **Node outputs** (only for nodes already `completed`):
 
@@ -212,7 +212,7 @@ sides are numeric. **Fails closed**: an invalid or unparseable expression evalua
 
 ```yaml
 - id: create-pr
-  bash: 'gh pr create …'
+  bash: "gh pr create …"
   depends_on: [review-gate]
   when: "$review-gate.output != 'rejected'"
 ```
@@ -221,12 +221,12 @@ sides are numeric. **Fails closed**: an invalid or unparseable expression evalua
 
 When a node has multiple `depends_on`, `trigger_rule` decides whether it runs:
 
-| Rule | Runs when |
-|---|---|
-| `all_success` (default) | every dep `completed`. |
-| `one_success` | at least one dep `completed`. |
-| `all_done` | every dep reached a terminal state (completed/failed/cancelled/skipped). |
-| `none_failed_min_one_success` | no dep failed/cancelled **and** at least one completed. |
+| Rule                          | Runs when                                                                |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `all_success` (default)       | every dep `completed`.                                                   |
+| `one_success`                 | at least one dep `completed`.                                            |
+| `all_done`                    | every dep reached a terminal state (completed/failed/cancelled/skipped). |
+| `none_failed_min_one_success` | no dep failed/cancelled **and** at least one completed.                  |
 
 A node whose trigger rule isn't satisfied is marked `skipped`.
 
@@ -234,7 +234,8 @@ A node whose trigger rule isn't satisfied is marked `skipped`.
 
 Add `output_format` (a JSON schema subset: `type`, `properties`, `required`, `enum`, `items`)
 to a `prompt`/`command` node. The engine extracts JSON from the model output (raw or from a
-```json fenced block), checks the top-level type and required fields. On success the parsed
+
+````json fenced block), checks the top-level type and required fields. On success the parsed
 object is exposed as the node's structured output (`$id.output.field`); on failure the node
 **fails**.
 
@@ -246,7 +247,7 @@ object is exposed as the node's structured output (`$id.output.field`); on failu
     properties:
       type: { type: string, enum: [bug, feature, refactor, docs] }
     required: [type]
-```
+````
 
 ## Loops
 
@@ -258,9 +259,9 @@ A `loop` node repeats an AI task until a completion signal or a shell check pass
     prompt: |
       Run the tests; fix failures. Previous attempt: $LOOP_PREV_OUTPUT
       When all tests pass, end with <promise>COMPLETE</promise>.
-    until: COMPLETE          # detected from a <promise>…</promise> tag or trailing token
-    until_bash: "bun test"   # optional: also complete when this exits 0
-    max_iterations: 5        # required; failing to converge fails the node
+    until: COMPLETE # detected from a <promise>…</promise> tag or trailing token
+    until_bash: "bun test" # optional: also complete when this exits 0
+    max_iterations: 5 # required; failing to converge fails the node
 ```
 
 Completion is detected from a `<promise>SIGNAL</promise>` tag (or a trailing plain signal).
@@ -276,7 +277,7 @@ never blocks on the UI). A later `/daddy approve|reject` reloads state and conti
 - id: review-gate
   approval:
     message: "Implementation done. Approve to open a PR, reject to abort."
-    on_reject: abort     # optional: 'abort' cancels the run; otherwise gate output = 'rejected'
+    on_reject: abort # optional: 'abort' cancels the run; otherwise gate output = 'rejected'
   depends_on: [test]
 ```
 
@@ -295,9 +296,9 @@ Non-loop nodes accept a `retry` policy. Errors are classified `fatal` (auth/perm
 - id: flaky
   bash: "./sometimes-fails.sh"
   retry:
-    max_attempts: 3        # 1–5, default 2
-    delay_ms: 3000         # base backoff (exponential), clamped 1000–60000
-    on_error: transient    # 'transient' (default) retries transient only; 'all' retries all non-fatal
+    max_attempts: 3 # 1–5, default 2
+    delay_ms: 3000 # base backoff (exponential), clamped 1000–60000
+    on_error: transient # 'transient' (default) retries transient only; 'all' retries all non-fatal
 ```
 
 `fatal` errors are never retried.
@@ -365,19 +366,19 @@ Optional, in the extension folder. Defaults shown:
 
 ```yaml
 engine:
-  concurrency: 4          # max parallel nodes per layer
+  concurrency: 4 # max parallel nodes per layer
   node_timeout_ms: 600000 # per-node timeout (10 min)
-  loop_idle_ms: 1800000   # per-iteration loop timeout (30 min)
+  loop_idle_ms: 1800000 # per-iteration loop timeout (30 min)
 ```
 
 ## Bundled workflows
 
-| Name | Worktree | Summary |
-|---|---|---|
-| `smoke` | no | Safe end-to-end check: bash + one AI prompt + an approval gate. No `gh`, no worktree. |
-| `fix-issue` | yes | classify → investigate → implement → test → **gate** → open PR / abort. |
-| `feature-dev` | yes | plan → implement → test-loop → **gate** → open PR. |
-| `pr-review` | no | fetch diff → 3 parallel reviews (quality/security/architecture) → synthesize → comment. |
+| Name          | Worktree | Summary                                                                                 |
+| ------------- | -------- | --------------------------------------------------------------------------------------- |
+| `smoke`       | no       | Safe end-to-end check: bash + one AI prompt + an approval gate. No `gh`, no worktree.   |
+| `fix-issue`   | yes      | classify → investigate → implement → test → **gate** → open PR / abort.                 |
+| `feature-dev` | yes      | plan → implement → test-loop → **gate** → open PR.                                      |
+| `pr-review`   | no       | fetch diff → 3 parallel reviews (quality/security/architecture) → synthesize → comment. |
 
 > `fix-issue`, `feature-dev`, and `pr-review` perform real side effects (`wt` worktrees,
 > `gh` PRs/comments). Use `smoke` for a first, side-effect-free run.
