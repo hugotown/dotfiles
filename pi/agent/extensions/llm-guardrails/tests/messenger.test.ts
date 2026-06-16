@@ -58,6 +58,20 @@ describe("createMessenger", () => {
     expect(sendUserMessage.mock.calls[0]?.[1]).toEqual({ deliverAs: "followUp" });
   });
 
+  test("substitutes custom rule placeholders in descriptions", async () => {
+    const sendUserMessage = createSendUserMessageMock();
+    const messenger = createMessenger({ sendUserMessage } as unknown as GuardrailsPi, { cooldownMs: 30_000, logger: createLogger() });
+    const placeholderRule: Rule = {
+      ...rule,
+      description: "Found {match} on line {line}.",
+      message: "Fallback {match} on {line}.",
+    };
+
+    await messenger.sendWarning([match], placeholderRule, { isIdle: () => true });
+
+    expect(sendUserMessage.mock.calls[0]?.[0]).toContain("Rule: Found // @ts-ignore on line 42.");
+  });
+
   test("dedups repeated warning by file line and rule within cooldown", async () => {
     const sendUserMessage = createSendUserMessageMock();
     const messenger = createMessenger({ sendUserMessage } as unknown as GuardrailsPi, { cooldownMs: 30_000, logger: createLogger() });

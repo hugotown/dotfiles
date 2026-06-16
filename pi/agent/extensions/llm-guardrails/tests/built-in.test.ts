@@ -57,6 +57,18 @@ describe("BUILT_IN_RULES", () => {
     expect(matches("// I disabled the lint warning")).toBe(false);
   });
 
+  test("phpstan and psalm suppressions only match at line or comment start", () => {
+    const rule = getRule("no-linter-suppressions");
+    const matches = (content: string) => matchesAnyPattern(rule.patterns, content);
+
+    expect(matches("@phpstan-ignore-line")).toBe(true);
+    expect(matches("@psalm-suppress PropertyNotSetInConstructor")).toBe(true);
+    expect(matches("// @phpstan-ignore-line")).toBe(true);
+    expect(matches("// @psalm-suppress PropertyNotSetInConstructor")).toBe(true);
+    expect(matches("// docs mention @phpstan-ignore-line")).toBe(false);
+    expect(matches("// docs mention @psalm-suppress PropertyNotSetInConstructor")).toBe(false);
+  });
+
   test("compiler patterns match Java SuppressWarnings annotations", () => {
     const rule = getRule("no-compiler-suppressions");
     const matches = (content: string) => matchesAnyPattern(rule.patterns, content);

@@ -21,12 +21,20 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function substitutePlaceholders(text: string, match: Match): string {
+  return text
+    .replaceAll("{line}", String(match.line))
+    .replaceAll("{match}", match.matchedText);
+}
+
 function format(match: Match, rule: Rule): string {
+  const ruleText = substitutePlaceholders(rule.description ?? rule.message, match);
+
   return [
     `Guardrail violation: ${rule.name}`,
     `File: ${match.file}:${match.line}:${match.column}`,
     `Match: \`${match.matchedText}\``,
-    `Rule: ${rule.description ?? rule.message}`,
+    `Rule: ${ruleText}`,
     "",
     "This shortcut hides the real problem. Resolve it at the root, not with a suppression.",
   ].join("\n");
