@@ -8,6 +8,8 @@ interface Logger {
 
 export type ValidationResult = { ok: true } | { ok: false; reason: string };
 
+const SAFE_REGEX_TIMEOUT_MS = 50;
+
 function isRuleShape(value: unknown): value is Partial<Rule> & Pick<Rule, "filePatterns" | "patterns"> {
   if (!value || typeof value !== "object") return false;
   const rule = value as Partial<Rule>;
@@ -30,7 +32,14 @@ export function validateRule(value: unknown): ValidationResult {
     return { ok: false, reason: "rule patterns must contain at least one RegExp" };
   }
 
-  if (value.patterns.some((pattern) => !safeRegex(pattern))) return { ok: false, reason: "rule contains an unsafe regex" };
+  for (const pattern of value.patterns) {
+    const started = performance.now();
+    const isSafe = safeRegex(pattern);
+    const durationMs = performance.now() - started;
+
+    if (durationMs > SAFE_REGEX_TIMEOUT_MS) return { ok: false, reason: "rule regex validation timed out" };
+    if (!isSafe) return { ok: false, reason: "rule contains an unsafe regex" };
+  }
 
   if (value.severity !== undefined && value.severity !== "error" && value.severity !== "warning") {
     return { ok: false, reason: "rule severity must be error or warning" };
@@ -39,17 +48,36 @@ export function validateRule(value: unknown): ValidationResult {
   return { ok: true };
 }
 
+function ruleIdForLog(rule: unknown): string | undefined {
+  if (!rule || typeof rule !== "object") return undefined;
+  const id = (rule as { id?: unknown }).id;
+
+  return typeof id === "string" && id.trim().length > 0 ? id : undefined;
+}
+
+function freezeRule(rule: Rule): Rule {
+  const filePatterns = Object.freeze([...rule.filePatterns]);
+  const patterns = Object.freeze(rule.patterns.map((pattern) => Object.freeze(new RegExp(pattern.source, pattern.flags))));
+
+  return Object.freeze({
+    ...rule,
+    filePatterns,
+    patterns,
+  });
+}
+
 export function createRuleRegistry(logger: Logger) {
   const rules = new Map<string, Rule>();
 
   function register(rule: unknown): boolean {
     const result = validateRule(rule);
     if (!result.ok) {
-      logger.warn(`llm-guardrail: invalid rule skipped: ${result.reason}`);
+      const id = ruleIdForLog(rule);
+      logger.warn(`llm-guardrail: invalid rule skipped${id ? `: ${id}` : ""}: ${result.reason}`);
       return false;
     }
 
-    const typedRule = rule as Rule;
+    const typedRule = freezeRule(rule as Rule);
     const existed = rules.has(typedRule.id);
     rules.set(typedRule.id, typedRule);
     logger.info(`llm-guardrail: rule ${existed ? "overwritten" : "registered"}: ${typedRule.id}`);
