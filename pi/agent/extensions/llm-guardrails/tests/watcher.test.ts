@@ -25,7 +25,9 @@ class FakeWatcher {
 }
 
 const watchers: FakeWatcher[] = [];
+let throwOnWatch = false;
 const watch = mock((_include: readonly string[], _options: unknown) => {
+  if (throwOnWatch) throw new Error("restart failed");
   const watcher = new FakeWatcher();
   watchers.push(watcher);
   return watcher;
@@ -59,6 +61,7 @@ describe("createWatcher", () => {
 
   beforeEach(async () => {
     watchers.length = 0;
+    throwOnWatch = false;
     watch.mockClear();
     dir = await fs.mkdtemp(path.join(os.tmpdir(), "llm-guardrails-"));
   });
@@ -104,6 +107,19 @@ describe("createWatcher", () => {
     expect(ignored?.("package-lock.json")).toBe(true);
     expect(ignored?.("src/foo.generated.ts")).toBe(true);
     expect(ignored?.("src/foo.ts")).toBe(false);
+
+    await watcher.stop();
+  });
+
+  test("matches user ignore globs against paths relative to cwd", async () => {
+    const watcher = createWatcher({ debounceMs: 25, maxSizeKb: 500, logger: createLogger() });
+
+    await watcher.start(dir, ["**/*"], ["src/**/*.generated.ts"], mock(() => {}));
+    const ignored = (watch.mock.calls[0]?.[1] as WatchOptions | undefined)?.ignored;
+
+    expect(ignored?.(path.join(dir, "src/foo.generated.ts"))).toBe(true);
+    expect(ignored?.(path.join(dir, ".git/config"))).toBe(true);
+    expect(ignored?.(path.join(dir, "src/foo.ts"))).toBe(false);
 
     await watcher.stop();
   });
@@ -175,6 +191,59 @@ describe("createWatcher", () => {
     await watcher.stop();
   });
 
+  test("warns once per path for repeated EACCES read failures", async () => {
+    const logger = createLogger();
+    const inaccessible = path.join(dir, "secret.ts");
+    const watcher = createWatcher({
+      debounceMs: 10,
+      maxSizeKb: 500,
+      logger,
+      readFile: mock(async () => {
+        const error = new Error("denied") as NodeJS.ErrnoException;
+        error.code = "EACCES";
+        throw error;
+      }),
+      stat: mock(async () => ({ isFile: () => true, size: 10 })),
+    });
+
+    await watcher.start(dir, ["**/*"], [], mock(() => {}));
+    watchers[0]?.emit("add", "secret.ts");
+    await waitFor(() => logger.warn.mock.calls.length === 1);
+    watchers[0]?.emit("change", "secret.ts");
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+    expect(logger.warn).toHaveBeenCalledWith(`llm-guardrail: permission denied reading ${inaccessible}`);
+
+    await watcher.stop();
+  });
+
+  test("stop during in-flight processing prevents the callback", async () => {
+    const onFile = mock((_file: string, _content: string) => {});
+    let releaseRead: (() => void) | undefined;
+    const watcher = createWatcher({
+      debounceMs: 0,
+      maxSizeKb: 500,
+      logger: createLogger(),
+      stat: mock(async () => ({ isFile: () => true, size: 10 })),
+      readFile: mock(async () => {
+        await new Promise<void>((resolve) => {
+          releaseRead = resolve;
+        });
+        return Buffer.from("content");
+      }),
+    });
+
+    await watcher.start(dir, ["**/*"], [], onFile);
+    watchers[0]?.emit("add", "foo.ts");
+    await waitFor(() => releaseRead !== undefined);
+    await watcher.stop();
+    releaseRead?.();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(onFile).toHaveBeenCalledTimes(0);
+  });
+
   test("logs chokidar errors", async () => {
     const logger = createLogger();
     const watcher = createWatcher({ debounceMs: 25, maxSizeKb: 500, logger });
@@ -183,6 +252,39 @@ describe("createWatcher", () => {
     watchers[0]?.emit("error", new Error("boom"));
 
     expect(logger.error).toHaveBeenCalledWith("llm-guardrail: watcher error: boom");
+
+    await watcher.stop();
+  });
+
+  test("restarts once after a watcher error", async () => {
+    const logger = createLogger();
+    const watcher = createWatcher({ debounceMs: 25, maxSizeKb: 500, logger, retryDelayMs: 1 });
+
+    await watcher.start(dir, ["**/*"], [], mock(() => {}));
+    watchers[0]?.emit("error", new Error("boom"));
+
+    await waitFor(() => watch.mock.calls.length === 2);
+    expect(logger.error).toHaveBeenCalledWith("llm-guardrail: watcher error: boom");
+    expect(watchers[0]?.close).toHaveBeenCalledTimes(1);
+
+    watchers[1]?.emit("error", new Error("boom again"));
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    expect(watch).toHaveBeenCalledTimes(2);
+
+    await watcher.stop();
+  });
+
+  test("disables watcher when restart fails", async () => {
+    const logger = createLogger();
+    const watcher = createWatcher({ debounceMs: 25, maxSizeKb: 500, logger, retryDelayMs: 1 });
+
+    await watcher.start(dir, ["**/*"], [], mock(() => {}));
+    throwOnWatch = true;
+    watchers[0]?.emit("error", new Error("boom"));
+
+    await waitFor(() => logger.warn.mock.calls.length === 1);
+    expect(watchers[0]?.close).toHaveBeenCalledTimes(1);
+    expect(logger.warn).toHaveBeenCalledWith("llm-guardrail: watcher restart failed, disabling watcher: restart failed");
 
     await watcher.stop();
   });
