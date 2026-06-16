@@ -37,10 +37,13 @@ export function createMessenger(pi: GuardrailsPi, options: MessengerOptions) {
   const dedup = new Map<string, number>();
   const retryDelayMs = options.retryDelayMs ?? 500;
   const maxDedupEntries = options.maxDedupEntries ?? 10_000;
+  let drainPromise: Promise<void> | undefined;
 
   function remember(key: string, now: number): boolean {
     const previous = dedup.get(key);
     if (previous !== undefined && now - previous < options.cooldownMs) {
+      dedup.delete(key);
+      dedup.set(key, previous);
       options.logger.debug?.("llm-guardrail: suppressed duplicate warning");
       return false;
     }
@@ -85,11 +88,19 @@ export function createMessenger(pi: GuardrailsPi, options: MessengerOptions) {
     }
   }
 
-  async function drain(): Promise<void> {
+  async function drainQueue(): Promise<void> {
     while (queue.length > 0) {
       const message = queue.shift();
       if (message !== undefined) await deliver(message);
     }
+  }
+
+  function drain(): Promise<void> {
+    drainPromise ??= drainQueue().finally(() => {
+      drainPromise = undefined;
+    });
+
+    return drainPromise;
   }
 
   function flush(): void {
