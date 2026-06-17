@@ -6,7 +6,7 @@
   "pi": { "extensions": ["./index.ts"] },
   "scripts": { "test": "bun test", "typecheck": "tsc --noEmit" },
   "dependencies": {
-    "@earendil-works/pi-coding-agent": "0.75.4",
+    "@earendil-works/pi-coding-agent": "0.79.0",
     "@earendil-works/pi-tui": "0.75.4",
     "typebox": "1.1.38",
     "yaml": "2.9.0"
