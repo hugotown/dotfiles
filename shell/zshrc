@@ -14,6 +14,7 @@ command -v mise >/dev/null && eval "$(mise activate zsh)"
 
 # 4. User customizations
 alias cldy="claude --dangerously-skip-permissions"
+alias kitty="kitty --start-as=fullscreen"
 export PATH="$HOME/.opencode/bin:$PATH"
 
 # Analyzer wrappers - Trigger Phase 2 normalizer when agent exits
@@ -54,3 +55,6 @@ export VERTEX_LOCATION="global"
 # Added by Antigravity CLI installer
 export PATH="/Users/hugoruiz/.local/bin:$PATH"
 export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+
+# Vite+ bin (https://viteplus.dev)
+. "$HOME/.vite-plus/env"

@@ -9,7 +9,7 @@ config.color_scheme = "Tokyo Night"
 
 config.font = wezterm.font("JetBrainsMono Nerd Font")
 
-config.font_size = 17
+config.font_size = 19
 
 -- Tab bar minimalista y delgado
 config.enable_tab_bar = true
