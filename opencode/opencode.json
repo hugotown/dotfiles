@@ -1,17 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    "superpowers@git+https://github.com/obra/superpowers.git"
-  ],
-  "model": "github-copilot/claude-opus-4.6",
   "provider": {},
   "agent": {},
-  "permission": {
-    "read": {
-      "~/.config/opencode/get-shit-done/*": "allow"
-    },
-    "external_directory": {
-      "~/.config/opencode/get-shit-done/*": "allow"
-    }
-  }
+  "formatter": true
 }
