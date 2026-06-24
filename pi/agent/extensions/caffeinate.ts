@@ -7,10 +7,17 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (_event, _ctx) => {
     if (caffeinateProcess) return;
 
-    caffeinateProcess = spawn("caffeinate", ["-i"], {
-      stdio: "ignore",
-      detached: false,
-    });
+    // -d display, -i idle system, -m disk, -s system (AC), -u declare user active.
+    // -w PID makes caffeinate exit automatically when this process exits, so even
+    // a crash/SIGKILL cannot leave an orphan asserting "forever".
+    caffeinateProcess = spawn(
+      "caffeinate",
+      ["-dimsu", "-w", String(process.pid)],
+      {
+        stdio: "ignore",
+        detached: false,
+      },
+    );
 
     caffeinateProcess.on("error", () => {
       caffeinateProcess = null;

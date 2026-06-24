@@ -1,12 +1,7 @@
 {
-  "lastChangelogVersion": "0.79.4",
+  "defaultModel": "gpt-5.5",
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.4",
   "defaultThinkingLevel": "high",
-  "extensions": [
-    "~/.pi/agent/extensions/",
-    "-extensions/llm-guardrails/index.ts"
-  ],
   "enabledModels": [
     "opencode-go/deepseek-v4-flash",
     "opencode-go/deepseek-v4-pro",
@@ -74,7 +69,59 @@
     "openai-codex/gpt-5.4-mini",
     "openai-codex/gpt-5.3-codex-spark"
   ],
-  "packages": [],
+  "extensions": [
+    "~/.pi/agent/extensions/",
+    "-extensions/llm-guardrails/index.ts"
+  ],
   "hideThinkingBlock": false,
+  "lastChangelogVersion": "0.80.2",
+  "packages": [
+    "npm:pi-subagents",
+    "npm:pi-messenger",
+    "npm:pi-intercom",
+    "npm:pi-interview",
+    "npm:pi-web-access",
+    "npm:pi-boomerang",
+    "npm:pi-custom-compaction",
+    "npm:pi-review-loop",
+    "npm:pi-powerline-footer",
+    "npm:pi-model-switch"
+  ],
+  "subagents": {
+    "agentOverrides": {
+      "scout": {
+        "model": "minimax/MiniMax-M3",
+        "fallbackModels": ["openai-codex/gpt-5.5"]
+      },
+      "researcher": {
+        "model": "minimax/MiniMax-M3",
+        "fallbackModels": ["openai-codex/gpt-5.5"]
+      },
+      "planner": {
+        "model": "minimax/MiniMax-M3",
+        "fallbackModels": ["openai-codex/gpt-5.5"]
+      },
+      "worker": {
+        "model": "minimax/MiniMax-M3",
+        "fallbackModels": ["openai-codex/gpt-5.5"]
+      },
+      "reviewer": {
+        "model": "minimax/MiniMax-M3",
+        "fallbackModels": ["openai-codex/gpt-5.5"]
+      },
+      "context-builder": {
+        "model": "minimax/MiniMax-M3",
+        "fallbackModels": ["openai-codex/gpt-5.5"]
+      },
+      "oracle": {
+        "model": "minimax/MiniMax-M3",
+        "fallbackModels": ["openai-codex/gpt-5.5"]
+      },
+      "delegate": {
+        "model": "minimax/MiniMax-M3",
+        "fallbackModels": ["openai-codex/gpt-5.5"]
+      }
+    }
+  },
   "theme": "dark"
 }
