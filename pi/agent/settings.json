@@ -1,11 +1,10 @@
 {
   "defaultModel": "gpt-5.5",
   "defaultProvider": "openai-codex",
-  "defaultThinkingLevel": "high",
+  "defaultThinkingLevel": "xhigh",
   "enabledModels": [
     "opencode-go/deepseek-v4-flash",
     "opencode-go/deepseek-v4-pro",
-    "opencode-go/glm-5",
     "opencode-go/glm-5.1",
     "opencode-go/kimi-k2.6",
     "opencode-go/mimo-v2.5",
@@ -15,12 +14,6 @@
     "opencode-go/qwen3.6-plus",
     "opencode-go/qwen3.7-max",
     "opencode-go/qwen3.7-plus",
-    "google/gemini-3-flash-preview",
-    "google/gemini-3-pro-preview",
-    "google/gemini-3.1-flash-lite",
-    "google/gemini-3.1-pro-preview",
-    "google/gemini-3.5-flash",
-    "google-vertex/gemini-3.1-pro-preview",
     "minimax/MiniMax-M2.7",
     "minimax/MiniMax-M2.7-highspeed",
     "minimax/MiniMax-M3",
@@ -71,7 +64,9 @@
   ],
   "extensions": [
     "~/.pi/agent/extensions/",
-    "-extensions/llm-guardrails/index.ts"
+    "-extensions/llm-guardrails/index.ts",
+    "-extensions/ask-user-question-tool/index.ts",
+    "-extensions/statusline/index.ts"
   ],
   "hideThinkingBlock": false,
   "lastChangelogVersion": "0.80.2",
@@ -88,6 +83,11 @@
     "npm:pi-model-switch"
   ],
   "subagents": {
+    "control": {
+      "needsAttentionAfterMs": 1800000,
+      "activeNoticeAfterMs": 1800000,
+      "notifyChannels": ["event", "async"]
+    },
     "agentOverrides": {
       "scout": {
         "model": "minimax/MiniMax-M3",
