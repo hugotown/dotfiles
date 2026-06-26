@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@earendil-works/pi-coding-agent": "0.75.4",
+    "@earendil-works/pi-coding-agent": "0.79.0",
     "chokidar": "^3.6.0",
     "micromatch": "^4.0.8",
     "safe-regex": "^2.1.1",
