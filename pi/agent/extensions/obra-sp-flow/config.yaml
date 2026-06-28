@@ -1,0 +1,150 @@
+# obra-sp-flow — configuration
+# ──────────────────────────────────────────────────────────────────────────
+# Global defaults: live next to the extension (this file, as config.yaml).
+# Per-project override: <project>/.pi/obra-sp-flow/config.yaml  (merged ON TOP).
+#
+# Rules:
+#   - An empty "model" on a step or in defaults => the pi child inherits the
+#     session's default model. To pin it, use the pi id "provider/id"
+#     (e.g. "openai-codex/gpt-5.4", "anthropic/claude-opus-4-8").
+#   - "thinkingLevel" per step ("" | minimal | low | medium | high | xhigh).
+#     "" inherits defaults.thinkingLevel.
+#   - "tools" allowlist of the child's tools (built-in + extension).
+#   - "skills" list of skill paths the child loads via --skill (additive).
+#   - "customInstructions" array of text injected into the step system prompt (LLM only).
+#   - "promptAppend" extra text for the step system prompt (LLM only).
+version: 1
+
+defaults:
+  # default model for ALL LLM steps (overridable per step below)
+  model: "openai-codex/gpt-5.4"
+  thinkingLevel: "high"
+  tools: "read,grep,find,ls,bash,write,edit"
+  skills: []
+  # retries when an LLM artifact fails its contract
+  llmRetries: 2
+
+# collect-tree step (deterministic): repo tree via eza --tree --level=<depth> --git-ignore.
+collectTree:
+  depth: 5
+
+# web-grounding step (llm, runs BEFORE the interview): research best practices + risks
+# on the web so the brainstorm arrives already expert. All requests go through the
+# DataImpulse proxy (DI_* env vars); web content is treated as untrusted.
+#   quick = ddg only | deep = Brave API (if BRAVE_SEARCH_API_KEY) else ddg + Brave scrape
+webGrounding:
+  mode: deep
+
+# brainstorm step (interactive LLM): questions until convergence or user close.
+brainstorm:
+  # 0 = unlimited
+  maxRounds: 0
+  # terminal ASCII wireframes (offered once). Browser companion is dropped.
+  visualCompanion: true
+
+# write-spec step: design.md is ALWAYS written to the session run dir
+# (~/.pi/agent/sessions/<session>/obra-sp-flow-runs/<runId>/design.md).
+spec:
+  # optionally also copy the spec into the project repo (docs/superpowers/specs/…)
+  toProject: false
+  projectDir: "docs/superpowers/specs"
+  # if toProject=true, commit the spec
+  commit: false
+
+# Per-step config: model/thinkingLevel/tools/skills/customInstructions/promptAppend.
+# Steps map to the 7 canonical milestones (group 0..6). Deterministic/gate steps
+# ignore model/tools/skills.
+steps:
+  # ── Group 0 — Pre-flight (deterministic, no LLM) -> 00-preflight.json ──
+  preflight: {}
+
+  # ── Group 1 — Design -> 01-design.json + design.md ──
+  # det: eza --tree -> no LLM (ignores model/tools/skills)
+  collect-tree: {}
+
+  # llm: reads requirement + tree, decides and runs rg -> ast-grep searches
+  # (loads the ast-grep skill) and emits curated, structured context.
+  context-extract:
+    model: "openai-codex/gpt-5.4"
+    thinkingLevel: "high"
+    tools: "read,grep,find,ls,bash"
+    skills:
+      - "/Users/hugoruiz/.config/pi/skills/ast-grep"
+    customInstructions: []
+    promptAppend: ""
+
+  # llm: researches the web (ddg/Brave via the DataImpulse proxy) to ground best
+  # practices + technical/business risks BEFORE the interview. tools = read,bash only
+  # (no native web tool). Web results are untrusted (prompt-injection) -> summarize/cite.
+  web-grounding:
+    model: "openai-codex/gpt-5.4"
+    thinkingLevel: "high"
+    tools: "read,bash"
+    skills: []
+    customInstructions: []
+    promptAppend: ""
+
+  # llm (human loop): brainstorming -> approvable design (one question at a time).
+  # Pin the MOST CAPABLE available model here: this human interview closes the gaps
+  # up front, which is what keeps the autonomous phases out of D3's blocked path.
+  brainstorm:
+    model: "openai-codex/gpt-5.4"
+    thinkingLevel: "high"
+    tools: "read,grep,find,ls,bash"
+    skills: []
+    customInstructions: []
+    promptAppend: ""
+
+  # det: renders design.md -> no LLM
+  write-spec: {}
+
+  # llm (clean context, fresh agent): spec document reviewer (Approved | Issues Found),
+  # runs BEFORE the human approval gate.
+  spec-review:
+    model: "openai-codex/gpt-5.4"
+    thinkingLevel: "high"
+    tools: "read,grep,find,ls,bash"
+    skills: []
+    customInstructions: []
+    promptAppend: ""
+
+  # human gate: design approval -> no LLM. Last human intervention of the flow.
+  approval-gate: {}
+
+  # ── Group 2 — Plan + contracts -> 02-plan-contracts.json + plan.md ──
+  # llm: auto-discovers stack (deterministic part) + defines per-file CONTRACTS.
+  plan-contracts:
+    model: "openai-codex/gpt-5.4"
+    thinkingLevel: "high"
+    tools: "read,grep,find,ls,bash"
+    skills: []
+    customInstructions: []
+    promptAppend: ""
+
+  # ── Group 3 — Workspace / branch (deterministic, no LLM) -> 03-workspace.json ──
+  workspace: {}
+
+  # ── Group 4 — Controlled parallel execution -> 04-execution.json ──
+  # orchestrated: deterministic control (waves <=7, 1 file/agent, gates C/E) +
+  # LLM subagents. Model is selected per role at dispatch time (see inspiration).
+  execution:
+    model: "openai-codex/gpt-5.4"
+    thinkingLevel: "high"
+    tools: "read,grep,find,ls,bash,write,edit"
+    skills: []
+    customInstructions: []
+    promptAppend: ""
+
+  # ── Group 5 — Branch review -> 05-branch-review.json ──
+  # llm: whole-branch review (use the most capable model available).
+  branch-review:
+    model: "openai-codex/gpt-5.4"
+    thinkingLevel: "high"
+    tools: "read,grep,find,ls,bash"
+    skills: []
+    customInstructions: []
+    promptAppend: ""
+
+  # ── Group 6 — Close-out (deterministic, no LLM) -> 06-close.json ──
+  # LLM optional only for a summary; verification + actions are deterministic.
+  close: {}
