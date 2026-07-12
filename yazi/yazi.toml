@@ -111,44 +111,44 @@ folder = [
 # REGLAS PARA ABRIR ARCHIVOS
 # =============================================================================
 rules = [
-    # Directorios
-    { name = "*/", use = ["folder", "reveal"] },
-    
+    # Directorios (yazi 26: requires url or mime, not just name)
+    { url = "*/", use = ["folder", "reveal"] },
+
     # Archivos de texto plano
     { mime = "text/*", use = ["edit", "reveal"] },
     { mime = "application/json", use = ["edit", "reveal"] },
     { mime = "application/x-yaml", use = ["edit", "reveal"] },
     { mime = "application/toml", use = ["edit", "reveal"] },
     { mime = "application/xml", use = ["edit", "reveal"] },
-    
+
     # Imágenes
     { mime = "image/*", use = ["image", "reveal"] },
-    
+
     # Videos
     { mime = "video/*", use = ["video", "reveal"] },
-    
+
     # Audio
     { mime = "audio/*", use = ["audio", "reveal"] },
-    
+
     # PDFs
     { mime = "application/pdf", use = ["pdf", "reveal"] },
-    
+
     # Archivos comprimidos
     { mime = "application/{zip,gzip,x-tar,x-bzip*,x-7z-compressed,x-rar}", use = ["archive", "reveal"] },
-    
+
     # Archivos de código por extensión
-    { name = "*.{rs,py,js,ts,jsx,tsx,vue,go,c,cpp,h,hpp,java,kt,swift,rb,php,lua,nix}", use = ["edit", "reveal"] },
-    { name = "*.{md,txt,conf,config,cfg,ini,log,csv,tsv}", use = ["edit", "reveal"] },
-    { name = "*.{html,htm,css,scss,sass,less,xml,svg}", use = ["edit", "reveal"] },
-    { name = "*.{sh,bash,zsh,fish,ps1,bat,cmd}", use = ["edit", "reveal"] },
-    { name = "*.{toml,yaml,yml,json}", use = ["edit", "reveal"] },
-    
+    { url = "*.{rs,py,js,ts,jsx,tsx,vue,go,c,cpp,h,hpp,java,kt,swift,rb,php,lua,nix}", use = ["edit", "reveal"] },
+    { url = "*.{md,txt,conf,config,cfg,ini,log,csv,tsv}", use = ["edit", "reveal"] },
+    { url = "*.{html,htm,css,scss,sass,less,xml,svg}", use = ["edit", "reveal"] },
+    { url = "*.{sh,bash,zsh,fish,ps1,bat,cmd}", use = ["edit", "reveal"] },
+    { url = "*.{toml,yaml,yml,json}", use = ["edit", "reveal"] },
+
     # Archivos de configuración sin extensión
-    { name = "{Dockerfile,Makefile,Justfile,Brewfile,Gemfile,Rakefile}", use = ["edit", "reveal"] },
-    { name = "{README,LICENSE,CHANGELOG,TODO,FIXME,CONTRIBUTING,AUTHORS}", use = ["edit", "reveal"] },
-    { name = ".*rc", use = ["edit", "reveal"] },
-    { name = ".*ignore", use = ["edit", "reveal"] },
-    { name = ".*env*", use = ["edit", "reveal"] },
+    { url = "{Dockerfile,Makefile,Justfile,Brewfile,Gemfile,Rakefile}", use = ["edit", "reveal"] },
+    { url = "{README,LICENSE,CHANGELOG,TODO,FIXME,CONTRIBUTING,AUTHORS}", use = ["edit", "reveal"] },
+    { url = ".*rc", use = ["edit", "reveal"] },
+    { url = ".*ignore", use = ["edit", "reveal"] },
+    { url = ".*env*", use = ["edit", "reveal"] },
 ]
 
 [plugin]
@@ -156,8 +156,8 @@ rules = [
 # PREVIEWERS - Configuración optimizada para imágenes
 # =============================================================================
 previewers = [
-    # Directorios
-    { name = "*/", run = "folder", sync = true },
+    # Directorios (yazi 26: requires url or mime, not just name)
+    { url = "*/", run = "folder", sync = true },
     
     # Código y texto
     { mime = "text/*", run = "code" },
