@@ -1,7 +1,8 @@
-# Allowlist: only per-host bootstrap scripts and compose files are tracked.
+# Allowlist: only per-host bootstrap scripts, runbooks, and compose files are tracked.
 # Per-host runtime state, secrets, and local overrides are rejected.
 *
 !.gitignore
 !*/
 !*/initialize.sh
+!*/runbook_*.sh
 !*/docker-compose.yml
