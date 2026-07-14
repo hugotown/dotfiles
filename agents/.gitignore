@@ -1,7 +1,0 @@
-# Allowlist: track all skills and the skill lock
-*
-!.gitignore
-!AGENTS.md
-!skills/
-!skills/**
-!.skill-lock.json

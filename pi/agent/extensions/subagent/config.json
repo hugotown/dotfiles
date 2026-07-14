@@ -1,0 +1,11 @@
+{
+  "maxSubagentDepth": 5,
+  "control": {
+    "needsAttentionAfterMs": 1800000,
+    "activeNoticeAfterMs": 1800000,
+    "notifyChannels": [
+      "event",
+      "async"
+    ]
+  }
+}
