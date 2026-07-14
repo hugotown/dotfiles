@@ -3,6 +3,13 @@
   "defaultProvider": "openai-codex",
   "defaultThinkingLevel": "xhigh",
   "hideThinkingBlock": false,
-  "lastChangelogVersion": "0.80.6",
-  "theme": "dark"
+  "lastChangelogVersion": "0.80.7",
+  "theme": "dark",
+  "skills": [
+    "!/Users/hugoruiz/.agents/skills/**"
+  ],
+  "interview": {
+    "port": 19847,
+    "timeout": 3600
+  }
 }
