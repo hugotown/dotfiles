@@ -7,11 +7,9 @@
 # ESTRUCTURA:
 # - prepend_keymap: Mayor prioridad, sobrescribe defaults
 # - append_keymap: Menor prioridad, complementa defaults
-# 
+#
 # Para ver todos los keybindings activos: presiona ~ o F1 dentro de yazi
 # =============================================================================
-
-"$schema" = "https://yazi-rs.github.io/schemas/keymap.json"
 
 # =============================================================================
 # [mgr] - File Manager (Gestor de archivos principal)
