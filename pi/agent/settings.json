@@ -9,7 +9,10 @@
     "!/Users/hugoruiz/.agents/skills/**"
   ],
   "interview": {
-    "port": 19847,
+    "port": 32124,
     "timeout": 3600
+  },
+  "designDeck": {
+    "port": 32123
   }
 }
