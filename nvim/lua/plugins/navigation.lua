@@ -1,0 +1,27 @@
+return {
+  {
+    "alexghergh/nvim-tmux-navigation",
+    config = function()
+      require("nvim-tmux-navigation").setup({
+        disable_when_zoomed = true,
+        keybindings = {
+          left = "<C-h>",
+          down = "<C-j>",
+          up = "<C-k>",
+          right = "<C-l>",
+        },
+      })
+    end,
+  },
+  {
+    "rmagatti/goto-preview",
+    dependencies = { "rmagatti/logger.nvim" },
+    event = "BufEnter",
+    opts = {
+      default_mappings = true,
+      references = {
+        provider = "fzf_lua",
+      },
+    },
+  },
+}

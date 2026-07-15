@@ -37,17 +37,3 @@ end
 
 # Host-specific overrides (not tracked in git)
 test -f ~/.config/shell/env.local.fish; and source ~/.config/shell/env.local.fish
-
-# Analyzer wrappers - Trigger Phase 2 normalizer when agent exits
-function pi
-    command pi $argv
-    set -l analyzer_dir (set -q XDG_CONFIG_HOME; and echo "$XDG_CONFIG_HOME/agent-session-analyzer"; or echo "$HOME/.config/agent-session-analyzer")
-    fish -c "cd $analyzer_dir && python3 -m normalizer pi --all &>/dev/null &" &>/dev/null &
-end
-
-function opencode
-    command opencode $argv
-    set -l analyzer_dir (set -q XDG_CONFIG_HOME; and echo "$XDG_CONFIG_HOME/agent-session-analyzer"; or echo "$HOME/.config/agent-session-analyzer")
-    fish -c "cd $analyzer_dir && python3 -m normalizer opencode --all &>/dev/null &" &>/dev/null &
-end
-

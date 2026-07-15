@@ -21,30 +21,17 @@ command -v mise >/dev/null && eval "$(mise activate bash)"
 
 # 4. User customizations
 alias cldy="claude --dangerously-skip-permissions"
-
-# Analyzer wrappers - Trigger Phase 2 normalizer when agent exits
-pi() {
-    command pi "$@"
-    # Run in background, discard output, explicitly use project path via XDG_CONFIG_HOME
-    (cd "${XDG_CONFIG_HOME:-$HOME/.config}/agent-session-analyzer" && python3 -m normalizer pi --all &>/dev/null &)
-}
-
-opencode() {
-    command opencode "$@"
-    # Run in background, discard output, explicitly use project path via XDG_CONFIG_HOME
-    (cd "${XDG_CONFIG_HOME:-$HOME/.config}/agent-session-analyzer" && python3 -m normalizer opencode --all &>/dev/null &)
-}
+alias oc="opencode --auto"
 
 add-secret() {
-    [ "$#" -lt 2 ] && { echo "Usage: add-secret VAR_NAME value" >&2; return 1; }
-    ~/.config/shell/scripts/add-secret "$1" "$2" && export "$1=$2"
+  [ "$#" -lt 2 ] && {
+    echo "Usage: add-secret VAR_NAME value" >&2
+    return 1
+  }
+  ~/.config/shell/scripts/add-secret "$1" "$2" && export "$1=$2"
 }
 
 if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init bash)"; fi
-
-# Google Cloud SDK
-[ -f "$HOME/google-cloud-sdk/path.bash.inc" ] && . "$HOME/google-cloud-sdk/path.bash.inc"
-[ -f "$HOME/google-cloud-sdk/completion.bash.inc" ] && . "$HOME/google-cloud-sdk/completion.bash.inc"
 
 
 # Added by Antigravity CLI installer

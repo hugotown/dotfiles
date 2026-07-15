@@ -57,5 +57,5 @@ mode = "execute"
 
 [actions.code-review]
 description = "Review PR"
-command = 'wt switch pr:{strip_ansi|split:#:1|split:   :0} -x "script -q /dev/null opencode run \" please do not ask questions review this pull request changes, make a objective code-review and then make a comment in this pull request using: gh --help; adding your observations \" --model opencode/minimax-m2.5-free"'
+command = 'wt switch pr:{strip_ansi|split:#:1|split:   :0} -x "script -q /dev/null pi -p \" please do not ask questions, review this pull request changes, make a objective code-review and then make a comment in this pull request using: gh --help; adding your observations \" --model minimax/MiniMax-M3"'
 mode = "execute"

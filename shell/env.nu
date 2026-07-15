@@ -58,16 +58,4 @@ if (which sops | is-not-empty) and ($"($env.HOME)/.local/share/sops/age/keys.txt
 const env_local_path = $"($nu.home-dir)/.config/shell/env.local.nu"
 if ($env_local_path | path exists) { source $env_local_path }
 
-# Analyzer wrappers - Trigger Phase 2 normalizer when agent exits
-def --wrapped pi [...args] {
-    let target_dir = if ("XDG_CONFIG_HOME" in $env) { $"($env.XDG_CONFIG_HOME)/agent-session-analyzer" } else { $"($env.HOME)/.config/agent-session-analyzer" }
-    ^pi ...$args
-    do -i { cd $target_dir; bash -c "python3 -m normalizer pi --all &>/dev/null &" }
-}
-
-def --wrapped opencode [...args] {
-    let target_dir = if ("XDG_CONFIG_HOME" in $env) { $"($env.XDG_CONFIG_HOME)/agent-session-analyzer" } else { $"($env.HOME)/.config/agent-session-analyzer" }
-    ^opencode ...$args
-    do -i { cd $target_dir; bash -c "python3 -m normalizer opencode --all &>/dev/null &" }
-}
 

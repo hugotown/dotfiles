@@ -1,3 +1,0 @@
-**RUNTIME**
-
-- always use bun

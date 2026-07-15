@@ -111,6 +111,12 @@ if ! command -v pi >/dev/null; then
     curl -fsSL https://pi.dev/install.sh | sh
 fi
 
+# herdr (terminal-native agent runtime — tmux-style persistence + agent state)
+if ! command -v herdr >/dev/null; then
+    echo "Installing herdr..."
+    curl -fsSL https://herdr.dev/install.sh | sh
+fi
+
 # agent-tools: install @google/genai for genai-core (shared tool logic)
 echo "Installing agent-tools dependencies..."
 (cd "$HOME/.config/agent-tools/genai-core" && "$HOME/.local/bin/mise" exec -- bun install)

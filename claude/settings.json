@@ -1,13 +1,5 @@
 {
-  "statusLine": {
-    "type": "command",
-    "command": "bash ~/.claude/statusline.sh"
-  },
-  "effortLevel": "high",
-  "voice": {
-    "enabled": false,
-    "mode": "hold"
-  },
-  "skipDangerousModePermissionPrompt": true,
-  "voiceEnabled": false
+  "model": "claude-fable-5[1m]",
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true
 }
