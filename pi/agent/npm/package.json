@@ -2,5 +2,20 @@
   "name": "pi-extensions",
   "private": true,
   "dependencies": {
+    "pi-boomerang": "^0.6.6",
+    "pi-custom-compaction": "^0.2.5",
+    "pi-design-deck": "^0.3.6",
+    "pi-discord": "^0.2.5",
+    "pi-interactive-shell": "^0.13.0",
+    "pi-intercom": "^0.6.0",
+    "pi-interview": "^0.8.7",
+    "pi-model-switch": "^0.1.4",
+    "pi-powerline-footer": "^0.7.0",
+    "pi-review-loop": "^0.4.4",
+    "pi-rewind-hook": "^1.8.4",
+    "pi-side-chat": "^0.1.4",
+    "pi-skill-palette": "^1.1.0",
+    "pi-subagents": "^0.34.0",
+    "pi-web-access": "^0.13.0"
   }
 }

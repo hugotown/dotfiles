@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "1c6327be-fa75-4682-a242-37524d3c7531",
+      "state": "completed",
+      "source": {
+        "kind": "interaction",
+        "sourceId": "1527135814797234196",
+        "userId": "1442570173872734260",
+        "guildId": "1527129123833512067",
+        "channelId": "1527129293082333315",
+        "threadId": null,
+        "trigger": "slash-command"
+      },
+      "payload": {
+        "rawText": "de que trata el codebase ?",
+        "promptText": "Discord route: 1527129123833512067__1527129293082333315__root\n\nRequester: Hugo Ruíz (1442570173872734260)\n\nTrigger: slash-command\n\nGuild: 1527129123833512067\n\nChannel: 1527129293082333315\n\nUser request:\nde que trata el codebase ?",
+        "attachments": []
+      }
+    },
+    {
+      "id": "4b771838-0dad-46cc-a51c-f31a45bf3e25",
+      "state": "failed",
+      "error": "Error: Failed to run bun root -g: error: Script not found \"root\"\n",
+      "source": {
+        "kind": "interaction",
+        "sourceId": "1527138806078246952",
+        "userId": "1442570173872734260",
+        "guildId": "1527129123833512067",
+        "channelId": "1527129293082333315",
+        "threadId": null,
+        "trigger": "slash-command"
+      },
+      "payload": {
+        "rawText": "oye, para que sirve el skill brainstorming ??",
+        "promptText": "Discord route: 1527129123833512067__1527129293082333315__root\n\nRequester: Hugo Ruíz (1442570173872734260)\n\nTrigger: slash-command\n\nGuild: 1527129123833512067\n\nChannel: 1527129293082333315\n\nUser request:\noye, para que sirve el skill brainstorming ??",
+        "attachments": []
+      }
+    },
+    {
+      "id": "e337ef77-7928-4f5e-98f8-1488774cbc57",
+      "state": "failed",
+      "error": "Error: Failed to run bun root -g: error: Script not found \"root\"\n",
+      "source": {
+        "kind": "interaction",
+        "sourceId": "1527139774047977564",
+        "userId": "1442570173872734260",
+        "guildId": "1527129123833512067",
+        "channelId": "1527129293082333315",
+        "threadId": null,
+        "trigger": "slash-command"
+      },
+      "payload": {
+        "rawText": "para que sirve el skill brainstorming ?",
+        "promptText": "Discord route: 1527129123833512067__1527129293082333315__root\n\nRequester: Hugo Ruíz (1442570173872734260)\n\nTrigger: slash-command\n\nGuild: 1527129123833512067\n\nChannel: 1527129293082333315\n\nUser request:\npara que sirve el skill brainstorming ?",
+        "attachments": []
+      }
+    },
+    {
+      "id": "d9518709-1eb6-43f3-9e0f-bf8da391cb6a",
+      "state": "completed",
+      "source": {
+        "kind": "interaction",
+        "sourceId": "1527141378738356264",
+        "userId": "1442570173872734260",
+        "guildId": "1527129123833512067",
+        "channelId": "1527129293082333315",
+        "threadId": null,
+        "trigger": "slash-command"
+      },
+      "payload": {
+        "rawText": "para que sirven los jobscorecards en este proyecto ?",
+        "promptText": "Discord route: 1527129123833512067__1527129293082333315__root\n\nRequester: Hugo Ruíz (1442570173872734260)\n\nTrigger: slash-command\n\nGuild: 1527129123833512067\n\nChannel: 1527129293082333315\n\nUser request:\npara que sirven los jobscorecards en este proyecto ?",
+        "attachments": []
+      }
+    }
+  ]
+}
