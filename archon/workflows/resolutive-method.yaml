@@ -1,0 +1,986 @@
+# ============================================================================
+# RESOLUTIVE METHOD — workflow skeleton (cascarón)
+#
+# Maps the resolutive method (Piezas 1–5) onto the Archon DAG engine:
+#
+#   Runbook step (Pieza 2)                  → Node(s)
+#   0  brainstorming with HUMAN (#1)        → brainstorm-spec        (interactive loop)
+#   1  design verifier (oracle, fresh)      → design-verifier
+#   2  HARD GATE — HUMAN approves spec (#2) → hard-gate-spec         (approval)
+#   3  writing-plans → plan+CONTRACTS+graph → planner
+#   5  STUBS global, waves ≤7 + REVIEW(A)   → batch-a-stubs          (loop_group)
+#   6  gate-contract-review (singleton)     → gate-contract-review + halt-on-weak-contracts
+#   7v VERTICAL slices                      → vertical-execution     (loop_group)
+#   7h HORIZONTAL file×phase batches B–I    → batch-b-tests … batch-i-refactor
+#   10 GATE E global + cross-file review    → gate-e-global-check + cross-file-review
+#   11 the ONLY git commit (R17)            → final-commit
+#   12 finishing with HUMAN (#3)            → finishing + finishing-actions
+#
+# Rule mapping notes:
+#   R9/R15  — waves ≤7 via Task sub-agents inside each batch node (engine node =
+#             depth 1, sub-agent = depth 2; never deeper).
+#   R16     — sub-agents inherit nothing: every role loads its superpowers
+#             skills EXPLICITLY via `skills:` (node-level and per sub-agent),
+#             per the Pieza 4 role → skills map:
+#               brainstorm (MAIN)  [brainstorming]
+#               oracle/verifier    [verification-before-completion]
+#               planner            [writing-plans]
+#               wave dispatcher    [dispatching-parallel-agents,
+#                                   systematic-debugging,
+#                                   verification-before-completion]
+#               contract-worker    [test-driven-development,
+#                                   verification-before-completion,
+#                                   systematic-debugging]
+#               file-reviewer      [requesting-code-review]
+#               file-fixer         [receiving-code-review,
+#                                   verification-before-completion,
+#                                   systematic-debugging]
+#               triage oracle (H)  [systematic-debugging]
+#               gate/cross-file    [requesting-code-review,
+#                                   verification-before-completion]
+#               finishing executor [finishing-a-development-branch]
+#             REQUIREMENT: those skills must be discoverable from
+#             ~/.claude/skills/ (user) or .claude/skills/ (target repo) —
+#             install them from the superpowers repo.
+#             COUPLING RULE: the skills push their own cross-phase flow
+#             (brainstorming wants to commit the spec and invoke
+#             writing-plans; writing-plans wants docs/superpowers/ paths and
+#             frequent commits; finishing wants to run its own option menu).
+#             Every skill-bearing prompt therefore carries WORKFLOW OVERRIDES
+#             that win on conflict: the ENGINE owns sequencing and the human
+#             gates (R14), $ARTIFACTS_DIR owns file locations (R22), and
+#             nobody commits except final-commit (R17/R21).
+#   R21/R22 — all handoffs are FILES under $ARTIFACTS_DIR at FIXED, well-known
+#             paths (workers/reviewers/fixers never commit). NO output_format /
+#             structured output anywhere: engine routing decisions are written
+#             to one-word decision files, read back by deterministic bash
+#             reader nodes, and branched on with `when:`.
+#
+# ARTIFACT CONTRACT (fixed paths every node relies on):
+#   design/spec-candidate.md                     — spec candidate (step 0)
+#   design/design-verification.xml               — oracle report (step 1)
+#   planning/planning-handoff.xml                — plan A-I + behavior graph
+#   planning/contracts/<file-slug>.contract.xml  — one CONTRACT MASTER per file
+#   planning/topology.txt                        — exactly VERTICAL|HORIZONTAL
+#   execution/<PHASE>/<file-slug>.result.xml     — worker/fixer handoffs
+#   execution/<PHASE>/<file-slug>.review.xml     — reviewer findings
+#   execution/<PHASE>/checkpoint.xml             — non-Git phase checkpoint
+#   gates/contract-review.xml                    — R18 review body
+#   gates/contract-review-verdict.txt            — exactly PASS|FAIL
+#   gates/gate-e-global.xml                      — GATE E cross-file review
+#   gates/gate-e-global-verdict.txt              — exactly PASS|FAIL
+#   finishing/finishing-report.xml               — final report
+#   R10–R12 — workers always end DONE|BLOCKED; errors travel as data in the
+#             handoff; no inline fixes; a batch that exhausts max_iterations
+#             FAILS the run → escalation surfaces to the human (last resort).
+#
+# Provider: opencode (supports inline `agents:` for the worker/reviewer/fixer
+# waves). Switching `provider: pi` also works, but pi ignores `agents:` — the
+# wave nodes then execute their dispatch instructions single-handedly.
+#
+# TODO(project): the deterministic gate commands (compile/lint/suite RED/suite
+# GREEN) are placeholders — replace every "GATE COMMAND PLACEHOLDER" block with
+# the real project commands before relying on the gates.
+# ============================================================================
+
+name: resolutive-method
+description: >
+  Skeleton of the resolutive method: brainstorm a spec with the human, verify
+  the design with a fresh oracle, hard-gate human approval, plan with frozen
+  CONTRACT MASTERs and a behavior graph, run the global STUBS barrier, pass
+  the contract review gate, then execute by topology (VERTICAL slices or
+  HORIZONTAL file-by-phase batches A-I) with per-batch review/fix/re-gate
+  cycles, a global GATE E with cross-file review, a single final commit, and
+  human finishing. Gate commands are placeholders to be filled per project.
+provider: opencode
+model: medium
+interactive: true # required: approval gates + interactive brainstorming loop
+worktree:
+  enabled: true # the method mutates the checkout; always isolate
+
+nodes:
+  # --------------------------------------------------------------------------
+  # Step 0 — Brainstorming with the human (ordinary human intervention #1)
+  # --------------------------------------------------------------------------
+  # loop_group (not plain loop) so the body node can load the brainstorming
+  # skill — `skills:` is ignored on loop nodes but honored on body nodes.
+  - id: brainstorm-spec
+    output_type: spec-candidate
+    loop_group:
+      nodes:
+        - id: draft
+          skills: [brainstorming]
+          prompt: |
+            You are MAIN (0) running the BRAINSTORMING phase with the human.
+            Skill injected per R16: brainstorming. Apply its questioning and
+            design discipline, WITH these WORKFLOW OVERRIDES (they win over
+            the skill's own checklist wherever they conflict):
+            - The spec lives at $ARTIFACTS_DIR/design/spec-candidate.md —
+              NOT docs/superpowers/specs/. NEVER commit it (R17/R21: git
+              stays untouched until the engine's final-commit node).
+            - Do NOT invoke writing-plans or any implementation skill, do
+              not scaffold code — the ENGINE runs the next phases behind
+              its own human gates (R14); your only exit is the promise
+              signal below.
+            - The human dialog happens through the workflow's interactive
+              gate, ONE round per iteration — ask your questions by listing
+              them in the spec file and in your output, then end the
+              iteration.
+
+            Original task: $ARGUMENTS
+            Human feedback for this round (empty on the first pass):
+            $LOOP_USER_INPUT
+
+            Each iteration: fold the feedback in, refine the spec file
+            (problem, goals/non-goals, constraints, acceptance criteria,
+            approaches considered), and list the remaining open questions
+            at the top.
+            Only when the human's feedback explicitly says the spec is ready
+            (e.g. "READY", "listo", "aprobado para verificar"), finalize the
+            file and output: <promise>SPEC_READY</promise>
+      until: SPEC_READY
+      max_iterations: 10
+      fresh_context: false
+      interactive: true
+      gate_message: |
+        [Método resolutivo — intervención humana #1: brainstorming]
+        Revisa el spec candidato en artifacts: design/spec-candidate.md.
+        Responde con feedback para iterar, o escribe READY para pasar a la
+        verificación de diseño.
+
+  # --------------------------------------------------------------------------
+  # Step 1 — Design verifier (oracle, fresh, strong model)
+  # --------------------------------------------------------------------------
+  - id: design-verifier
+    depends_on: [brainstorm-spec]
+    context: fresh
+    model: large
+    output_type: design-verification
+    skills: [verification-before-completion]
+    prompt: |
+      Role: DESIGN VERIFIER (oracle, fresh context, no memory of the
+      brainstorming session).
+      Skill injected per R16: verification-before-completion — every claim
+      in your report must cite evidence (spec text, repo files you checked);
+      no unverified assertions. The method leaves the oracle's skill set
+      open (TO_BE_DEFINED_ORACLE_SKILLS) — extend `skills:` here if needed.
+
+      Read $ARTIFACTS_DIR/design/spec-candidate.md and audit it for:
+      - ambiguities and contradictions
+      - missing acceptance criteria or untestable requirements
+      - hidden coupling / risky assumptions about the existing codebase
+      - anything that would make contract freezing (R19) unsafe later
+
+      Write your full report as an XML handoff file (R22) to:
+      $ARTIFACTS_DIR/design/design-verification.xml
+      with <finding severity="critical|important|minor"> entries and a
+      <summary> the human can read in under a minute.
+
+      Do NOT modify the spec. Do NOT write code. Do NOT commit.
+      End by summarizing the verdict and top findings as plain text.
+
+  # --------------------------------------------------------------------------
+  # Step 2 — HARD GATE: human approves the spec (ordinary intervention #2)
+  # --------------------------------------------------------------------------
+  - id: hard-gate-spec
+    depends_on: [design-verifier]
+    approval:
+      message: |
+        [Método resolutivo — HARD GATE, intervención humana #2]
+        Revisa en artifacts:
+          - design/spec-candidate.md        (spec candidato)
+          - design/design-verification.xml  (reporte del verificador)
+        Aprueba para CONGELAR el spec y pasar a planificación, o rechaza con
+        razones (el spec se revisará y volverá a este gate).
+      capture_response: true
+      on_reject:
+        prompt: |
+          The human rejected the spec at the hard gate with this reason:
+          $REJECTION_REASON
+
+          Revise $ARTIFACTS_DIR/design/spec-candidate.md to address the
+          rejection, append a <revision> entry describing what changed to
+          $ARTIFACTS_DIR/design/design-verification.xml, and stop.
+          Do NOT write code. Do NOT commit.
+        max_attempts: 3
+
+  # --------------------------------------------------------------------------
+  # Step 3 — Planner (writing-plans): plan A–I + CONTRACT MASTERs + graph
+  # --------------------------------------------------------------------------
+  - id: planner
+    depends_on: [hard-gate-spec]
+    context: fresh
+    model: large
+    output_type: planning-handoff
+    skills: [writing-plans]
+    prompt: |
+      Role: PLANNER. Skill injected per R16: writing-plans — apply its
+      zero-context, bite-sized-tasks planning discipline, WITH these
+      WORKFLOW OVERRIDES (they win over the skill wherever they conflict):
+      - Outputs go to the EXACT $ARTIFACTS_DIR paths below — NOT to
+        docs/superpowers/plans/.
+      - NO commits, ever (R17/R21) — ignore the skill's frequent-commit
+        guidance; the engine owns git.
+      - Do NOT hand off to execution or invoke other skills — the ENGINE
+        dispatches execution behind its own gates after you finish.
+
+      The approved design is $ARTIFACTS_DIR/design/spec-candidate.md
+      (approved at the human hard gate; approval notes: $hard-gate-spec.output).
+
+      Produce, as FILES (R22):
+      1. $ARTIFACTS_DIR/planning/contracts/<logical-file-slug>.contract.xml —
+         ONE CONTRACT MASTER per logical file (R19): implementation file plus
+         its associated tests/fixtures. Each contract freezes: contractId,
+         content hash, public interface (signatures + types), required
+         behavioral guarantees, dependencies, allowed paths, and the sentinel
+         test expected to produce the contractual RED (R6).
+      2. $ARTIFACTS_DIR/planning/planning-handoff.xml — the master handoff:
+         phase plan A-I, the BEHAVIOR dependency graph (R4: edges only where
+         one file's GREEN needs another file's real GREEN), the density
+         measurement, and the topology recommendation (R8: sparse deps ->
+         VERTICAL, dense deps -> HORIZONTAL).
+      3. $ARTIFACTS_DIR/planning/topology.txt — the DECISION FILE (R22): its
+         entire content must be exactly one word, VERTICAL or HORIZONTAL
+         (uppercase, no quotes, no explanation). The engine branches on this
+         file — anything else halts the run.
+
+      Do NOT write stubs, tests, or implementation. Do NOT commit.
+      End with a one-paragraph plain-text summary of the plan and topology.
+
+  # Deterministic reader: exposes the topology decision file to the engine so
+  # `when:` can branch without any structured output (R22).
+  - id: read-topology
+    depends_on: [planner]
+    timeout: 15000
+    bash: |
+      v=$(cat "$ARTIFACTS_DIR/planning/topology.txt" 2>/dev/null | tr -d '[:space:]')
+      case "$v" in
+        VERTICAL|HORIZONTAL) printf '%s' "$v" ;;
+        *)
+          echo "ERROR: planning/topology.txt must contain exactly VERTICAL or HORIZONTAL (got: '$v')" >&2
+          exit 1
+          ;;
+      esac
+
+  # --------------------------------------------------------------------------
+  # Step 5 — Batch A: STUBS global barrier (R2), waves ≤7, REVIEW(A), gate A
+  # Iterates: wave -> gate evidence -> review; iteration ≥2 = fix dispatch.
+  # --------------------------------------------------------------------------
+  - id: batch-a-stubs
+    depends_on: [planner]
+    model: medium
+    output_type: batch-a-checkpoint
+    loop_group:
+      nodes:
+        - id: work
+          skills: &dispatcher-skills
+            - dispatching-parallel-agents
+            - systematic-debugging
+            - verification-before-completion
+          prompt: |
+            PHASE A — STUBS (global entry barrier, R2). You are the wave
+            dispatcher for this phase, under the execution orchestrator.
+            Skills injected per R16: dispatching-parallel-agents (wave
+            mechanics), systematic-debugging, verification-before-completion.
+            You dispatch and verify — you never write code yourself and
+            never commit; phase sequencing belongs to the engine.
+
+            Read $ARTIFACTS_DIR/planning/planning-handoff.xml and every
+            CONTRACT MASTER in $ARTIFACTS_DIR/planning/contracts/.
+
+            Iteration 1: for EACH eligible contract/logical file, dispatch ONE
+            fresh contract-worker sub-agent (Task tool) to write that file's
+            STUB + SENTINEL test exactly as its contract specifies. Dispatch
+            in waves of AT MOST 7 parallel workers (R9); wait for each wave
+            before the next.
+
+            Iterations >= 2: act as the FIX dispatcher (R12 — never fix
+            inline yourself): for each finding in the previous review below,
+            dispatch one file-fixer sub-agent per affected logical file.
+            Previous review: $LOOP_PREV.review.output
+
+            Every worker/fixer must leave its handoff XML at
+            $ARTIFACTS_DIR/execution/A-stubs/<file-slug>.result.xml with
+            status DONE or BLOCKED + bounded diff + evidence (R10, R21, R22).
+            Nobody commits — including you (R17, R21).
+
+            Your output: a plain-text wave summary (files dispatched, DONE
+            vs BLOCKED counts, blocked reasons).
+          agents: &wave-agents
+            contract-worker:
+              description: "Fresh TDD worker owning ONE logical file in ONE phase under its frozen contract"
+              skills:
+                - test-driven-development
+                - verification-before-completion
+                - systematic-debugging
+              prompt: |
+                Skills injected per R16 (loaded in your context):
+                test-driven-development, verification-before-completion,
+                systematic-debugging. Apply them within YOUR phase only —
+                never commit and never advance phases (the engine owns both).
+                You own exactly ONE logical file (implementation + its tests/
+                fixtures) for exactly ONE phase. Before touching anything,
+                read your CONTRACT MASTER XML; frozen public signatures are
+                law (R13) and you must stay inside the contract's allowed
+                paths. Never touch another file's code (R12). NEVER run git
+                commit (R21). Verify your own work (run the relevant tests/
+                lint) before reporting. On error: debug systematically, max 3
+                bounded attempts; if still stuck, STOP — the error travels as
+                DATA (R10, R11). Always finish by writing your handoff XML
+                (<result status="DONE|BLOCKED"> + diff summary + evidence) at
+                the path given in your task.
+            file-reviewer:
+              description: "Reviewer of ONE logical file's phase result — findings only, no code changes"
+              skills:
+                - requesting-code-review
+              prompt: |
+                Skill injected per R16 (loaded in your context):
+                requesting-code-review — use its review rigor, but your
+                verdict travels ONLY as a findings XML file (R22), never as
+                a conversation with the author.
+                Review the worker handoff + diff for ONE logical file against
+                its CONTRACT MASTER and the current phase's gate criteria.
+                You never edit code and never commit (R21). Write your
+                findings as XML (severity critical|important|minor) at the
+                path given in your task (R22).
+            file-fixer:
+              description: "Fixer applying review findings to ONE logical file"
+              skills:
+                - receiving-code-review
+                - verification-before-completion
+                - systematic-debugging
+              prompt: |
+                Skills injected per R16 (loaded in your context):
+                receiving-code-review, verification-before-completion,
+                systematic-debugging. Evaluate each finding on its technical
+                merits before applying it (push back in your handoff if a
+                finding is wrong — never blind-apply).
+                Apply the review findings for your ONE logical file only —
+                never another file (R12). Re-run its tests/lint to verify.
+                NEVER commit (R21). Finish by writing your handoff XML
+                (DONE|BLOCKED + what changed + evidence) at the path given
+                in your task.
+        - id: gate-check
+          depends_on: [work]
+          timeout: 600000
+          bash: |
+            # GATE COMMAND PLACEHOLDER — gate A (R2): contract-hash,
+            # signatures-frozen, sentinel-present, compiles, lint/import OK.
+            # TODO(project): replace with the real compile + lint commands,
+            # e.g.:  bun run type-check 2>&1 || true ; bun run lint 2>&1 || true
+            echo "GATE-A-EVIDENCE-BEGIN"
+            echo "WARNING: gate A command not configured (placeholder). Reviewer must rely on worker-reported evidence and flag this in the checkpoint."
+            echo "GATE-A-EVIDENCE-END"
+        - id: review
+          depends_on: [gate-check]
+          skills: &gate-reviewer-skills
+            - requesting-code-review
+            - verification-before-completion
+          prompt: |
+            REVIEW(A) + gate A evaluation. You are the review dispatcher.
+            Skills injected per R16: requesting-code-review,
+            verification-before-completion — the gate only passes on cited
+            EVIDENCE (handoffs + deterministic output), never on optimism.
+
+            Inputs:
+            - Worker handoffs in $ARTIFACTS_DIR/execution/A-stubs/
+            - Deterministic gate evidence: $gate-check.output
+            - Contracts in $ARTIFACTS_DIR/planning/contracts/
+
+            Dispatch ONE file-reviewer sub-agent per reviewed logical file
+            (waves <= 7, R9/R20). Reviewers write findings XML to
+            $ARTIFACTS_DIR/execution/A-stubs/<file-slug>.review.xml.
+
+            Gate A passes only if: every eligible file is DONE, stubs honor
+            frozen signatures + sentinel present, and the deterministic
+            evidence shows compile/lint OK. Any BLOCKED handoff or critical
+            finding = gate fails.
+
+            If the gate FAILS: output a consolidated findings list (file ->
+            findings) for the next fix iteration. Do not fix anything (R12).
+            If the gate PASSES: write the phase checkpoint (non-Git, R21) to
+            $ARTIFACTS_DIR/execution/A-stubs/checkpoint.xml and output:
+            <promise>GATE_A_PASS</promise>
+          agents: *wave-agents
+      until: GATE_A_PASS
+      max_iterations: 4
+      fresh_context: true
+
+  # --------------------------------------------------------------------------
+  # Step 6 — gate-contract-review (singleton, semantic, R18) + HALT on fail
+  # --------------------------------------------------------------------------
+  - id: gate-contract-review
+    depends_on: [batch-a-stubs]
+    context: fresh
+    model: large
+    output_type: contract-review
+    prompt: |
+      Role: GATE-CONTRACT-REVIEW — singleton, semantic, "the insurance
+      premium" (R18). Fresh context.
+
+      Inputs:
+      - Contracts: $ARTIFACTS_DIR/planning/contracts/
+      - Stub results + checkpoint: $ARTIFACTS_DIR/execution/A-stubs/
+      - The actual stub/sentinel code in the working tree.
+
+      Evaluate semantically: signatures-honored, edges-consumable (every
+      declared dependency edge can actually be consumed through the stubs),
+      interface-complete. Weak contracts make vertical execution unsafe —
+      judge strictly.
+
+      Write, as FILES (R22):
+      1. $ARTIFACTS_DIR/gates/contract-review.xml — the full review.
+      2. $ARTIFACTS_DIR/gates/contract-review-verdict.txt — the DECISION
+         FILE: its entire content must be exactly one word, PASS or FAIL
+         (uppercase, no quotes, no explanation).
+
+      Do NOT modify code. Do NOT commit. End with a short plain-text summary
+      of the verdict and reasons.
+
+  # Deterministic reader for the contract-review verdict file (R22).
+  # A missing/invalid file resolves to FAIL — weak evidence never passes.
+  - id: read-contract-verdict
+    depends_on: [gate-contract-review]
+    timeout: 15000
+    bash: |
+      v=$(cat "$ARTIFACTS_DIR/gates/contract-review-verdict.txt" 2>/dev/null | tr -d '[:space:]')
+      case "$v" in
+        PASS|FAIL) printf '%s' "$v" ;;
+        *)
+          echo "WARNING: gates/contract-review-verdict.txt missing or invalid (got: '$v') — treating as FAIL" >&2
+          printf 'FAIL'
+          ;;
+      esac
+
+  - id: halt-on-weak-contracts
+    depends_on: [read-contract-verdict]
+    when: "$read-contract-verdict.output != 'PASS'"
+    cancel: >
+      HALT (R18): gate-contract-review failed — contracts are not safe to
+      build on. See artifacts gates/contract-review.xml, repair the contracts
+      or the stubs, and start a new run. next.allowed: false.
+
+  # --------------------------------------------------------------------------
+  # Step 7v — VERTICAL topology: independent slices in parallel, coupled
+  # slices grouped in topological order (R4, R5, R6).
+  # --------------------------------------------------------------------------
+  - id: vertical-execution
+    depends_on: [read-contract-verdict, read-topology]
+    when: "$read-contract-verdict.output == 'PASS' && $read-topology.output == 'VERTICAL'"
+    model: medium
+    output_type: vertical-checkpoint
+    loop_group:
+      nodes:
+        - id: work
+          skills: *dispatcher-skills
+          prompt: |
+            VERTICAL EXECUTION (R5). You are the slice dispatcher, under the
+            execution orchestrator. Skills injected per R16:
+            dispatching-parallel-agents, systematic-debugging,
+            verification-before-completion. You dispatch and verify — never
+            write code yourself, never commit.
+
+            Read $ARTIFACTS_DIR/planning/planning-handoff.xml (behavior graph)
+            and $ARTIFACTS_DIR/execution/vertical/state.xml if it exists
+            (create it on iteration 1: slice list + status per slice).
+
+            Dispatch contract-worker sub-agents (waves <= 7, R9):
+            - INDEPENDENT slices (no behavior edges) run in parallel.
+            - COUPLED slices (R4) stay in the same group, executed in
+              topological order of the behavior graph — never in free
+              parallel.
+            Each slice worker runs the full vertical cycle for its logical
+            file: test -> contractual RED via sentinel (R6: sentinelMatches>0
+            AND nonSentinelFailures==0) -> implement -> GREEN -> harden ->
+            refactor. Hardening/refactor that would mutate frozen shared
+            signatures must be reported BLOCKED, not applied (R13).
+
+            Iterations >= 2: dispatch file-fixer sub-agents for the findings
+            in the previous review: $LOOP_PREV.review.output
+
+            Handoffs (R21, R22): $ARTIFACTS_DIR/execution/vertical/
+            <slice>.result.xml — DONE|BLOCKED + diff + evidence. No commits.
+            Update state.xml. Output a plain-text wave summary.
+          agents: *wave-agents
+        - id: suite-check
+          depends_on: [work]
+          timeout: 900000
+          bash: |
+            # GATE COMMAND PLACEHOLDER — full suite + lint evidence for the
+            # vertical review below.
+            # TODO(project): replace, e.g.:  bun run test 2>&1 || true ; bun run lint 2>&1 || true
+            echo "VERTICAL-SUITE-EVIDENCE-BEGIN"
+            echo "WARNING: suite command not configured (placeholder)."
+            echo "VERTICAL-SUITE-EVIDENCE-END"
+        - id: review
+          depends_on: [suite-check]
+          skills: *gate-reviewer-skills
+          prompt: |
+            VERTICAL REVIEW. Skills injected per R16: requesting-code-review,
+            verification-before-completion — pass only on cited evidence. Read slice handoffs in
+            $ARTIFACTS_DIR/execution/vertical/, the state file, and the
+            deterministic evidence: $suite-check.output
+
+            Dispatch file-reviewer sub-agents per completed slice (waves <=
+            7). Reviewers write findings XML next to each result file.
+
+            If ALL slices are DONE, reviewed clean, and the suite evidence is
+            GREEN: write $ARTIFACTS_DIR/execution/vertical/checkpoint.xml and
+            output <promise>VERTICAL_GREEN</promise>.
+            Otherwise output the consolidated findings/BLOCKED list for the
+            next iteration (escalation per R11 travels as data — never fix
+            inline, R12).
+          agents: *wave-agents
+      until: VERTICAL_GREEN
+      max_iterations: 8
+      fresh_context: true
+
+  # --------------------------------------------------------------------------
+  # Step 7h — HORIZONTAL topology: file × phase matrix (R20), global barriers
+  # between batches. Each batch = wave -> gate evidence -> review/fix cycle.
+  # --------------------------------------------------------------------------
+  - id: batch-b-tests
+    depends_on: [read-contract-verdict, read-topology]
+    when: "$read-contract-verdict.output == 'PASS' && $read-topology.output == 'HORIZONTAL'"
+    model: medium
+    output_type: batch-b-checkpoint
+    loop_group:
+      nodes:
+        - id: work
+          skills: *dispatcher-skills
+          prompt: |
+            PHASE B — TESTS (horizontal matrix file x phase, R20).
+            Skills injected per R16: dispatching-parallel-agents,
+            systematic-debugging, verification-before-completion.
+            Read planning handoff + contracts under $ARTIFACTS_DIR/planning/.
+
+            Iteration 1: dispatch ONE fresh contract-worker per eligible
+            contract to write that file's full test suite against the frozen
+            interface (tests must fail through the sentinel — contractual
+            RED, R6). Waves <= 7 (R9).
+            Iterations >= 2: dispatch file-fixer sub-agents per finding in:
+            $LOOP_PREV.review.output
+
+            Handoffs -> $ARTIFACTS_DIR/execution/B-tests/<file>.result.xml
+            (DONE|BLOCKED + diff + evidence; no commits — R21, R22).
+            Output a plain-text wave summary.
+          agents: *wave-agents
+        - id: gate-check
+          depends_on: [work]
+          timeout: 900000
+          bash: |
+            # GATE COMMAND PLACEHOLDER — GATE C (suite RED, R6): the full
+            # suite runs every expected contract, each matches its sentinel,
+            # and nonSentinelFailures == 0 globally.
+            # TODO(project): replace, e.g.:  bun run test 2>&1 || true
+            echo "GATE-C-EVIDENCE-BEGIN"
+            echo "WARNING: gate C command not configured (placeholder)."
+            echo "GATE-C-EVIDENCE-END"
+        - id: review
+          depends_on: [gate-check]
+          skills: *gate-reviewer-skills
+          prompt: |
+            REVIEW(B) + GATE C (suite RED). Skills injected per R16:
+            requesting-code-review, verification-before-completion. Handoffs in
+            $ARTIFACTS_DIR/execution/B-tests/, evidence: $gate-check.output
+
+            Dispatch file-reviewer sub-agents per file (waves <= 7).
+            GATE C passes only if every contract's sentinel matches and there
+            are zero non-sentinel failures (R6). On PASS: write
+            $ARTIFACTS_DIR/execution/B-tests/checkpoint.xml and output
+            <promise>GATE_C_PASS</promise>. On FAIL: consolidated findings
+            for the next fix iteration (no inline fixes, R12).
+          agents: *wave-agents
+      until: GATE_C_PASS
+      max_iterations: 5
+      fresh_context: true
+
+  - id: batch-d-impl
+    depends_on: [batch-b-tests]
+    model: medium
+    output_type: batch-d-checkpoint
+    loop_group:
+      nodes:
+        - id: work
+          skills: *dispatcher-skills
+          prompt: |
+            PHASE D — IMPLEMENTATION (horizontal, R20).
+            Skills injected per R16: dispatching-parallel-agents,
+            systematic-debugging, verification-before-completion.
+            Read planning handoff + contracts under $ARTIFACTS_DIR/planning/.
+
+            Iteration 1: ONE fresh contract-worker per eligible contract
+            implements its logical file until its own tests are GREEN,
+            honoring frozen signatures (R13). Behavior-dependency edges (R4)
+            still serialize: dispatch dependents only after their
+            prerequisites' workers report DONE. Waves <= 7 (R9).
+            Iterations >= 2: file-fixer dispatch per finding in:
+            $LOOP_PREV.review.output
+
+            Handoffs -> $ARTIFACTS_DIR/execution/D-impl/<file>.result.xml
+            (DONE|BLOCKED + diff + evidence; no commits — R21, R22).
+            Output a plain-text wave summary.
+          agents: *wave-agents
+        - id: gate-check
+          depends_on: [work]
+          timeout: 900000
+          bash: |
+            # GATE COMMAND PLACEHOLDER — GATE E (R7): full suite GREEN + lint,
+            # together.
+            # TODO(project): replace, e.g.:  bun run test 2>&1 || true ; bun run lint 2>&1 || true
+            echo "GATE-E-EVIDENCE-BEGIN"
+            echo "WARNING: gate E command not configured (placeholder)."
+            echo "GATE-E-EVIDENCE-END"
+        - id: review
+          depends_on: [gate-check]
+          skills: *gate-reviewer-skills
+          prompt: |
+            REVIEW(D) + GATE E (suite GREEN + lint). Skills injected per
+            R16: requesting-code-review, verification-before-completion. Handoffs in
+            $ARTIFACTS_DIR/execution/D-impl/, evidence: $gate-check.output
+
+            Dispatch file-reviewer sub-agents per file (waves <= 7).
+            On PASS (all DONE, reviews clean, suite GREEN + lint OK): write
+            $ARTIFACTS_DIR/execution/D-impl/checkpoint.xml and output
+            <promise>GATE_E_PASS</promise>. On FAIL: consolidated findings
+            (R12 — no inline fixes).
+          agents: *wave-agents
+      until: GATE_E_PASS
+      max_iterations: 6
+      fresh_context: true
+
+  - id: batch-f-hardening
+    depends_on: [batch-d-impl]
+    model: medium
+    output_type: batch-f-checkpoint
+    loop_group:
+      nodes:
+        - id: work
+          skills: *dispatcher-skills
+          prompt: |
+            PHASE F — HARDENING (horizontal, R20).
+            Skills injected per R16: dispatching-parallel-agents,
+            systematic-debugging, verification-before-completion.
+            ONE fresh contract-worker per eligible contract hardens its
+            logical file (error paths, input validation, resilience) WITHOUT
+            mutating frozen shared signatures — signature-breaking hardening
+            must be reported BLOCKED for triage instead (R13). Waves <= 7.
+            Iterations >= 2: file-fixer dispatch per: $LOOP_PREV.review.output
+            Handoffs -> $ARTIFACTS_DIR/execution/F-hardening/<file>.result.xml
+            (no commits — R21). Output a wave summary.
+          agents: *wave-agents
+        - id: gate-check
+          depends_on: [work]
+          timeout: 900000
+          bash: |
+            # GATE COMMAND PLACEHOLDER — re-gate after hardening (suite GREEN
+            # + lint). TODO(project): replace with real commands.
+            echo "REGATE-F-EVIDENCE-BEGIN"
+            echo "WARNING: re-gate command not configured (placeholder)."
+            echo "REGATE-F-EVIDENCE-END"
+        - id: review
+          depends_on: [gate-check]
+          skills: *gate-reviewer-skills
+          prompt: |
+            REVIEW(F) + re-gate. Skills injected per R16:
+            requesting-code-review, verification-before-completion. Handoffs in
+            $ARTIFACTS_DIR/execution/F-hardening/, evidence:
+            $gate-check.output
+            File-reviewer waves <= 7. On PASS: write checkpoint.xml in that
+            directory and output <promise>REGATE_F_PASS</promise>.
+            On FAIL: consolidated findings (R12).
+          agents: *wave-agents
+      until: REGATE_F_PASS
+      max_iterations: 4
+      fresh_context: true
+
+  - id: batch-g-edge-cases
+    depends_on: [batch-f-hardening]
+    model: medium
+    output_type: batch-g-checkpoint
+    loop_group:
+      nodes:
+        - id: work
+          skills: *dispatcher-skills
+          prompt: |
+            PHASE G — EDGE CASES (horizontal, R20).
+            Skills injected per R16: dispatching-parallel-agents,
+            systematic-debugging, verification-before-completion.
+            ONE fresh contract-worker per eligible contract adds edge-case
+            coverage + handling for its logical file, within its contract's
+            allowed paths and frozen signatures (R13). Waves <= 7 (R9).
+            Iterations >= 2: file-fixer dispatch per: $LOOP_PREV.review.output
+            Handoffs -> $ARTIFACTS_DIR/execution/G-edge-cases/
+            <file>.result.xml (no commits — R21). Output a wave summary.
+          agents: *wave-agents
+        - id: gate-check
+          depends_on: [work]
+          timeout: 900000
+          bash: |
+            # GATE COMMAND PLACEHOLDER — re-gate after edge cases (suite
+            # GREEN + lint). TODO(project): replace with real commands.
+            echo "REGATE-G-EVIDENCE-BEGIN"
+            echo "WARNING: re-gate command not configured (placeholder)."
+            echo "REGATE-G-EVIDENCE-END"
+        - id: review
+          depends_on: [gate-check]
+          skills: *gate-reviewer-skills
+          prompt: |
+            REVIEW(G) + re-gate. Skills injected per R16:
+            requesting-code-review, verification-before-completion. Handoffs in
+            $ARTIFACTS_DIR/execution/G-edge-cases/, evidence:
+            $gate-check.output
+            File-reviewer waves <= 7. On PASS: write checkpoint.xml in that
+            directory and output <promise>REGATE_G_PASS</promise>.
+            On FAIL: consolidated findings (R12).
+          agents: *wave-agents
+      until: REGATE_G_PASS
+      max_iterations: 4
+      fresh_context: true
+
+  - id: batch-h-triage
+    depends_on: [batch-g-edge-cases]
+    model: medium
+    output_type: batch-h-checkpoint
+    loop_group:
+      nodes:
+        - id: triage
+          model: large
+          skills: [systematic-debugging]
+          prompt: |
+            PHASE H — CENTRAL TRIAGE (oracle role; skill injected per R16:
+            systematic-debugging — find ROOT CAUSES with evidence, never
+            symptom patches).
+
+            Read every checkpoint, review, and BLOCKED handoff under
+            $ARTIFACTS_DIR/execution/ plus the contracts. Identify contract
+            mismatches, cross-file drift, and unresolved BLOCKED chains
+            (R11 escalation data, R13 signature conflicts).
+
+            Write $ARTIFACTS_DIR/execution/H-triage/triage.xml: affected
+            logical files, root cause per mismatch, and — where a frozen
+            signature must change — an explicit re-freeze proposal (R13).
+            If nothing is affected, write an empty <triage/> and say so.
+            Do NOT modify code. Do NOT commit.
+        - id: work
+          depends_on: [triage]
+          skills: *dispatcher-skills
+          prompt: |
+            PHASE H — AFFECTED-FILES FANOUT. Skills injected per R16:
+            dispatching-parallel-agents, systematic-debugging,
+            verification-before-completion.
+            Read $ARTIFACTS_DIR/execution/H-triage/triage.xml. If empty,
+            output "NO-AFFECTED-FILES" and stop.
+            Otherwise dispatch ONE fresh contract-worker per AFFECTED logical
+            file (waves <= 7) applying exactly the triage resolution — a
+            re-freeze changes the contract file FIRST, then the code follows
+            it (R13). Iterations >= 2: file-fixer dispatch per:
+            $LOOP_PREV.review.output
+            Handoffs -> $ARTIFACTS_DIR/execution/H-triage/<file>.result.xml
+            (no commits — R21). Output a wave summary.
+          agents: *wave-agents
+        - id: gate-check
+          depends_on: [work]
+          timeout: 900000
+          bash: |
+            # GATE COMMAND PLACEHOLDER — re-freeze/re-gate after triage
+            # (suite GREEN + lint). TODO(project): replace with real commands.
+            echo "REGATE-H-EVIDENCE-BEGIN"
+            echo "WARNING: re-gate command not configured (placeholder)."
+            echo "REGATE-H-EVIDENCE-END"
+        - id: review
+          depends_on: [gate-check]
+          skills: *gate-reviewer-skills
+          prompt: |
+            REVIEW(H) + re-freeze/re-gate. Skills injected per R16:
+            requesting-code-review, verification-before-completion. Read triage.xml, the fanout
+            handoffs in $ARTIFACTS_DIR/execution/H-triage/, and evidence:
+            $gate-check.output
+            File-reviewer waves <= 7 (skip if fanout was empty). On PASS
+            (all affected files consistent with their — possibly re-frozen —
+            contracts): write checkpoint.xml in that directory and output
+            <promise>REGATE_H_PASS</promise>. On FAIL: consolidated findings
+            (R12).
+          agents: *wave-agents
+      until: REGATE_H_PASS
+      max_iterations: 4
+      fresh_context: true
+
+  - id: batch-i-refactor
+    depends_on: [batch-h-triage]
+    model: medium
+    output_type: batch-i-checkpoint
+    loop_group:
+      nodes:
+        - id: work
+          skills: *dispatcher-skills
+          prompt: |
+            PHASE I — REFACTOR (horizontal, R20).
+            Skills injected per R16: dispatching-parallel-agents,
+            systematic-debugging, verification-before-completion.
+            ONE fresh contract-worker per eligible contract refactors its
+            logical file for clarity WITHOUT changing behavior or frozen
+            shared signatures — a refactor needing a signature change is
+            BLOCKED for re-freeze, never applied unilaterally (R13).
+            Waves <= 7 (R9).
+            Iterations >= 2: file-fixer dispatch per: $LOOP_PREV.review.output
+            Handoffs -> $ARTIFACTS_DIR/execution/I-refactor/<file>.result.xml
+            (no commits — R21). Output a wave summary.
+          agents: *wave-agents
+        - id: gate-check
+          depends_on: [work]
+          timeout: 900000
+          bash: |
+            # GATE COMMAND PLACEHOLDER — GATE E final (R7): full suite GREEN
+            # + lint together. TODO(project): replace with real commands.
+            echo "GATE-E-FINAL-EVIDENCE-BEGIN"
+            echo "WARNING: gate E final command not configured (placeholder)."
+            echo "GATE-E-FINAL-EVIDENCE-END"
+        - id: review
+          depends_on: [gate-check]
+          skills: *gate-reviewer-skills
+          prompt: |
+            REVIEW(I) + GATE E final. Skills injected per R16:
+            requesting-code-review, verification-before-completion. Handoffs in
+            $ARTIFACTS_DIR/execution/I-refactor/, evidence:
+            $gate-check.output
+            File-reviewer waves <= 7. On PASS: write checkpoint.xml in that
+            directory and output <promise>GATE_E_FINAL_PASS</promise>.
+            On FAIL: consolidated findings (R12).
+          agents: *wave-agents
+      until: GATE_E_FINAL_PASS
+      max_iterations: 4
+      fresh_context: true
+
+  # --------------------------------------------------------------------------
+  # Step 10 — GATE E GLOBAL (R7, inevitable for BOTH topologies):
+  # deterministic evidence + cross-file review.
+  # --------------------------------------------------------------------------
+  - id: gate-e-global-check
+    depends_on: [vertical-execution, batch-i-refactor]
+    trigger_rule: none_failed_min_one_success # exactly one topology branch ran
+    timeout: 900000
+    bash: |
+      # GATE COMMAND PLACEHOLDER — GATE E GLOBAL (R7): full suite GREEN +
+      # lint, run together, regardless of topology.
+      # TODO(project): replace, e.g.:  bun run test 2>&1 || true ; bun run lint 2>&1 || true
+      echo "GATE-E-GLOBAL-EVIDENCE-BEGIN"
+      echo "WARNING: global gate E command not configured (placeholder)."
+      echo "GATE-E-GLOBAL-EVIDENCE-END"
+
+  - id: cross-file-review
+    depends_on: [gate-e-global-check]
+    context: fresh
+    model: large
+    output_type: gate-e-global
+    skills: *gate-reviewer-skills
+    prompt: |
+      Role: GATE E GLOBAL — CROSS-FILE REVIEW (R7). Fresh context.
+      Skills injected per R16: requesting-code-review,
+      verification-before-completion — the verdict must cite evidence.
+
+      Inputs:
+      - Deterministic evidence: $gate-e-global-check.output
+      - All contracts: $ARTIFACTS_DIR/planning/contracts/
+      - All phase checkpoints/handoffs: $ARTIFACTS_DIR/execution/
+      - The integrated working tree.
+
+      Review ACROSS files: contract mismatches, integration seams, dead
+      stubs/sentinels left behind, drift between contracts and code (R13).
+      Write, as FILES (R22):
+      1. $ARTIFACTS_DIR/gates/gate-e-global.xml — the full review.
+      2. $ARTIFACTS_DIR/gates/gate-e-global-verdict.txt — the DECISION FILE:
+         its entire content must be exactly one word, PASS or FAIL
+         (uppercase, no quotes, no explanation).
+
+      Do NOT modify code. Do NOT commit. End with a short plain-text summary
+      (FAIL routes the run to failure so it can be triaged and resumed).
+
+  # Deterministic reader for the GATE E global verdict file (R22).
+  # A missing/invalid file resolves to FAIL — the commit gate never opens
+  # on weak evidence.
+  - id: read-gate-e-verdict
+    depends_on: [cross-file-review]
+    timeout: 15000
+    bash: |
+      v=$(cat "$ARTIFACTS_DIR/gates/gate-e-global-verdict.txt" 2>/dev/null | tr -d '[:space:]')
+      case "$v" in
+        PASS|FAIL) printf '%s' "$v" ;;
+        *)
+          echo "WARNING: gates/gate-e-global-verdict.txt missing or invalid (got: '$v') — treating as FAIL" >&2
+          printf 'FAIL'
+          ;;
+      esac
+
+  - id: fail-on-gate-e-mismatch
+    depends_on: [read-gate-e-verdict]
+    when: "$read-gate-e-verdict.output != 'PASS'"
+    bash: |
+      echo "GATE E GLOBAL FAILED (R7/R13): see artifacts gates/gate-e-global.xml" >&2
+      echo "Triage the mismatches (re-freeze if needed), then resume this run: archon workflow resume $WORKFLOW_ID" >&2
+      exit 1
+
+  # --------------------------------------------------------------------------
+  # Step 11 — The ONLY git commit of the whole method (R17, R21)
+  # --------------------------------------------------------------------------
+  - id: final-commit
+    depends_on: [read-gate-e-verdict]
+    when: "$read-gate-e-verdict.output == 'PASS'"
+    timeout: 120000
+    bash: |
+      # R17/R21 — the single commit, made by the orchestrator (engine) after
+      # every gate passed. Workers/reviewers/fixers/finishing never commit.
+      git add -A
+      if git diff --cached --quiet; then
+        echo "WARNING: nothing to commit (working tree clean)"
+      else
+        git commit -m "feat(resolutive-method): run $WORKFLOW_ID — all gates passed"
+      fi
+      git log -1 --oneline
+
+  # --------------------------------------------------------------------------
+  # Step 12 — Finishing with the human (ordinary intervention #3)
+  # --------------------------------------------------------------------------
+  - id: finishing
+    depends_on: [final-commit]
+    approval:
+      message: |
+        [Método resolutivo — intervención humana #3: finishing]
+        Todos los gates pasaron y la rama tiene su único commit (R17).
+        Revisa artifacts/gates/gate-e-global.xml y el diff de la rama.
+        Aprueba indicando qué hacer con la rama — escribe una de:
+          MERGE · PR · KEEP · DISCARD
+        (o rechaza para cancelar el run y decidir después).
+      capture_response: true
+
+  - id: finishing-actions
+    depends_on: [finishing]
+    context: fresh
+    output_type: finishing-report
+    skills: [finishing-a-development-branch]
+    prompt: |
+      Role: FINISHING executor. Skill injected per R16:
+      finishing-a-development-branch, WITH these WORKFLOW OVERRIDES (they
+      win over the skill wherever they conflict):
+      - SKIP the skill's "verify tests" step — GATE E global already gated
+        on the full suite; do not re-run it.
+      - SKIP the skill's option menu — the human ALREADY decided at the
+        engine's finishing gate (below); execute that decision only.
+      - NEVER commit or delete work (R17/R21).
+
+      The human's finishing decision: $finishing.output
+
+      Execute exactly that decision for the current branch:
+      - MERGE   -> report the exact merge commands for the human to run (do
+                   not merge into a protected branch yourself unless the
+                   decision explicitly instructs it).
+      - PR      -> push the branch and open a pull request (gh pr create),
+                   describing the run and linking artifacts.
+      - KEEP    -> leave the branch as-is; summarize where everything lives.
+      - DISCARD -> report the exact cleanup commands for the human to run
+                   (never delete work yourself).
+
+      NEVER create additional commits (R17/R21 — the single commit already
+      exists). Write a final report to
+      $ARTIFACTS_DIR/finishing/finishing-report.xml and summarize it as your
+      output.

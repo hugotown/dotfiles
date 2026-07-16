@@ -1,0 +1,26 @@
+# Archon runtime state, caches, and secrets — never commit.
+# Keep tracked: config.yaml, workflows/, commands/, scripts/, .gitignore
+
+# Database (SQLite when DATABASE_URL is not set)
+archon.db
+archon.db-*
+
+# Per-project workspaces: clones, worktrees, artifacts, logs
+workspaces/
+
+# Cached web UI dist and vendored binaries (archon serve / binary builds)
+web-dist/
+vendor/
+
+# Encryption key for per-user credentials (auto-provisioned secret)
+credential-key
+
+# Anonymous telemetry install id
+telemetry-id
+
+# Update-check and notice caches
+update-check.json
+tier-notice.json
+
+# Logs
+*.log
