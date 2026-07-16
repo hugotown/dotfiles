@@ -11,3 +11,9 @@ gemini-output/
 
 # Discord bot local credentials
 agent/pi-discord/config.json
+
+# Intercom runtime state
+agent/intercom/broker.pid
+
+# Generated deck previews
+deck-snapshots/

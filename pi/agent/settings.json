@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.80.7",
+  "lastChangelogVersion": "0.80.9",
   "theme": "dark",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.6-terra",
@@ -12,7 +12,9 @@
     "port": 32124,
     "timeout": 3600
   },
-  "npmCommand": ["npm"],
+  "npmCommand": [
+    "npm"
+  ],
   "packages": [
     "npm:pi-boomerang",
     "npm:pi-subagents",
@@ -30,60 +32,134 @@
     "npm:pi-model-switch",
     "npm:pi-design-deck"
   ],
-  "skills": ["!/Users/hugoruiz/.agents/skills/**"],
+  "skills": [
+    "!/Users/hugoruiz/.agents/skills/**"
+  ],
   "subagents": {
     "agentOverrides": {
       "scout": {
         "model": "openai-codex/gpt-5.3-codex-spark",
-        "fallbackModels": ["openai-codex/gpt-5.4-mini"],
-        "tools": ["read", "write", "bash"],
-        "skills": ["using-superpowers"]
+        "fallbackModels": [
+          "openai-codex/gpt-5.4-mini"
+        ],
+        "tools": [
+          "read",
+          "write",
+          "bash"
+        ],
+        "skills": [
+          "using-superpowers"
+        ]
       },
       "researcher": {
         "model": "openai-codex/gpt-5.4-mini",
-        "fallbackModels": ["openai-codex/gpt-5.4"],
-        "tools": ["read", "write", "bash"],
-        "skills": ["using-superpowers"]
+        "fallbackModels": [
+          "openai-codex/gpt-5.4"
+        ],
+        "tools": [
+          "read",
+          "write",
+          "bash"
+        ],
+        "skills": [
+          "using-superpowers"
+        ]
       },
       "planner": {
         "model": "openai-codex/gpt-5.5",
-        "fallbackModels": ["openai-codex/gpt-5.4"],
-        "tools": ["read", "write", "bash", "subagent", "boomerang"],
-        "skills": ["using-superpowers"],
+        "fallbackModels": [
+          "openai-codex/gpt-5.4"
+        ],
+        "tools": [
+          "read",
+          "write",
+          "bash",
+          "subagent",
+          "boomerang"
+        ],
+        "skills": [
+          "using-superpowers"
+        ],
         "defaultContext": "fresh"
       },
       "worker": {
         "model": "openai-codex/gpt-5.4",
-        "fallbackModels": ["openai-codex/gpt-5.4-mini"],
-        "tools": ["read", "write", "bash", "subagent", "boomerang"],
-        "skills": ["using-superpowers"],
+        "fallbackModels": [
+          "openai-codex/gpt-5.4-mini"
+        ],
+        "tools": [
+          "read",
+          "write",
+          "bash",
+          "subagent",
+          "boomerang"
+        ],
+        "skills": [
+          "using-superpowers"
+        ],
         "defaultContext": "fresh"
       },
       "reviewer": {
         "model": "openai-codex/gpt-5.4",
-        "fallbackModels": ["openai-codex/gpt-5.4-mini"],
-        "tools": ["read", "write", "bash", "subagent", "boomerang"],
-        "skills": ["using-superpowers"],
+        "fallbackModels": [
+          "openai-codex/gpt-5.4-mini"
+        ],
+        "tools": [
+          "read",
+          "write",
+          "bash",
+          "subagent",
+          "boomerang"
+        ],
+        "skills": [
+          "using-superpowers"
+        ],
         "defaultContext": "fresh"
       },
       "context-builder": {
         "model": "openai-codex/gpt-5.4-mini",
-        "fallbackModels": ["openai-codex/gpt-5.3-codex-spark"],
-        "tools": ["read", "write", "bash"],
-        "skills": ["using-superpowers"]
+        "fallbackModels": [
+          "openai-codex/gpt-5.3-codex-spark"
+        ],
+        "tools": [
+          "read",
+          "write",
+          "bash"
+        ],
+        "skills": [
+          "using-superpowers"
+        ]
       },
       "oracle": {
         "model": "openai-codex/gpt-5.5",
-        "fallbackModels": ["openai-codex/gpt-5.4"],
-        "tools": ["read", "write", "bash"],
-        "skills": ["using-superpowers"],
+        "fallbackModels": [
+          "openai-codex/gpt-5.4"
+        ],
+        "tools": [
+          "read",
+          "write",
+          "bash"
+        ],
+        "skills": [
+          "using-superpowers"
+        ],
         "defaultContext": "fresh"
       },
       "delegate": {
         "model": "openai-codex/gpt-5.4-mini",
-        "fallbackModels": ["openai-codex/gpt-5.4"],
-        "tools": ["read", "write", "bash", "subagent", "boomerang"],
-        "skills": ["using-superpowers"],
+        "fallbackModels": [
+          "openai-codex/gpt-5.4"
+        ],
+        "tools": [
+          "read",
+          "write",
+          "bash",
+          "subagent",
+          "boomerang"
+        ],
+        "skills": [
+          "using-superpowers"
+        ],
         "defaultContext": "fresh"
       }
     }
