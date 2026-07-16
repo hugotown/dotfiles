@@ -1,0 +1,186 @@
+# ============================================================================
+# RESOLUTIVE METHOD — stage 1: DESIGN & PLANNING (building block)
+#
+# Included by resolutive-method.yaml as `include: resolutive-design`.
+# NOT meant for standalone runs — see the parent for the full method overview,
+# rule mapping (R-notes), and the complete artifact contract.
+#
+# Runbook steps (Pieza 2) owned by this stage:
+#   0  brainstorming with HUMAN (#1)        → brainstorm-spec   (interactive loop)
+#   1  design verifier (oracle, fresh)      → design-verifier
+#   2  HARD GATE — HUMAN approves spec (#2) → hard-gate-spec    (approval)
+#   3  writing-plans → plan+CONTRACTS+graph → planner
+#
+# Structure contract with the parent:
+#   - ENTRY: brainstorm-spec (no depends_on) — the method's first node.
+#   - SINK:  planner (single sink) — the parent's next stage attaches here.
+#   - All node-output refs stay INSIDE this file (include boundary rule);
+#     everything this stage hands downstream travels as FILES (R21/R22):
+#       design/spec-candidate.md                     — spec candidate (step 0)
+#       design/design-verification.xml               — oracle report (step 1)
+#       planning/planning-handoff.xml                — plan A-I + behavior graph
+#       planning/contracts/<file-slug>.contract.xml  — one CONTRACT MASTER per file
+#       planning/topology.txt                        — exactly VERTICAL|HORIZONTAL
+#
+# Workflow-level fields of this file are dropped at include time — the PARENT
+# governs provider/model/worktree. `interactive: true` is declared here only so
+# a standalone parse of this file doesn't warn about the interactive loop.
+# ============================================================================
+
+name: resolutive-design
+description: >
+  BUILDING BLOCK for resolutive-method — do not run standalone. Stage 1:
+  interactive brainstorming with the human, fresh-oracle design verification,
+  human hard gate, and planning with frozen CONTRACT MASTERs, a behavior
+  graph, and the topology decision file.
+interactive: true
+
+nodes:
+  # --------------------------------------------------------------------------
+  # Step 0 — Brainstorming with the human (ordinary human intervention #1)
+  # --------------------------------------------------------------------------
+  # loop_group (not plain loop) so the body node can load the brainstorming
+  # skill — `skills:` is ignored on loop nodes but honored on body nodes.
+  - id: brainstorm-spec
+    output_type: spec-candidate
+    loop_group:
+      nodes:
+        - id: draft
+          skills: [brainstorming]
+          prompt: |
+            You are MAIN (0) running the BRAINSTORMING phase with the human.
+            Skill injected per R16: brainstorming. Apply its questioning and
+            design discipline, WITH these WORKFLOW OVERRIDES (they win over
+            the skill's own checklist wherever they conflict):
+            - The spec lives at $ARTIFACTS_DIR/design/spec-candidate.md —
+              NOT docs/superpowers/specs/. NEVER commit it (R17/R21: git
+              stays untouched until the engine's final-commit node).
+            - Do NOT invoke writing-plans or any implementation skill, do
+              not scaffold code — the ENGINE runs the next phases behind
+              its own human gates (R14); your only exit is the promise
+              signal below.
+            - The human dialog happens through the workflow's interactive
+              gate, ONE round per iteration — ask your questions by listing
+              them in the spec file and in your output, then end the
+              iteration.
+
+            Original task: $ARGUMENTS
+            Human feedback for this round (empty on the first pass):
+            $LOOP_USER_INPUT
+
+            Each iteration: fold the feedback in, refine the spec file
+            (problem, goals/non-goals, constraints, acceptance criteria,
+            approaches considered), and list the remaining open questions
+            at the top.
+            Only when the human's feedback explicitly says the spec is ready
+            (e.g. "READY", "listo", "aprobado para verificar"), finalize the
+            file and output: <promise>SPEC_READY</promise>
+      until: SPEC_READY
+      max_iterations: 10
+      fresh_context: false
+      interactive: true
+      gate_message: |
+        [Método resolutivo — intervención humana #1: brainstorming]
+        Revisa el spec candidato en artifacts: design/spec-candidate.md.
+        Responde con feedback para iterar, o escribe READY para pasar a la
+        verificación de diseño.
+
+  # --------------------------------------------------------------------------
+  # Step 1 — Design verifier (oracle, fresh, strong model)
+  # --------------------------------------------------------------------------
+  - id: design-verifier
+    depends_on: [brainstorm-spec]
+    context: fresh
+    model: large
+    output_type: design-verification
+    skills: [verification-before-completion]
+    prompt: |
+      Role: DESIGN VERIFIER (oracle, fresh context, no memory of the
+      brainstorming session).
+      Skill injected per R16: verification-before-completion — every claim
+      in your report must cite evidence (spec text, repo files you checked);
+      no unverified assertions. The method leaves the oracle's skill set
+      open (TO_BE_DEFINED_ORACLE_SKILLS) — extend `skills:` here if needed.
+
+      Read $ARTIFACTS_DIR/design/spec-candidate.md and audit it for:
+      - ambiguities and contradictions
+      - missing acceptance criteria or untestable requirements
+      - hidden coupling / risky assumptions about the existing codebase
+      - anything that would make contract freezing (R19) unsafe later
+
+      Write your full report as an XML handoff file (R22) to:
+      $ARTIFACTS_DIR/design/design-verification.xml
+      with <finding severity="critical|important|minor"> entries and a
+      <summary> the human can read in under a minute.
+
+      Do NOT modify the spec. Do NOT write code. Do NOT commit.
+      End by summarizing the verdict and top findings as plain text.
+
+  # --------------------------------------------------------------------------
+  # Step 2 — HARD GATE: human approves the spec (ordinary intervention #2)
+  # --------------------------------------------------------------------------
+  - id: hard-gate-spec
+    depends_on: [design-verifier]
+    approval:
+      message: |
+        [Método resolutivo — HARD GATE, intervención humana #2]
+        Revisa en artifacts:
+          - design/spec-candidate.md        (spec candidato)
+          - design/design-verification.xml  (reporte del verificador)
+        Aprueba para CONGELAR el spec y pasar a planificación, o rechaza con
+        razones (el spec se revisará y volverá a este gate).
+      capture_response: true
+      on_reject:
+        prompt: |
+          The human rejected the spec at the hard gate with this reason:
+          $REJECTION_REASON
+
+          Revise $ARTIFACTS_DIR/design/spec-candidate.md to address the
+          rejection, append a <revision> entry describing what changed to
+          $ARTIFACTS_DIR/design/design-verification.xml, and stop.
+          Do NOT write code. Do NOT commit.
+        max_attempts: 3
+
+  # --------------------------------------------------------------------------
+  # Step 3 — Planner (writing-plans): plan A–I + CONTRACT MASTERs + graph
+  # --------------------------------------------------------------------------
+  # SINK of this stage: the parent wires the execution stage after this node.
+  - id: planner
+    depends_on: [hard-gate-spec]
+    context: fresh
+    model: large
+    output_type: planning-handoff
+    skills: [writing-plans]
+    prompt: |
+      Role: PLANNER. Skill injected per R16: writing-plans — apply its
+      zero-context, bite-sized-tasks planning discipline, WITH these
+      WORKFLOW OVERRIDES (they win over the skill wherever they conflict):
+      - Outputs go to the EXACT $ARTIFACTS_DIR paths below — NOT to
+        docs/superpowers/plans/.
+      - NO commits, ever (R17/R21) — ignore the skill's frequent-commit
+        guidance; the engine owns git.
+      - Do NOT hand off to execution or invoke other skills — the ENGINE
+        dispatches execution behind its own gates after you finish.
+
+      The approved design is $ARTIFACTS_DIR/design/spec-candidate.md
+      (approved at the human hard gate; approval notes: $hard-gate-spec.output).
+
+      Produce, as FILES (R22):
+      1. $ARTIFACTS_DIR/planning/contracts/<logical-file-slug>.contract.xml —
+         ONE CONTRACT MASTER per logical file (R19): implementation file plus
+         its associated tests/fixtures. Each contract freezes: contractId,
+         content hash, public interface (signatures + types), required
+         behavioral guarantees, dependencies, allowed paths, and the sentinel
+         test expected to produce the contractual RED (R6).
+      2. $ARTIFACTS_DIR/planning/planning-handoff.xml — the master handoff:
+         phase plan A-I, the BEHAVIOR dependency graph (R4: edges only where
+         one file's GREEN needs another file's real GREEN), the density
+         measurement, and the topology recommendation (R8: sparse deps ->
+         VERTICAL, dense deps -> HORIZONTAL).
+      3. $ARTIFACTS_DIR/planning/topology.txt — the DECISION FILE (R22): its
+         entire content must be exactly one word, VERTICAL or HORIZONTAL
+         (uppercase, no quotes, no explanation). The engine branches on this
+         file — anything else halts the run.
+
+      Do NOT write stubs, tests, or implementation. Do NOT commit.
+      End with a one-paragraph plain-text summary of the plan and topology.
