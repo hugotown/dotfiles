@@ -1,0 +1,467 @@
+# ============================================================================
+# archon_sldc_skeleton — NODE SKELETON of the resolutive method (Piezas 1-4)
+#
+# PURPOSE: structural skeleton ONLY. Every "subagent" of the method is an
+# Archon DAG node here. No prompt engineering: every agent node carries
+# `prompt: TO_BE_DEFINED` plus its `skills:` list. Fill prompts later.
+#
+# PROVIDER / MODELS: provider is opencode (never substitute it); every node
+# model is a minimax model taken from `opencode models`:
+#   minimax/MiniMax-M3    → "modelo potente" roles (MAIN, oracle, gates, triage)
+#   minimax/MiniMax-M2.7  → workers / reviewers / fixers / finishing
+#
+# NOTE ON SKILLS (R16): Archon's `skills:` field is Claude-only. With
+# provider opencode the lists below are DECLARATIVE: at implementation time
+# each skill must be injected into the node prompt as a mandatory read of
+# ~/.config/opencode/skills/<skill>/SKILL.md (see archon_sldc_worker_file).
+#
+# RULES MAPPED TO STRUCTURE:
+#   R2  STUBS global first: stubs-batch-a is the only entry to any TDD work.
+#   R9  Wave cap ≤7: every *-batch-* node stands for N FRESH executions
+#       (1 per eligible contract/logical file) dispatched in ⌈N/7⌉ waves.
+#   R14 Exactly 3 ordinary HUMAN interventions: brainstorm (#1),
+#       hard-gate-spec (#2), human-finishing-decision (#3).
+#       human-last-resort is the extraordinary 4th (R11), when-gated.
+#   R15 maxSubagentDepth:2 — depth is flattened into DAG layers; no node
+#       spawns deeper than worker/reviewer/fixer level.
+#   R17/R21 The ONLY git commit is the final-commit bash node. No agent
+#       node commits, ever.
+#   R22 No structured_output / output_format anywhere. Handoffs travel as
+#       files under .archon/sldc/ and plain-text node outputs.
+# ============================================================================
+
+name: archon_sldc_skeleton
+description: >
+  Node skeleton of the full resolutive method: brainstorm with the human,
+  fresh design verification, human hard gate, writing-plans with frozen
+  CONTRACT MASTERs, execution orchestrator, global STUBS barrier + contract
+  review gate, topology branch (vertical slices vs horizontal file-by-phase
+  batches A-I with triage), global GATE E with cross-file review, single
+  final commit, and human finishing. Skeleton only: skills declared, prompts
+  TO_BE_DEFINED.
+
+provider: opencode
+model: minimax/MiniMax-M2.7
+interactive: true
+worktree:
+  enabled: true
+
+nodes:
+  # ==========================================================================
+  # STEP 0 — MAIN (0): brainstorming with the HUMAN → spec candidato
+  # [R14 intervention #1]
+  # ==========================================================================
+  - id: brainstorm
+    model: minimax/MiniMax-M3
+    skills: [using-superpowers, brainstorming]
+    prompt: TO_BE_DEFINED
+
+  # ==========================================================================
+  # STEP 1 — design verifier (1): FRESH, strong model, reviews ambiguities
+  # ==========================================================================
+  - id: design-verifier
+    depends_on: [brainstorm]
+    context: fresh
+    model: minimax/MiniMax-M3
+    # skills: TO_BE_DEFINED_ORACLE_SKILLS (Pieza 4 — empty list is rejected
+    # by the loader, so declare them here once defined)
+    prompt: TO_BE_DEFINED
+
+  # ==========================================================================
+  # STEP 2 — HARD GATE: HUMAN approves the spec [R14 intervention #2]
+  # ==========================================================================
+  - id: hard-gate-spec
+    depends_on: [design-verifier]
+    approval:
+      message: "HARD GATE (R14 #2): revisa el spec candidato + reporte de ambigüedades y aprueba para pasar a writing-plans."
+      capture_response: true
+
+  # ==========================================================================
+  # STEP 3 — writing-plans (1): plan A-I + sentinel + CONTRACT MASTER per
+  # logical file + behavior graph; freezes contractId/hash; measures DENSITY
+  # and recommends VERTICAL|HORIZONTAL [R8, R19, R22]
+  # ==========================================================================
+  - id: writing-plans
+    depends_on: [hard-gate-spec]
+    context: fresh
+    model: minimax/MiniMax-M3
+    skills: [writing-plans]
+    prompt: TO_BE_DEFINED
+
+  # ==========================================================================
+  # STEP 4 — execution orchestrator (1): receives the plan handoff, injects
+  # skills into every child dispatch; owns waves and gates [R16, R22]
+  # ==========================================================================
+  - id: orchestrator-setup
+    depends_on: [writing-plans]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - dispatching-parallel-agents
+      - systematic-debugging
+      - verification-before-completion
+    prompt: TO_BE_DEFINED
+
+  # ==========================================================================
+  # STEP 5 — GLOBAL STUBS (Batch A): 1 FRESH worker per contract/logical
+  # file writes stub + sentinel, in waves ≤7 [R2, R9, R20, R21, R22]
+  # ==========================================================================
+  - id: stubs-batch-a
+    depends_on: [orchestrator-setup]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - test-driven-development
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  - id: review-a
+    depends_on: [stubs-batch-a]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills: [requesting-code-review]
+    prompt: TO_BE_DEFINED
+
+  - id: fix-a
+    depends_on: [review-a]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - receiving-code-review
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  # gate A: contract-hash · signatures-frozen · sentinel-present · compiles ·
+  # lint/import OK — deterministic; writes the NO-Git phase checkpoint [R21]
+  - id: gate-a
+    depends_on: [fix-a]
+    timeout: 900000
+    bash: |
+      echo "TO_BE_DEFINED — gate A checks + NO-Git checkpoint file"
+
+  # ==========================================================================
+  # STEP 6 — gate-contract-review (singleton, semantic): signatures-honored ·
+  # edges-consumable · interface-complete; fail → HALT [R18]
+  # ==========================================================================
+  - id: gate-contract-review
+    depends_on: [gate-a]
+    context: fresh
+    model: minimax/MiniMax-M3
+    skills:
+      - requesting-code-review
+      - verification-before-completion
+    prompt: TO_BE_DEFINED
+
+  # ==========================================================================
+  # STEP 7 — TOPOLOGY BRANCH: read the topology frozen by writing-plans from
+  # the handoff file (file-based, R22) and route [R8]
+  # ==========================================================================
+  - id: read-topology
+    depends_on: [gate-contract-review]
+    timeout: 15000
+    bash: |
+      echo "TO_BE_DEFINED — read topology (VERTICAL|HORIZONTAL) from the planning handoff and print it"
+
+  # --------------------------------------------------------------------------
+  # STEP 7v — VERTICAL: independent slices in parallel; coupled slices in the
+  # same group, topological order [R4, R5]; local sentinel RED per slice [R6]
+  # --------------------------------------------------------------------------
+  - id: vertical-slices
+    depends_on: [read-topology]
+    when: "$read-topology.output == 'VERTICAL'"
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - test-driven-development
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  - id: vertical-review
+    depends_on: [vertical-slices]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills: [requesting-code-review]
+    prompt: TO_BE_DEFINED
+
+  - id: vertical-fix
+    depends_on: [vertical-review]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - receiving-code-review
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  # --------------------------------------------------------------------------
+  # STEP 7h — HORIZONTAL: file × phase matrix; barrier between phases;
+  # 1 FRESH execution per eligible contract/file, waves ≤7 [R7, R9, R13, R20]
+  # --------------------------------------------------------------------------
+
+  # Batch B — TESTS
+  - id: tests-batch-b
+    depends_on: [read-topology]
+    when: "$read-topology.output == 'HORIZONTAL'"
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - test-driven-development
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  - id: review-b
+    depends_on: [tests-batch-b]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills: [requesting-code-review]
+    prompt: TO_BE_DEFINED
+
+  - id: fix-b
+    depends_on: [review-b]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - receiving-code-review
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  # GATE C — full suite RED: every contract matches its sentinel and
+  # nonSentinelFailures==0 globally [R6]
+  - id: gate-c-suite-red
+    depends_on: [fix-b]
+    timeout: 900000
+    bash: |
+      echo "TO_BE_DEFINED — GATE C: sentinelMatches>0 per contract AND nonSentinelFailures==0 global + NO-Git checkpoint"
+
+  # Batch D — IMPL
+  - id: impl-batch-d
+    depends_on: [gate-c-suite-red]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - test-driven-development
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  - id: review-d
+    depends_on: [impl-batch-d]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills: [requesting-code-review]
+    prompt: TO_BE_DEFINED
+
+  - id: fix-d
+    depends_on: [review-d]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - receiving-code-review
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  - id: gate-e-batch-d
+    depends_on: [fix-d]
+    timeout: 900000
+    bash: |
+      echo "TO_BE_DEFINED — GATE E (batch): suite GREEN + lint + NO-Git checkpoint"
+
+  # Batch F — HARDENING (no mutation of frozen shared signatures — R13)
+  - id: hardening-batch-f
+    depends_on: [gate-e-batch-d]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - test-driven-development
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  - id: review-f
+    depends_on: [hardening-batch-f]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills: [requesting-code-review]
+    prompt: TO_BE_DEFINED
+
+  - id: fix-f
+    depends_on: [review-f]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - receiving-code-review
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  - id: regate-f
+    depends_on: [fix-f]
+    timeout: 900000
+    bash: |
+      echo "TO_BE_DEFINED — re-gate global after HARDENING + NO-Git checkpoint"
+
+  # Batch G — EDGE CASES
+  - id: edge-batch-g
+    depends_on: [regate-f]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - test-driven-development
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  - id: review-g
+    depends_on: [edge-batch-g]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills: [requesting-code-review]
+    prompt: TO_BE_DEFINED
+
+  - id: fix-g
+    depends_on: [review-g]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - receiving-code-review
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  - id: regate-g
+    depends_on: [fix-g]
+    timeout: 900000
+    bash: |
+      echo "TO_BE_DEFINED — re-gate global after EDGE CASES + NO-Git checkpoint"
+
+  # Batch H — central TRIAGE (oracle) + fanout over affected files, then
+  # re-freeze of mutated contracts [R11, R13]
+  - id: triage-h
+    depends_on: [regate-g]
+    context: fresh
+    model: minimax/MiniMax-M3
+    skills: [systematic-debugging]
+    prompt: TO_BE_DEFINED
+
+  - id: fanout-h
+    depends_on: [triage-h]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - receiving-code-review
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  - id: review-h
+    depends_on: [fanout-h]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills: [requesting-code-review]
+    prompt: TO_BE_DEFINED
+
+  - id: refreeze-regate-h
+    depends_on: [review-h]
+    timeout: 900000
+    bash: |
+      echo "TO_BE_DEFINED — re-freeze mutated contracts + re-gate global + NO-Git checkpoint"
+
+  # Batch I — REFACTOR (clarity only; no behavior/signature change)
+  - id: refactor-batch-i
+    depends_on: [refreeze-regate-h]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - test-driven-development
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  - id: review-i
+    depends_on: [refactor-batch-i]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills: [requesting-code-review]
+    prompt: TO_BE_DEFINED
+
+  - id: fix-i
+    depends_on: [review-i]
+    context: fresh
+    model: minimax/MiniMax-M2.7
+    skills:
+      - receiving-code-review
+      - verification-before-completion
+      - systematic-debugging
+    prompt: TO_BE_DEFINED
+
+  # ==========================================================================
+  # STEP 10 — GLOBAL GATE E: full suite GREEN + lint together, then the
+  # cross-file review. Joins both topology branches [R7]
+  # ==========================================================================
+  - id: gate-e-global
+    depends_on: [vertical-fix, fix-i]
+    trigger_rule: none_failed_min_one_success
+    timeout: 1800000
+    bash: |
+      echo "TO_BE_DEFINED — GLOBAL GATE E: full suite GREEN + lint together"
+
+  - id: cross-file-review
+    depends_on: [gate-e-global]
+    context: fresh
+    model: minimax/MiniMax-M3
+    skills:
+      - requesting-code-review
+      - verification-before-completion
+    prompt: TO_BE_DEFINED
+
+  # ==========================================================================
+  # STEP 11 — the ONLY git commit of the whole method [R17, R21]
+  # ==========================================================================
+  - id: final-commit
+    depends_on: [cross-file-review]
+    timeout: 300000
+    bash: |
+      echo "TO_BE_DEFINED — orchestrator makes the single final git commit (R17)"
+
+  # ==========================================================================
+  # STEP 12 — finishing: MAIN + HUMAN decide MERGE/PR/KEEP/DISCARD
+  # [R14 intervention #3]
+  # ==========================================================================
+  - id: finishing
+    depends_on: [final-commit]
+    model: minimax/MiniMax-M2.7
+    skills: [finishing-a-development-branch]
+    prompt: TO_BE_DEFINED
+
+  - id: human-finishing-decision
+    depends_on: [finishing]
+    approval:
+      message: "FINISHING (R14 #3): decide MERGE | PR | KEEP | DISCARD."
+      capture_response: true
+
+  # ==========================================================================
+  # ESCALATION LEAVES (R11, R12): worker sysdbg ×3 → orchestrator sysdbg ×3
+  # → MAIN strong model. Only if MAIN stays BLOCKED after exhausting every
+  # autonomous option: extraordinary HUMAN intervention (R14 goes 3 → 4).
+  # `when:` left TO_BE_DEFINED — invalid expressions fail closed (skipped),
+  # so these leaves never fire in the bare skeleton.
+  # ==========================================================================
+  - id: escalate-main
+    depends_on: [gate-e-global]
+    when: "TO_BE_DEFINED"
+    context: fresh
+    model: minimax/MiniMax-M3
+    skills: [systematic-debugging]
+    prompt: TO_BE_DEFINED
+
+  - id: human-last-resort
+    depends_on: [escalate-main]
+    approval:
+      message: "ESCALACIÓN EXTRAORDINARIA (R11/R14): la cadena autónoma quedó BLOCKED; se requiere intervención humana como último recurso."
+      capture_response: true
