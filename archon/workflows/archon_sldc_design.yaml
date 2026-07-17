@@ -1,0 +1,181 @@
+# ============================================================================
+# archon_sldc_design — STAGE: runbook steps 0–2 (brainstorm, verify, HARD GATE)
+#
+# Suite: archon_sldc_*. The stage that owns TWO of the three ordinary human
+# interventions (R14): #1 brainstorming, #2 the spec HARD GATE.
+#
+# Contract (D2 — documented exception): $ARGUMENTS = the idea/PRD as free
+# text (or a path to a PRD file, which the brainstormer will read). This is
+# the ONLY non-file input of the suite: no upstream artifact exists yet.
+# Outputs (fixed conventional paths, repo-relative — D5):
+#   .archon/sldc/design/spec-candidate.md       (step 0)
+#   .archon/sldc/design/design-verification.md  (step 1, oracle report)
+#   .archon/sldc/design/spec-approved.md        (frozen after the hard gate,
+#                                                with specHash + approval notes)
+# Sink line: "APPROVED .archon/sldc/design/spec-approved.md" (R22).
+#
+# Interactive: the brainstorm loop pauses every round for human feedback and
+# the hard gate is an approval node. When nested by archon_sldc_method this
+# stage runs DETACHED and the human interacts with THIS run's id:
+#   archon workflow approve <run-id> --comment "..."   (iterate / approve)
+#   archon workflow reject  <run-id> --reason  "..."   (rework the spec)
+# ============================================================================
+
+name: archon_sldc_design
+description: >
+  Design stage of the archon_sldc suite (resolutive method steps 0-2):
+  interactive brainstorming with the human toward a spec candidate
+  (intervention #1), fresh strong-model design verification (oracle), human
+  HARD GATE approval (intervention #2), and deterministic freezing of the
+  approved spec with its hash. Never writes code, never commits.
+
+provider: opencode
+model: medium
+interactive: true
+worktree:
+  enabled: false
+
+nodes:
+  # --------------------------------------------------------------------------
+  # Step 0 — Brainstorming with the human (ordinary intervention #1, R14)
+  # --------------------------------------------------------------------------
+  - id: brainstorm-spec
+    loop:
+      prompt: |
+        You are MAIN (0) of the archon_sldc suite running the BRAINSTORMING
+        phase with the human.
+
+        SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY,
+        with the Read tool:
+        - ~/.config/opencode/skills/brainstorming/SKILL.md
+        Apply its questioning and design discipline, WITH these WORKFLOW
+        OVERRIDES (they win over the skill wherever they conflict):
+        - The spec lives at .archon/sldc/design/spec-candidate.md — nowhere
+          else. NEVER run any git command (R17/R21: git stays untouched
+          until the engine's single final commit).
+        - Do NOT invoke writing-plans or any implementation skill, do not
+          scaffold code — the ENGINE runs the next phases behind its own
+          human gates (R14).
+        - The human dialog happens through this workflow's interactive
+          gate, ONE round per iteration: fold the feedback in, refine the
+          spec, list the remaining open questions at the TOP of the spec
+          file AND in your output, then end the iteration.
+
+        Original task: $ARGUMENTS
+        (If that is a path to an existing file, read it as the PRD.)
+        Human feedback for this round (empty on the first pass):
+        $LOOP_USER_INPUT
+
+        Each iteration: refine .archon/sldc/design/spec-candidate.md —
+        problem, goals/non-goals, constraints, acceptance criteria,
+        approaches considered — as a .md with flat frontmatter
+        (status: DRAFT, round: <n>) and the spec body.
+        ONLY when the human's feedback explicitly says the spec is ready
+        (e.g. "READY", "listo", "aprobado para verificar"): set
+        status: CANDIDATE in the frontmatter and output:
+        <promise>SPEC_READY</promise>
+      until: SPEC_READY
+      max_iterations: 10
+      fresh_context: false
+      interactive: true
+      gate_message: |
+        [archon_sldc — intervención humana #1: brainstorming]
+        Revisa el spec candidato en .archon/sldc/design/spec-candidate.md.
+        Aprueba CON comentario para iterar con ese feedback, o comenta
+        READY para pasar a la verificación de diseño.
+
+  # --------------------------------------------------------------------------
+  # Step 1 — Design verifier (oracle, fresh, strong model)
+  # --------------------------------------------------------------------------
+  - id: design-verifier
+    depends_on: [brainstorm-spec]
+    context: fresh
+    model: large
+    output_type: sldc-design-verification
+    prompt: |
+      Role: DESIGN VERIFIER of the archon_sldc suite (oracle, fresh context,
+      no memory of the brainstorming session). You do NOT modify the spec,
+      do NOT write code, NEVER run git commands.
+
+      SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY, with
+      the Read tool:
+      - ~/.config/opencode/skills/verification-before-completion/SKILL.md
+      Every claim in your report must cite evidence (spec text, repo files
+      you actually checked); no unverified assertions.
+
+      Read .archon/sldc/design/spec-candidate.md and audit it for:
+      - ambiguities and contradictions
+      - missing acceptance criteria or untestable requirements
+      - hidden coupling / risky assumptions about the existing codebase
+        (verify them against the actual repo)
+      - anything that would make contract freezing (R19) unsafe later
+
+      WRITE your full report to .archon/sldc/design/design-verification.md
+      as .md with flat frontmatter (critical: <n>, important: <n>, minor:
+      <n>, producedBy: archon_sldc_design, workflowRunId: $WORKFLOW_ID) and
+      XML body:
+        <verification>
+          <finding severity="critical|important|minor">...</finding>
+          <summary>readable in under a minute</summary>
+        </verification>
+      End by summarizing the verdict and top findings as plain text.
+
+  # --------------------------------------------------------------------------
+  # Step 2 — HARD GATE: the human approves the spec (intervention #2, R14)
+  # --------------------------------------------------------------------------
+  - id: hard-gate-spec
+    depends_on: [design-verifier]
+    approval:
+      message: |
+        [archon_sldc — HARD GATE, intervención humana #2]
+        Revisa:
+          - .archon/sldc/design/spec-candidate.md        (spec candidato)
+          - .archon/sldc/design/design-verification.md   (reporte del oracle)
+        Aprueba para CONGELAR el spec y habilitar la planificación, o
+        rechaza con razones (el spec se revisará y volverá a este gate).
+      capture_response: true
+      on_reject:
+        prompt: |
+          The human rejected the spec at the archon_sldc hard gate with this
+          reason: $REJECTION_REASON
+
+          Revise .archon/sldc/design/spec-candidate.md to address the
+          rejection, append a <revision> entry describing what changed to
+          the XML body of .archon/sldc/design/design-verification.md, and
+          stop. Do NOT write code. NEVER run git commands.
+        max_attempts: 3
+
+  # --------------------------------------------------------------------------
+  # Freeze — deterministic: approved spec + hash + approval notes (R19 input)
+  # --------------------------------------------------------------------------
+  - id: freeze-spec
+    depends_on: [hard-gate-spec]
+    timeout: 15000
+    bash: |
+      set -u
+      SRC=.archon/sldc/design/spec-candidate.md
+      DST=.archon/sldc/design/spec-approved.md
+      [ -f "$SRC" ] || { echo "ERROR: spec candidate missing at $SRC" >&2; exit 1; }
+      HASH=$( (shasum -a 256 "$SRC" 2>/dev/null || sha256sum "$SRC") | awk '{print $1}')
+      NOTES=$hard-gate-spec.output
+      {
+        echo "---"
+        echo "status: APPROVED"
+        echo "specHash: $HASH"
+        echo "approvalNotes: \"$(printf '%s' "$NOTES" | tr '\n' ' ' | sed 's/"/'\''/g')\""
+        echo "producedBy: archon_sldc_design"
+        echo "workflowRunId: $WORKFLOW_ID"
+        echo "---"
+        # Body: the candidate without its own frontmatter block
+        awk 'BEGIN{n=0} /^---$/{n++; next} n>=2 || n==0 {print}' "$SRC"
+      } > "$DST"
+      echo "frozen: $DST ($HASH)"
+
+  # --------------------------------------------------------------------------
+  # Sink — one plain parseable line (R22)
+  # --------------------------------------------------------------------------
+  - id: report
+    depends_on: [freeze-spec]
+    timeout: 15000
+    bash: |
+      printf 'APPROVED %s\n' ".archon/sldc/design/spec-approved.md"

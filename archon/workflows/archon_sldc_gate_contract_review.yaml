@@ -1,0 +1,137 @@
+# ============================================================================
+# archon_sldc_gate_contract_review — R18 SINGLETON SEMANTIC GATE (post-stubs)
+#
+# Suite: archon_sldc_*. "The insurance premium": its quality decides whether
+# vertical execution is safe. Contract (D2): $ARGUMENTS = path to a
+# *.gate-request.md with flat frontmatter:
+#   contractsDir, stubsResultsDir, reviewPath, verdictPath
+# Output: full review at reviewPath + ONE-WORD verdict file (PASS|FAIL) at
+# verdictPath + sink line "PASS|FAIL PATH".
+#
+# D14: this workflow EXITS NON-ZERO when the verdict is FAIL — standalone,
+# the exit code IS the gate. Composing callers run it with `|| true`, re-read
+# the verdict file fail-closed, and route R18's HALT themselves (cancel).
+# ============================================================================
+
+name: archon_sldc_gate_contract_review
+description: >
+  R18 singleton semantic gate of the archon_sldc suite: after the global
+  STUBS barrier, a fresh strong-model reviewer audits every frozen CONTRACT
+  MASTER against the actual stubs/sentinels for signatures-honored,
+  edges-consumable and interface-complete. Writes a full review file and a
+  one-word PASS|FAIL verdict file (missing/invalid verdict = FAIL,
+  fail-closed). Exits non-zero on FAIL. Never modifies code, never commits.
+
+provider: opencode
+model: large
+worktree:
+  enabled: false
+
+nodes:
+  # --------------------------------------------------------------------------
+  # 1) Fail-fast deterministic input validation
+  # --------------------------------------------------------------------------
+  - id: validate-request
+    timeout: 15000
+    bash: |
+      set -u
+      REQ="$ARGUMENTS"
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      [ -n "$REQ" ] || { echo "ERROR: \$ARGUMENTS must be the path to a *.gate-request.md handoff" >&2; exit 1; }
+      [ -f "$REQ" ] || { echo "ERROR: gate request not found: $REQ" >&2; exit 1; }
+      CD=$(fm "$REQ" contractsDir); SD=$(fm "$REQ" stubsResultsDir)
+      RP=$(fm "$REQ" reviewPath); VP=$(fm "$REQ" verdictPath)
+      for kv in "contractsDir=$CD" "stubsResultsDir=$SD" "reviewPath=$RP" "verdictPath=$VP"; do
+        [ -n "${kv#*=}" ] || { echo "ERROR: request frontmatter missing required key: ${kv%%=*}" >&2; exit 1; }
+      done
+      [ -d "$CD" ] || { echo "ERROR: contractsDir not found: $CD" >&2; exit 1; }
+      ls "$CD"/*.contract.md >/dev/null 2>&1 || { echo "ERROR: no *.contract.md in $CD" >&2; exit 1; }
+      [ -d "$SD" ] || { echo "ERROR: stubsResultsDir not found: $SD" >&2; exit 1; }
+      mkdir -p "$(dirname "$RP")" "$(dirname "$VP")"
+      echo "contracts=$CD stubs=$SD"
+
+  # --------------------------------------------------------------------------
+  # 2) Semantic review — fresh, strong model, judge strictly (R18)
+  # --------------------------------------------------------------------------
+  - id: contract-review
+    depends_on: [validate-request]
+    context: fresh
+    output_type: sldc-contract-review
+    prompt: |
+      Role: GATE-CONTRACT-REVIEW of the archon_sldc suite — singleton,
+      semantic, "the insurance premium" (R18). Fresh context. Weak contracts
+      make everything downstream unsafe — judge STRICTLY. You do NOT modify
+      code or contracts, and you NEVER run git commands (R21). Your verdict
+      travels only as files (R22).
+
+      SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY, with
+      the Read tool:
+      - ~/.config/opencode/skills/requesting-code-review/SKILL.md
+      - ~/.config/opencode/skills/verification-before-completion/SKILL.md
+      Every claim in your review must cite evidence (contract text, stub
+      code you actually read); no unverified assertions.
+
+      YOUR GATE REQUEST: $ARGUMENTS
+      Read it: contractsDir (every frozen CONTRACT MASTER), stubsResultsDir
+      (the stub workers' handoffs + checkpoint), reviewPath, verdictPath.
+      Also read the ACTUAL stub/sentinel code in the working tree for every
+      contract (targetFile + allowedPaths).
+
+      EVALUATE SEMANTICALLY, per contract and across contracts:
+      - signatures-honored: the stubs implement EXACTLY the frozen public
+        interface (names, arities, types).
+      - edges-consumable: every declared dependency edge can actually be
+        consumed through the stubs as they exist now.
+      - interface-complete: nothing a dependent file will need is missing
+        from the frozen interface.
+      - sentinel-faithful: each sentinel matches its contract's <sentinel>
+        specification and will produce the contractual RED (R6).
+
+      WRITE, as FILES:
+      1. reviewPath — .md, flat frontmatter (verdict: PASS|FAIL, critical:
+         <n>, important: <n>, minor: <n>, producedBy:
+         archon_sldc_gate_contract_review, workflowRunId: $WORKFLOW_ID) and
+         XML body <review><finding severity="..." contract="..."/>
+         <summary/></review>.
+      2. verdictPath — the DECISION FILE: its ENTIRE content must be exactly
+         one word, PASS or FAIL (uppercase, no quotes, no explanation).
+      FAIL if ANY critical finding exists on any contract. End with a short
+      plain-text summary of the verdict and top reasons.
+
+  # --------------------------------------------------------------------------
+  # 3) Deterministic verdict reader — fail-closed (missing/invalid = FAIL)
+  # --------------------------------------------------------------------------
+  - id: read-verdict
+    depends_on: [contract-review]
+    always_run: true
+    timeout: 15000
+    bash: |
+      set -u
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      VP=$(fm "$ARGUMENTS" verdictPath)
+      v=$(cat "$VP" 2>/dev/null | tr -d '[:space:]')
+      case "$v" in
+        PASS|FAIL) printf '%s' "$v" ;;
+        *)
+          echo "WARNING: verdict file missing or invalid at $VP (got: '$v') — treating as FAIL" >&2
+          printf 'FAIL'
+          ;;
+      esac
+
+  # --------------------------------------------------------------------------
+  # 4) Sink — one plain line "PASS|FAIL REVIEW_PATH"; exit ≠0 on FAIL (D14)
+  # --------------------------------------------------------------------------
+  - id: report
+    depends_on: [read-verdict]
+    always_run: true
+    timeout: 15000
+    bash: |
+      set -u
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      RP=$(fm "$ARGUMENTS" reviewPath)
+      V=$read-verdict.output
+      printf '%s %s\n' "$V" "$RP"
+      if [ "$V" != "PASS" ]; then
+        echo "R18 HALT: contracts are not safe to build on — see $RP, repair contracts/stubs, then re-run this gate" >&2
+        exit 1
+      fi

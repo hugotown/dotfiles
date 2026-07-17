@@ -1,0 +1,100 @@
+# ============================================================================
+# archon_sldc_finish — STAGE: runbook step 12 (human finishing, R14 #3)
+#
+# Suite: archon_sldc_*. Contract (D2 — optional input): $ARGUMENTS may be
+# empty (defaults derive from the conventional .archon/sldc/ tree) or free
+# text with extra context for the finisher.
+# Output: .archon/sldc/finishing/finishing-report.md + sink line
+# "FINISHED <decision> .archon/sldc/finishing/finishing-report.md".
+#
+# Interactive: the finishing gate is an approval node. When nested by
+# archon_sldc_method this stage runs DETACHED and the human interacts with
+# THIS run's id: archon workflow approve <run-id> --comment "MERGE|PR|KEEP|DISCARD".
+# The single method commit already exists (R17) — nobody commits here.
+# ============================================================================
+
+name: archon_sldc_finish
+description: >
+  Finishing stage of the archon_sldc suite (resolutive method step 12,
+  human intervention #3): approval gate where the human decides
+  MERGE / PR / KEEP / DISCARD for the branch that carries the method's
+  single commit, then a fresh executor applies exactly that decision
+  (pushing/opening a PR when asked; only reporting the commands for
+  destructive choices). Writes the final report. Never creates commits.
+
+provider: opencode
+model: medium
+interactive: true
+worktree:
+  enabled: false
+
+nodes:
+  # --------------------------------------------------------------------------
+  # Step 12 — Finishing gate (ordinary human intervention #3, R14)
+  # --------------------------------------------------------------------------
+  - id: finishing
+    approval:
+      message: |
+        [archon_sldc — intervención humana #3: finishing]
+        Todos los gates pasaron y la rama tiene su único commit (R17).
+        Revisa .archon/sldc/gates/gate-e-global.md y el diff de la rama.
+        Aprueba CON comentario indicando qué hacer con la rama — una de:
+          MERGE · PR · KEEP · DISCARD
+        (o rechaza para cancelar el run y decidir después).
+      capture_response: true
+
+  # --------------------------------------------------------------------------
+  # Executor — applies exactly the human's decision
+  # --------------------------------------------------------------------------
+  - id: finishing-actions
+    depends_on: [finishing]
+    context: fresh
+    output_type: sldc-finishing-report
+    prompt: |
+      Role: FINISHING executor of the archon_sldc suite. The human ALREADY
+      decided at the gate — execute that decision only.
+
+      SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY, with
+      the Read tool:
+      - ~/.config/opencode/skills/finishing-a-development-branch/SKILL.md
+      WORKFLOW OVERRIDES (they win over the skill wherever they conflict):
+      - SKIP the skill's "verify tests" step — GATE E global already gated
+        the full suite; do not re-run it.
+      - SKIP the skill's option menu — the decision below is final.
+      - NEVER create commits and NEVER delete work (R17/R21).
+
+      The human's finishing decision (first word wins): $finishing.output
+      Extra context (may be empty): $ARGUMENTS
+
+      Execute exactly that decision for the current branch:
+      - MERGE   -> report the exact merge commands for the human to run (do
+                   not merge into a protected branch yourself unless the
+                   decision explicitly instructs it).
+      - PR      -> push the branch and open a pull request (gh pr create),
+                   describing the run and linking the .archon/sldc artifacts
+                   summary in the PR body.
+      - KEEP    -> leave the branch as-is; summarize where everything lives.
+      - DISCARD -> report the exact cleanup commands for the human to run
+                   (never delete work yourself).
+
+      WRITE the final report to .archon/sldc/finishing/finishing-report.md
+      as .md with flat frontmatter (decision: MERGE|PR|KEEP|DISCARD,
+      producedBy: archon_sldc_finish, workflowRunId: $WORKFLOW_ID) and XML
+      body <finishing><actions/><links/><summary/></finishing>, then
+      summarize it as plain text.
+
+  # --------------------------------------------------------------------------
+  # Deterministic output gate + sink (R22)
+  # --------------------------------------------------------------------------
+  - id: report
+    depends_on: [finishing-actions]
+    always_run: true
+    timeout: 15000
+    bash: |
+      set -u
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      RP=.archon/sldc/finishing/finishing-report.md
+      [ -f "$RP" ] || { echo "ERROR: finishing executor left no report at $RP" >&2; exit 1; }
+      D=$(fm "$RP" decision)
+      case "$D" in MERGE|PR|KEEP|DISCARD) : ;; *) echo "ERROR: report decision invalid: '$D'" >&2; exit 1 ;; esac
+      printf 'FINISHED %s %s\n' "$D" "$RP"

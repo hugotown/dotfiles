@@ -1,0 +1,175 @@
+# ============================================================================
+# archon_sldc_plan — STAGE: runbook step 3 (writing-plans → contracts + graph)
+#
+# Suite: archon_sldc_*. Contract (D2): $ARGUMENTS = path to the approved,
+# frozen spec (.archon/sldc/design/spec-approved.md). Outputs (fixed
+# conventional paths — D5):
+#   .archon/sldc/planning/planning-handoff.md   master handoff (see below)
+#   .archon/sldc/planning/contracts/<slug>.contract.md   CONTRACT MASTERs (D12)
+#   .archon/sldc/planning/topology.txt          exactly VERTICAL|HORIZONTAL
+# Sink line: "PLANNED <topology> .archon/sldc/planning/planning-handoff.md".
+#
+# planning-handoff.md flat frontmatter contract (consumed by
+# archon_sldc_execute — D3: verify commands travel in handoffs):
+#   specPath, contractsDir, topologyPath, topology, density,
+#   gateStubs  (phase A: compile/lint gate command, may be empty)
+#   gateRed    (phase B: command asserting the CONTRACTUAL RED, R6 — exit 0
+#               when every sentinel matches and nonSentinelFailures == 0)
+#   gateSuite  (full suite GREEN command)
+#   gateLint   (lint command, may be empty)
+# XML body: phase plan A-I + BEHAVIOR dependency graph (R4) + density notes.
+#
+# CONTRACT MASTER flat frontmatter (D12/D15 — one per logical file, R19):
+#   contractId, contractHash, targetFile, verifyLint, verifyTest
+#   allowedPaths: (list)   dependsOn: (list, behavior edges R4)
+#   phases: (optional list — omit for "eligible in all phases")
+# XML body: <contract><interface/><behavior/><sentinel/></contract>
+# ============================================================================
+
+name: archon_sldc_plan
+description: >
+  Planning stage of the archon_sldc suite (resolutive method step 3): a
+  fresh strong-model planner turns the human-approved spec into frozen
+  CONTRACT MASTERs (one per logical file: implementation + its tests and
+  fixtures, R19), the behavior dependency graph, the density measurement and
+  the topology decision file (R8: sparse deps -> VERTICAL, dense ->
+  HORIZONTAL), plus the project's verify/gate commands (stack-agnostic, D3).
+  Deterministically validated outputs. Never writes code, never commits.
+
+provider: opencode
+model: large
+worktree:
+  enabled: false
+
+nodes:
+  # --------------------------------------------------------------------------
+  # 1) Fail-fast deterministic input validation
+  # --------------------------------------------------------------------------
+  - id: validate-input
+    timeout: 15000
+    bash: |
+      set -u
+      SPEC="$ARGUMENTS"
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      [ -n "$SPEC" ] || { echo "ERROR: \$ARGUMENTS must be the path to the approved spec (design stage output)" >&2; exit 1; }
+      [ -f "$SPEC" ] || { echo "ERROR: approved spec not found: $SPEC" >&2; exit 1; }
+      [ "$(fm "$SPEC" status)" = "APPROVED" ] || { echo "ERROR: spec at $SPEC is not APPROVED (hard gate first — R14)" >&2; exit 1; }
+      [ -n "$(fm "$SPEC" specHash)" ] || { echo "ERROR: spec has no specHash (not frozen by archon_sldc_design)" >&2; exit 1; }
+      mkdir -p .archon/sldc/planning/contracts
+      echo "spec=$SPEC hash=$(fm "$SPEC" specHash)"
+
+  # --------------------------------------------------------------------------
+  # 2) Planner — fresh, strong model, writing-plans discipline
+  # --------------------------------------------------------------------------
+  - id: planner
+    depends_on: [validate-input]
+    context: fresh
+    output_type: sldc-planning-handoff
+    prompt: |
+      Role: PLANNER of the archon_sldc suite. You plan; you NEVER write
+      stubs, tests or implementation, and you NEVER run git commands
+      (R17/R21).
+
+      SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY, with
+      the Read tool:
+      - ~/.config/opencode/skills/writing-plans/SKILL.md
+      Apply its zero-context, bite-sized-tasks planning discipline, WITH
+      these WORKFLOW OVERRIDES (they win over the skill wherever they
+      conflict): outputs go to the EXACT paths below (never
+      docs/superpowers/plans/), no commits ever, and you do NOT hand off to
+      execution — the engine dispatches it behind its own gates.
+
+      The approved design is: $ARGUMENTS
+      Read it fully, then study the ACTUAL repository (structure, build
+      tooling, test runner, linter) so every command and path you freeze is
+      real — verify, don't assume.
+
+      PRODUCE, as FILES:
+
+      1. .archon/sldc/planning/contracts/<slug>.contract.md — ONE CONTRACT
+         MASTER per logical file (R19: the implementation file plus its
+         associated tests/fixtures). Flat frontmatter (D15):
+           contractId: <slug>            (unique, kebab-case, no spaces)
+           contractHash: <sha of the frozen interface text>
+           targetFile: <implementation file path>
+           verifyLint: "<lint command scoped to this file if possible>"
+           verifyTest: "<test command for this file's tests>"
+           allowedPaths:
+           - <impl path>
+           - <test/fixture paths>
+           dependsOn:
+           - <contractId of behavior dependencies only — R4: edges ONLY
+              where this file's GREEN needs that file's real GREEN>
+           phases:
+           - <optional: list phases if NOT eligible everywhere; omit key
+              entirely for all-phase eligibility>
+         XML body: <contract><interface>frozen public signatures + types
+         </interface><behavior>required behavioral guarantees</behavior>
+         <sentinel>exact specification of the sentinel test that produces
+         the contractual RED (R6)</sentinel></contract>
+
+      2. .archon/sldc/planning/planning-handoff.md — the master handoff.
+         Flat frontmatter: specPath, contractsDir:
+         .archon/sldc/planning/contracts, topologyPath:
+         .archon/sldc/planning/topology.txt, topology: VERTICAL|HORIZONTAL,
+         density: <edges/possible-edges ratio>, gateStubs, gateRed,
+         gateSuite, gateLint (real project commands — gateRed MUST exit 0
+         exactly when every sentinel matches and there are zero non-sentinel
+         failures, R6; script it under .archon/sldc/planning/ if the test
+         runner cannot express it directly). XML body: the phase plan A-I,
+         the full BEHAVIOR dependency graph (edges + why each edge exists),
+         and the density measurement with your topology recommendation (R8:
+         sparse -> VERTICAL, dense -> HORIZONTAL).
+
+      3. .archon/sldc/planning/topology.txt — the DECISION FILE (R22): its
+         ENTIRE content must be exactly one word, VERTICAL or HORIZONTAL
+         (uppercase, no quotes, no explanation).
+
+      End with a one-paragraph plain-text summary of the plan and topology.
+
+  # --------------------------------------------------------------------------
+  # 3) Deterministic output validation (fail-fast, before anything builds
+  #    on a malformed plan)
+  # --------------------------------------------------------------------------
+  - id: verify-outputs
+    depends_on: [planner]
+    always_run: true
+    timeout: 30000
+    bash: |
+      set -u
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      PH=.archon/sldc/planning/planning-handoff.md
+      TP=.archon/sldc/planning/topology.txt
+      CD=.archon/sldc/planning/contracts
+      [ -f "$PH" ] || { echo "ERROR: planner left no planning-handoff.md" >&2; exit 1; }
+      [ -f "$TP" ] || { echo "ERROR: planner left no topology.txt" >&2; exit 1; }
+      T=$(tr -d '[:space:]' < "$TP")
+      case "$T" in VERTICAL|HORIZONTAL) : ;; *) echo "ERROR: topology.txt must be exactly VERTICAL or HORIZONTAL (got '$T')" >&2; exit 1 ;; esac
+      [ "$(fm "$PH" topology)" = "$T" ] || { echo "ERROR: handoff topology and topology.txt disagree" >&2; exit 1; }
+      for k in specPath contractsDir topologyPath gateRed gateSuite; do
+        [ -n "$(fm "$PH" $k)" ] || { echo "ERROR: planning-handoff missing key: $k" >&2; exit 1; }
+      done
+      ls "$CD"/*.contract.md >/dev/null 2>&1 || { echo "ERROR: no CONTRACT MASTERs in $CD" >&2; exit 1; }
+      IDS=""
+      for C in "$CD"/*.contract.md; do
+        CID=$(fm "$C" contractId); TF=$(fm "$C" targetFile); VT=$(fm "$C" verifyTest)
+        [ -n "$CID" ] && [ -n "$TF" ] && [ -n "$VT" ] || { echo "ERROR: contract $C missing contractId/targetFile/verifyTest" >&2; exit 1; }
+        case "$CID" in *" "*) echo "ERROR: contractId '$CID' contains spaces" >&2; exit 1 ;; esac
+        case " $IDS " in *" $CID "*) echo "ERROR: duplicate contractId '$CID'" >&2; exit 1 ;; esac
+        IDS="$IDS $CID"
+        grep -q '<sentinel>' "$C" || { echo "ERROR: contract $C has no <sentinel> spec (R6)" >&2; exit 1; }
+        grep -q '<interface>' "$C" || { echo "ERROR: contract $C has no <interface> (R19)" >&2; exit 1; }
+      done
+      N=$(ls "$CD"/*.contract.md | wc -l | tr -d ' ')
+      echo "plan valid: topology=$T contracts=$N"
+
+  # --------------------------------------------------------------------------
+  # 4) Sink — one plain parseable line (R22)
+  # --------------------------------------------------------------------------
+  - id: report
+    depends_on: [verify-outputs]
+    timeout: 15000
+    bash: |
+      set -u
+      T=$(tr -d '[:space:]' < .archon/sldc/planning/topology.txt)
+      printf 'PLANNED %s %s\n' "$T" ".archon/sldc/planning/planning-handoff.md"

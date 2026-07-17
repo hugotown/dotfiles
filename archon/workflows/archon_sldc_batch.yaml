@@ -1,0 +1,310 @@
+# ============================================================================
+# archon_sldc_batch — GENERIC HORIZONTAL PHASE BATCH (file × phase matrix)
+#
+# Suite: archon_sldc_*. One workflow serves phases A/B/D/F/G/I (D13): the
+# phase travels as DATA in the manifest. Contract (D2): $ARGUMENTS = path to a
+# *.batch.md manifest with flat frontmatter:
+#   phase, resultsDir, gateSuite, gateLint, checkpointPath, waveSize
+# and a `tasks:` list of *.task.md paths (one per eligible contract, R20).
+# Task paths MUST NOT contain spaces (slug convention).
+#
+# GATE SEMANTICS ARE PHASE-AGNOSTIC HERE (D3/D13): gateSuite/gateLint are
+# whatever commands the manifest carries — for phase B the caller must supply
+# a command that asserts the CONTRACTUAL RED (R6: sentinel matches, zero
+# non-sentinel failures → exit 0), for D/F/G/I a command asserting suite
+# GREEN + lint. exit 0 = gate passes.
+#
+# Wave mechanics (R9/R20, D11/D17): a deterministic node materializes the
+# opencode subagents (sldc-contract-worker / sldc-file-reviewer /
+# sldc-file-fixer — no `archon-` prefix, so Archon's own agent cleanup never
+# deletes them); the dispatcher loop invokes them via opencode's native task
+# tool in waves of at most `waveSize` (≤7). The dispatcher never edits
+# production code and never commits (R12/R21); the batch gate is DETERMINISTIC
+# via until_bash. Exhausting max_iterations fails the workflow → escalation
+# travels to the caller (R10/R11).
+#
+# Standalone run:
+#   archon workflow run archon_sldc_batch ".archon/sldc/batches/D-impl.batch.md"
+# ============================================================================
+
+name: archon_sldc_batch
+description: >
+  Generic horizontal phase batch of the archon_sldc suite (file x phase
+  matrix, R20). Input is a *.batch.md manifest path in $ARGUMENTS (phase,
+  tasks list, gate commands, checkpoint path). Dispatches one fresh opencode
+  worker subagent per eligible task in waves of at most waveSize (default 7),
+  reviews every result, applies fix cycles, and only completes when the
+  deterministic gate passes: all results DONE, all reviews APPROVED, and the
+  manifest's gateSuite/gateLint commands exit 0. Writes a non-Git phase
+  checkpoint (R21). Never commits.
+
+provider: opencode
+model: medium
+worktree:
+  enabled: false
+
+nodes:
+  # --------------------------------------------------------------------------
+  # 1) Fail-fast deterministic manifest validation
+  # --------------------------------------------------------------------------
+  - id: validate-batch
+    timeout: 30000
+    bash: |
+      set -u
+      MF="$ARGUMENTS"
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      fml() { sed -n '/^---$/,/^---$/p' "$1" | awk -v k="$2" '$0 ~ "^"k":" {f=1; next} f && /^---$/ {exit} f && /^[[:space:]]*-[[:space:]]+[^[:space:]]/ {sub(/^[[:space:]]*-[[:space:]]+/,""); print; next} f {exit}'; }
+      [ -n "$MF" ] || { echo "ERROR: \$ARGUMENTS must be the path to a *.batch.md manifest" >&2; exit 1; }
+      [ -f "$MF" ] || { echo "ERROR: batch manifest not found: $MF" >&2; exit 1; }
+      PHASE=$(fm "$MF" phase); RD=$(fm "$MF" resultsDir); CP=$(fm "$MF" checkpointPath)
+      for kv in "phase=$PHASE" "resultsDir=$RD" "checkpointPath=$CP"; do
+        [ -n "${kv#*=}" ] || { echo "ERROR: manifest missing required key: ${kv%%=*}" >&2; exit 1; }
+      done
+      TASKS=$(fml "$MF" tasks)
+      [ -n "$TASKS" ] || { echo "ERROR: manifest has an empty tasks: list" >&2; exit 1; }
+      N=0
+      for T in $TASKS; do
+        [ -f "$T" ] || { echo "ERROR: task file not found: $T" >&2; exit 1; }
+        C=$(fm "$T" contractPath)
+        [ -n "$C" ] && [ -f "$C" ] || { echo "ERROR: task $T has no valid contractPath" >&2; exit 1; }
+        [ "$(fm "$T" phase)" = "$PHASE" ] || { echo "ERROR: task $T phase mismatch (manifest: $PHASE)" >&2; exit 1; }
+        N=$((N+1))
+      done
+      mkdir -p "$RD" "$(dirname "$CP")"
+      echo "phase=$PHASE tasks=$N resultsDir=$RD"
+
+  # --------------------------------------------------------------------------
+  # 2) Materialize the opencode wave subagents (D11/D17) — deterministic,
+  #    idempotent; written to both agent/ and agents/ to cover opencode
+  #    directory-name differences. No `archon-` prefix (cleanup safety).
+  # --------------------------------------------------------------------------
+  - id: materialize-agents
+    depends_on: [validate-batch]
+    timeout: 15000
+    bash: |
+      set -u
+      mkdir -p .opencode/agent .opencode/agents
+      write_agent() {
+        name="$1"; file=".opencode/agent/$name.md"
+        cat > "$file"
+        cp "$file" ".opencode/agents/$name.md"
+      }
+      write_agent sldc-contract-worker <<'AGENT'
+      ---
+      mode: subagent
+      description: "Fresh TDD worker owning ONE logical file in ONE phase under its frozen contract (archon_sldc suite)"
+      model: openai/gpt-5.6-terra
+      ---
+      You are a FRESH contract worker of the archon_sldc suite. Your task
+      message gives you the path to ONE *.task.md handoff — that file is your
+      entire assignment (contractPath, phase, resultPath, progressPath).
+
+      SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY
+      ~/.config/opencode/skills/test-driven-development/SKILL.md,
+      ~/.config/opencode/skills/verification-before-completion/SKILL.md and
+      ~/.config/opencode/skills/systematic-debugging/SKILL.md.
+
+      Discipline: read the CONTRACT MASTER at contractPath; frozen public
+      signatures are law (R13); only touch files inside allowedPaths (R12).
+      Phase duties — A-STUBS: stub + sentinel exactly as <sentinel> specifies
+      (contractual RED, R6). B-TESTS: full suite against the frozen
+      interface, failing through the sentinel only. D-IMPL: implement until
+      this file's own tests are GREEN. F-HARDENING / G-EDGE: robustness and
+      edge coverage WITHOUT mutating frozen signatures (needed mutation =
+      BLOCKED for triage). I-REFACTOR: clarity only, zero behavior change.
+      Verify your own work with the contract's verifyLint / verifyTest
+      commands BEFORE claiming DONE. On errors: systematic debugging, max 3
+      bounded attempts per distinct error, then stop.
+
+      ALWAYS terminate in state (R10): write resultPath as .md with flat
+      frontmatter (contractId, phase, status: DONE|BLOCKED, attempts,
+      producedBy: sldc-contract-worker) and XML body
+      <result><diff/><evidence/><blocked reason=""/></result>.
+      NEVER run any git command. NEVER touch another file's code. Your last
+      output line must be: RESULT <resultPath> <DONE|BLOCKED>
+      AGENT
+      write_agent sldc-file-reviewer <<'AGENT'
+      ---
+      mode: subagent
+      description: "Reviewer of ONE logical file's phase result — findings file only, no code changes (archon_sldc suite)"
+      model: minimax/MiniMax-M3
+      ---
+      You are a FILE REVIEWER of the archon_sldc suite. Your task message
+      gives you: the contract path, the result path, the phase, and the
+      review path where your findings go.
+
+      SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY
+      ~/.config/opencode/skills/requesting-code-review/SKILL.md.
+
+      Review the ACTUAL code (targetFile + allowedPaths), not just the
+      handoff's self-report, against the frozen contract and this phase's
+      gate criteria. You NEVER edit code and NEVER run git commands (R21).
+      Write the review path as .md with flat frontmatter (contractId, phase,
+      verdict: APPROVED|FINDINGS, critical: <n>, important: <n>, minor: <n>,
+      producedBy: sldc-file-reviewer) and XML body
+      <review><finding severity="critical|important|minor" file="..."/>
+      <summary/></review>. verdict APPROVED requires zero critical AND zero
+      important findings. Your last output line must be:
+      REVIEW <reviewPath> <APPROVED|FINDINGS>
+      AGENT
+      write_agent sldc-file-fixer <<'AGENT'
+      ---
+      mode: subagent
+      description: "Fixer applying review findings to ONE logical file under its frozen contract (archon_sldc suite)"
+      model: openai/gpt-5.6-terra
+      ---
+      You are a FILE FIXER of the archon_sldc suite. Your task message gives
+      you the path to ONE *.fix-request.md handoff (contractPath, phase,
+      reviewPath, resultPath, progressPath).
+
+      SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY
+      ~/.config/opencode/skills/receiving-code-review/SKILL.md,
+      ~/.config/opencode/skills/verification-before-completion/SKILL.md and
+      ~/.config/opencode/skills/systematic-debugging/SKILL.md.
+
+      Evaluate EACH finding on its technical merits before applying it —
+      document rebuttals with evidence in the result body instead of
+      blind-applying wrong findings. Fix ONLY inside this contract's
+      allowedPaths (R12); frozen signatures stay law (R13: a finding needing
+      a signature change = BLOCKED for triage). Re-run the contract's
+      verifyLint / verifyTest before claiming DONE.
+
+      ALWAYS terminate in state (R10): REWRITE resultPath (.md, flat
+      frontmatter: contractId, phase, status: DONE|BLOCKED, attempts,
+      producedBy: sldc-file-fixer) with XML body
+      <result><diff/><evidence/><rebuttals/><blocked reason=""/></result>.
+      NEVER run any git command. Your last output line must be:
+      RESULT <resultPath> <DONE|BLOCKED>
+      AGENT
+      echo "materialized: sldc-contract-worker sldc-file-reviewer sldc-file-fixer (.opencode/agent + .opencode/agents)"
+
+  # --------------------------------------------------------------------------
+  # 3) Dispatcher loop — waves ≤ waveSize; review + fix cycles; DETERMINISTIC
+  #    gate via until_bash (the dispatcher is forbidden to emit the promise).
+  # --------------------------------------------------------------------------
+  - id: batch-loop
+    depends_on: [materialize-agents]
+    loop:
+      prompt: |
+        You are the WAVE DISPATCHER of the archon_sldc suite for ONE
+        horizontal phase batch. You dispatch and verify — you NEVER write or
+        fix production code yourself (R12), you NEVER run git commands (R21),
+        and you NEVER output the text of the completion promise: the batch
+        gate is deterministic and outside your control.
+
+        SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY,
+        with the Read tool:
+        - ~/.config/opencode/skills/dispatching-parallel-agents/SKILL.md
+        - ~/.config/opencode/skills/systematic-debugging/SKILL.md
+        - ~/.config/opencode/skills/verification-before-completion/SKILL.md
+
+        YOUR MANIFEST: $ARGUMENTS
+        Read it: phase, resultsDir, waveSize (cap 7 — R9), checkpointPath,
+        and the tasks list (one *.task.md per eligible contract).
+
+        DERIVE THE CURRENT STATE FROM FILES (your context is fresh each
+        iteration — files are the only memory):
+        - For each task: its resultPath (in the task frontmatter), the
+          review at <resultPath with .result.md replaced by .review.md>, and
+          the fix request at <.result.md replaced by .fix-request.md>.
+        - Append a dated round entry to <resultsDir>/dispatch-log.md with
+          what you observe and what you dispatch (audit trail).
+
+        THEN ACT (in this order, waves of AT MOST waveSize parallel task
+        tool calls; wait for each wave before the next):
+        1. Tasks with NO valid result file → dispatch subagent
+           `sldc-contract-worker` with message: "Execute the archon_sldc
+           task file at <task path>. Work only within its contract."
+        2. Results with NO review file → write a minimal review request is
+           NOT needed; dispatch subagent `sldc-file-reviewer` with message:
+           "Review contract <contractPath>, result <resultPath>, phase
+           <phase>. Write your findings to <reviewPath>."
+        3. Reviews with verdict FINDINGS and critical+important > 0 → write
+           the fix-request handoff (.md, flat frontmatter: contractPath,
+           phase, reviewPath, resultPath, progressPath: resultPath with
+           .result.md → .fix-progress.md, attempt: n) and dispatch subagent
+           `sldc-file-fixer` with message: "Execute the archon_sldc fix
+           request at <fix-request path>." After a fixer rewrites a result,
+           delete the stale review file so step 2 re-reviews it next round.
+        4. Results with status BLOCKED → apply systematic debugging to the
+           blocker AS ANALYSIS ONLY: if the diagnosis suggests a retry with
+           better context, delete the stale result and re-dispatch a fresh
+           `sldc-contract-worker` including your diagnosis in the message
+           (max 2 redispatches per task — track them in dispatch-log.md);
+           otherwise leave the BLOCKED result in place: it is escalation
+           DATA for the caller (R10/R11), never something you fix inline.
+
+        When every task already has a DONE result and an APPROVED review,
+        simply write a final round entry to dispatch-log.md and end your
+        turn — the deterministic gate will close the batch.
+      until: BATCH_GATE_PASS
+      until_bash: |
+        set -u
+        MF="$ARGUMENTS"
+        fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+        fml() { sed -n '/^---$/,/^---$/p' "$1" | awk -v k="$2" '$0 ~ "^"k":" {f=1; next} f && /^---$/ {exit} f && /^[[:space:]]*-[[:space:]]+[^[:space:]]/ {sub(/^[[:space:]]*-[[:space:]]+/,""); print; next} f {exit}'; }
+        TASKS=$(fml "$MF" tasks)
+        [ -n "$TASKS" ] || exit 1
+        for T in $TASKS; do
+          R=$(fm "$T" resultPath)
+          [ -n "$R" ] && [ -f "$R" ] || exit 1
+          [ "$(fm "$R" status)" = "DONE" ] || exit 1
+          REV="${R%.result.md}.review.md"
+          [ -f "$REV" ] || exit 1
+          [ "$(fm "$REV" verdict)" = "APPROVED" ] || exit 1
+        done
+        GS=$(fm "$MF" gateSuite); GL=$(fm "$MF" gateLint)
+        if [ -n "$GS" ]; then sh -c "$GS" || exit 1; fi
+        if [ -n "$GL" ]; then sh -c "$GL" || exit 1; fi
+        exit 0
+      max_iterations: 6
+      fresh_context: true
+
+  # --------------------------------------------------------------------------
+  # 4) Non-Git phase checkpoint (R21) — deterministic, with re-run evidence
+  # --------------------------------------------------------------------------
+  - id: checkpoint
+    depends_on: [batch-loop]
+    timeout: 900000
+    bash: |
+      set -u
+      MF="$ARGUMENTS"
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      fml() { sed -n '/^---$/,/^---$/p' "$1" | awk -v k="$2" '$0 ~ "^"k":" {f=1; next} f && /^---$/ {exit} f && /^[[:space:]]*-[[:space:]]+[^[:space:]]/ {sub(/^[[:space:]]*-[[:space:]]+/,""); print; next} f {exit}'; }
+      PHASE=$(fm "$MF" phase); CP=$(fm "$MF" checkpointPath)
+      GS=$(fm "$MF" gateSuite); GL=$(fm "$MF" gateLint)
+      SUITE_OUT=""; LINT_OUT=""
+      if [ -n "$GS" ]; then SUITE_OUT=$(sh -c "$GS" 2>&1 | tail -20) || { echo "ERROR: gateSuite failed at checkpoint time" >&2; exit 1; }; fi
+      if [ -n "$GL" ]; then LINT_OUT=$(sh -c "$GL" 2>&1 | tail -20) || { echo "ERROR: gateLint failed at checkpoint time" >&2; exit 1; }; fi
+      {
+        echo "---"
+        echo "phase: $PHASE"
+        echo "status: PASS"
+        echo "producedBy: archon_sldc_batch"
+        echo "workflowRunId: $WORKFLOW_ID"
+        echo "---"
+        echo "<checkpoint>"
+        echo "  <tasks>"
+        for T in $(fml "$MF" tasks); do
+          R=$(fm "$T" resultPath)
+          echo "    <task path=\"$T\" result=\"$R\" status=\"$(fm "$R" status)\" review=\"$(fm "${R%.result.md}.review.md" verdict)\"/>"
+        done
+        echo "  </tasks>"
+        echo "  <gate>"
+        echo "    <suite cmd=\"$GS\"><![CDATA[$SUITE_OUT]]></suite>"
+        echo "    <lint cmd=\"$GL\"><![CDATA[$LINT_OUT]]></lint>"
+        echo "  </gate>"
+        echo "</checkpoint>"
+      } > "$CP"
+      echo "checkpoint written: $CP"
+
+  # --------------------------------------------------------------------------
+  # 5) Sink — one plain parseable line: PASS CHECKPOINT_PATH (R22)
+  # --------------------------------------------------------------------------
+  - id: report
+    depends_on: [checkpoint]
+    timeout: 15000
+    bash: |
+      set -u
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      printf 'PASS %s\n' "$(fm "$ARGUMENTS" checkpointPath)"

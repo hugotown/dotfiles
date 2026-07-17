@@ -1,0 +1,173 @@
+# ============================================================================
+# archon_sldc_method — COMPOSITION ROOT of the archon_sldc suite
+#
+# Maps the full resolutive method onto Archon v0.5.0 WITHOUT include:/
+# loop_group: (they do not exist in this binary — D10): every stage is an
+# ATOMIC sub-workflow invoked as a NESTED run inside bash nodes. All
+# children declare worktree.enabled: false, so they run inside THIS run's
+# worktree — the method owns isolation (worktree.enabled: true here).
+#
+#   stage 1  archon_sldc_design   steps 0-2   DETACHED + polled (interactive:
+#            brainstorm rounds + HARD GATE happen on the CHILD run id)
+#   stage 2  archon_sldc_plan     step 3      inline nested run
+#   stage 3  archon_sldc_execute  steps 5-11  inline nested run (includes the
+#            method's ONLY git commit, R17)
+#   stage 4  archon_sldc_finish   step 12     DETACHED + polled (interactive)
+#
+# HUMAN PLAYBOOK (R14 — exactly 3 ordinary interventions): when this run
+# logs "HUMAN:" lines, act on the CHILD run:
+#   archon workflow approve <child-id> --comment "feedback | READY | MERGE…"
+#   archon workflow reject  <child-id> --reason  "…"
+#
+# Contract (D2 — documented exception): $ARGUMENTS = the idea/PRD free text
+# (or a path to a PRD file). Sink line: "METHOD-COMPLETE <decision>".
+#
+# Standalone run:
+#   archon workflow run archon_sldc_method "Build X with Y constraints"
+# ============================================================================
+
+name: archon_sldc_method
+description: >
+  Composition root of the archon_sldc suite (the whole resolutive method):
+  brainstorm a spec with the human, verify the design with a fresh oracle,
+  hard-gate human approval, plan with frozen CONTRACT MASTERs and a behavior
+  graph, run the global STUBS barrier and the R18 contract gate, execute by
+  topology (vertical slices or horizontal file-by-phase batches with
+  triage), close the global GATE E, make the single final commit, and
+  finish with the human (MERGE/PR/KEEP/DISCARD). Composed from the atomic
+  archon_sldc_* stage workflows via nested runs inside one shared worktree.
+
+provider: opencode
+model: medium
+interactive: true
+worktree:
+  enabled: true
+
+nodes:
+  # --------------------------------------------------------------------------
+  # 0) Init — conventional handoff tree (D5)
+  # --------------------------------------------------------------------------
+  - id: init
+    timeout: 15000
+    bash: |
+      set -u
+      mkdir -p .archon/sldc/design .archon/sldc/planning .archon/sldc/execution .archon/sldc/gates .archon/sldc/batches .archon/sldc/finishing
+      echo "archon_sldc method run $WORKFLOW_ID"
+      echo "task: $ARGUMENTS"
+
+  # --------------------------------------------------------------------------
+  # Stage 1 — DESIGN (interactive child: detach + poll; human acts on child)
+  # --------------------------------------------------------------------------
+  - id: run-design
+    depends_on: [init]
+    timeout: 86400000
+    bash: |
+      set -u
+      # --detach does not print the run id (v0.5.0): resolve it from the runs
+      # index by workflow name, newest first.
+      archon workflow run archon_sldc_design --detach "$ARGUMENTS" || exit 1
+      ID=""
+      for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        ID=$(archon workflow runs --json --limit 15 2>/dev/null | awk '
+          /"id": "[0-9a-f]+"/ { if (match($0, /[0-9a-f]{32}/)) id = substr($0, RSTART, RLENGTH) }
+          /"workflow_name": "archon_sldc_design"/ { if (id != "") { print id; exit } }')
+        [ -n "$ID" ] && break
+        sleep 5
+      done
+      [ -n "$ID" ] || { echo "ERROR: could not resolve the design child run id from 'archon workflow runs'" >&2; exit 1; }
+      echo "design child run: $ID"
+      LAST=""
+      while :; do
+        ST=$(archon workflow get "$ID" --json 2>/dev/null | sed -n 's/.*"status": "\([a-z_]*\)".*/\1/p' | head -1)
+        [ -n "$ST" ] || ST=unknown
+        if [ "$ST" != "$LAST" ]; then
+          echo "design child status: $ST"
+          if [ "$ST" = "paused" ]; then
+            echo "HUMAN: el hijo design espera tu intervención (R14 #1/#2):"
+            echo "HUMAN:   archon workflow approve $ID --comment \"<feedback | READY | aprobación>\""
+            echo "HUMAN:   archon workflow reject  $ID --reason  \"<razones>\""
+          fi
+          LAST=$ST
+        fi
+        case "$ST" in
+          completed) break ;;
+          failed|cancelled) echo "ERROR: design child run $ID ended '$ST'" >&2; exit 1 ;;
+        esac
+        sleep 20
+      done
+      SPEC=.archon/sldc/design/spec-approved.md
+      [ -f "$SPEC" ] || { echo "ERROR: design child completed but $SPEC is missing" >&2; exit 1; }
+      echo "design complete: $SPEC"
+
+  # --------------------------------------------------------------------------
+  # Stage 2 — PLAN (autonomous child: inline nested run)
+  # --------------------------------------------------------------------------
+  - id: run-plan
+    depends_on: [run-design]
+    timeout: 7200000
+    bash: |
+      archon workflow run archon_sldc_plan ".archon/sldc/design/spec-approved.md"
+
+  # --------------------------------------------------------------------------
+  # Stage 3 — EXECUTE (autonomous child: inline nested run; the single
+  # commit R17 happens inside)
+  # --------------------------------------------------------------------------
+  - id: run-execute
+    depends_on: [run-plan]
+    timeout: 43200000
+    bash: |
+      archon workflow run archon_sldc_execute ".archon/sldc/planning/planning-handoff.md"
+
+  # --------------------------------------------------------------------------
+  # Stage 4 — FINISH (interactive child: detach + poll; human decides
+  # MERGE/PR/KEEP/DISCARD on the child run — R14 #3)
+  # --------------------------------------------------------------------------
+  - id: run-finish
+    depends_on: [run-execute]
+    timeout: 86400000
+    bash: |
+      set -u
+      # --detach does not print the run id (v0.5.0): resolve it from the runs
+      # index by workflow name, newest first.
+      archon workflow run archon_sldc_finish --detach || exit 1
+      ID=""
+      for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        ID=$(archon workflow runs --json --limit 15 2>/dev/null | awk '
+          /"id": "[0-9a-f]+"/ { if (match($0, /[0-9a-f]{32}/)) id = substr($0, RSTART, RLENGTH) }
+          /"workflow_name": "archon_sldc_finish"/ { if (id != "") { print id; exit } }')
+        [ -n "$ID" ] && break
+        sleep 5
+      done
+      [ -n "$ID" ] || { echo "ERROR: could not resolve the finish child run id from 'archon workflow runs'" >&2; exit 1; }
+      echo "finish child run: $ID"
+      LAST=""
+      while :; do
+        ST=$(archon workflow get "$ID" --json 2>/dev/null | sed -n 's/.*"status": "\([a-z_]*\)".*/\1/p' | head -1)
+        [ -n "$ST" ] || ST=unknown
+        if [ "$ST" != "$LAST" ]; then
+          echo "finish child status: $ST"
+          if [ "$ST" = "paused" ]; then
+            echo "HUMAN: el hijo finish espera tu decisión (R14 #3):"
+            echo "HUMAN:   archon workflow approve $ID --comment \"MERGE | PR | KEEP | DISCARD\""
+          fi
+          LAST=$ST
+        fi
+        case "$ST" in
+          completed) break ;;
+          failed|cancelled) echo "ERROR: finish child run $ID ended '$ST'" >&2; exit 1 ;;
+        esac
+        sleep 20
+      done
+      echo "finishing complete"
+
+  # --------------------------------------------------------------------------
+  # Sink — one plain parseable line (R22)
+  # --------------------------------------------------------------------------
+  - id: report
+    depends_on: [run-finish]
+    timeout: 15000
+    bash: |
+      set -u
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      D=$(fm ".archon/sldc/finishing/finishing-report.md" decision)
+      printf 'METHOD-COMPLETE %s\n' "${D:-UNKNOWN}"

@@ -1,0 +1,317 @@
+# ============================================================================
+# archon_sldc_triage — PHASE H: central triage + affected-files fanout
+#
+# Suite: archon_sldc_*. Contract (D2): $ARGUMENTS = path to a
+# *.triage-request.md with flat frontmatter:
+#   contractsDir, executionDir, triagePath, resultsDir, checkpointPath,
+#   gateSuite, gateLint
+# Output: triage report at triagePath, fanout results under resultsDir,
+# checkpoint at checkpointPath + sink line "PASS PATH".
+#
+# The triage oracle finds ROOT CAUSES across every phase artifact (contract
+# mismatches, cross-file drift, unresolved BLOCKED chains — R11/R13). Where a
+# frozen signature must change, the RE-FREEZE edits the CONTRACT FIRST, then
+# the code follows it (R13). The fanout dispatches one fresh worker per
+# AFFECTED logical file only; an empty triage short-circuits to the
+# checkpoint. Nobody commits (R21).
+#
+# Standalone run:
+#   archon workflow run archon_sldc_triage ".archon/sldc/batches/H-triage.triage-request.md"
+# ============================================================================
+
+name: archon_sldc_triage
+description: >
+  Phase H of the archon_sldc suite: a fresh strong-model oracle reads every
+  checkpoint, review and BLOCKED handoff under the execution tree, identifies
+  contract mismatches and root causes, proposes explicit re-freezes (contract
+  file changes FIRST, R13), and a dispatcher fans out one fresh worker per
+  affected logical file (waves ≤7). Deterministic re-gate + checkpoint.
+  Never commits.
+
+provider: opencode
+model: medium
+worktree:
+  enabled: false
+
+nodes:
+  # --------------------------------------------------------------------------
+  # 1) Fail-fast deterministic input validation
+  # --------------------------------------------------------------------------
+  - id: validate-request
+    timeout: 15000
+    bash: |
+      set -u
+      REQ="$ARGUMENTS"
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      [ -n "$REQ" ] || { echo "ERROR: \$ARGUMENTS must be the path to a *.triage-request.md handoff" >&2; exit 1; }
+      [ -f "$REQ" ] || { echo "ERROR: triage request not found: $REQ" >&2; exit 1; }
+      CD=$(fm "$REQ" contractsDir); ED=$(fm "$REQ" executionDir)
+      TP=$(fm "$REQ" triagePath); RD=$(fm "$REQ" resultsDir); CP=$(fm "$REQ" checkpointPath)
+      for kv in "contractsDir=$CD" "executionDir=$ED" "triagePath=$TP" "resultsDir=$RD" "checkpointPath=$CP"; do
+        [ -n "${kv#*=}" ] || { echo "ERROR: request frontmatter missing required key: ${kv%%=*}" >&2; exit 1; }
+      done
+      [ -d "$CD" ] || { echo "ERROR: contractsDir not found: $CD" >&2; exit 1; }
+      [ -d "$ED" ] || { echo "ERROR: executionDir not found: $ED" >&2; exit 1; }
+      mkdir -p "$(dirname "$TP")" "$RD" "$(dirname "$CP")"
+      echo "contracts=$CD execution=$ED triage=$TP"
+
+  # --------------------------------------------------------------------------
+  # 2) Central triage oracle — fresh, strong model, analysis only
+  # --------------------------------------------------------------------------
+  - id: triage
+    depends_on: [validate-request]
+    context: fresh
+    model: large
+    output_type: sldc-triage
+    prompt: |
+      You are the CENTRAL TRIAGE ORACLE of the archon_sldc suite (phase H of
+      the resolutive method). You find ROOT CAUSES with evidence — never
+      symptom patches. You do NOT modify code and you NEVER run git commands
+      (R21). Your report travels only as a file (R22).
+
+      SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY, with
+      the Read tool:
+      - ~/.config/opencode/skills/systematic-debugging/SKILL.md
+
+      YOUR TRIAGE REQUEST: $ARGUMENTS
+      Read it: contractsDir (every frozen CONTRACT MASTER), executionDir
+      (every phase's results, reviews, checkpoints, dispatch logs) and
+      triagePath (where your report goes).
+
+      ANALYZE ACROSS FILES:
+      - contract mismatches and drift between contracts and code (R13)
+      - unresolved BLOCKED chains (R11 escalation data)
+      - cross-file integration seams the per-file reviews cannot see
+      - signature conflicts: where a frozen signature MUST change, propose an
+        explicit RE-FREEZE (which contract file changes, exactly how, and
+        which other logical files are affected by the new signature)
+
+      WRITE triagePath as a .md file with flat frontmatter:
+        phase: H-TRIAGE, affected: <n>, producedBy: archon_sldc_triage,
+        workflowRunId: $WORKFLOW_ID
+      and XML body:
+        <triage>
+          <mismatch contract="..." rootCause="...">evidence</mismatch>
+          <refreeze contract="...">exact contract change + affected logical
+          files</refreeze>
+          <affectedFile contract="<contractPath>" slug="...">what must change
+          in this file and why</affectedFile>
+          <summary>one-minute readable summary</summary>
+        </triage>
+      `affected` MUST equal the number of <affectedFile> entries. If nothing
+      is affected, write affected: 0 with an empty <triage/> and say so.
+      End with a one-line plain-text verdict.
+
+  # --------------------------------------------------------------------------
+  # 3) Deterministic reader — affected count (fail-closed)
+  # --------------------------------------------------------------------------
+  - id: read-affected
+    depends_on: [triage]
+    always_run: true
+    timeout: 15000
+    bash: |
+      set -u
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      TP=$(fm "$ARGUMENTS" triagePath)
+      [ -f "$TP" ] || { echo "ERROR: triage oracle ended without a report at $TP" >&2; exit 1; }
+      A=$(fm "$TP" affected)
+      case "$A" in ''|*[!0-9]*) echo "ERROR: triage report 'affected' missing/invalid: '$A'" >&2; exit 1 ;; esac
+      N=$(grep -c '<affectedFile' "$TP" || true)
+      [ "$A" = "$N" ] || { echo "ERROR: affected=$A but report has $N <affectedFile> entries (fail-closed)" >&2; exit 1; }
+      printf '%s' "$A"
+
+  # --------------------------------------------------------------------------
+  # 4) Materialize wave subagents (same as batch — D11/D17), only if needed
+  # --------------------------------------------------------------------------
+  - id: materialize-agents
+    depends_on: [read-affected]
+    when: "$read-affected.output != '0'"
+    timeout: 15000
+    bash: |
+      set -u
+      mkdir -p .opencode/agent .opencode/agents
+      write_agent() {
+        name="$1"; file=".opencode/agent/$name.md"
+        cat > "$file"
+        cp "$file" ".opencode/agents/$name.md"
+      }
+      write_agent sldc-contract-worker <<'AGENT'
+      ---
+      mode: subagent
+      description: "Fresh TDD worker owning ONE logical file in ONE phase under its frozen contract (archon_sldc suite)"
+      model: openai/gpt-5.6-terra
+      ---
+      You are a FRESH contract worker of the archon_sldc suite. Your task
+      message gives you the path to ONE *.task.md handoff — that file is your
+      entire assignment (contractPath, phase, resultPath, progressPath).
+
+      SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY
+      ~/.config/opencode/skills/test-driven-development/SKILL.md,
+      ~/.config/opencode/skills/verification-before-completion/SKILL.md and
+      ~/.config/opencode/skills/systematic-debugging/SKILL.md.
+
+      Discipline: read the CONTRACT MASTER at contractPath; frozen public
+      signatures are law (R13); only touch files inside allowedPaths (R12).
+      For phase H-TRIAGE your task message includes the triage resolution:
+      apply EXACTLY that resolution — if it is a re-freeze, the contract file
+      has already been updated and the code follows the NEW contract.
+      Verify with the contract's verifyLint / verifyTest BEFORE claiming
+      DONE. On errors: systematic debugging, max 3 bounded attempts, then
+      stop. ALWAYS terminate in state (R10): write resultPath as .md with
+      flat frontmatter (contractId, phase, status: DONE|BLOCKED, attempts,
+      producedBy: sldc-contract-worker) and XML body
+      <result><diff/><evidence/><blocked reason=""/></result>.
+      NEVER run any git command. Your last output line must be:
+      RESULT <resultPath> <DONE|BLOCKED>
+      AGENT
+      write_agent sldc-file-reviewer <<'AGENT'
+      ---
+      mode: subagent
+      description: "Reviewer of ONE logical file's phase result — findings file only, no code changes (archon_sldc suite)"
+      model: minimax/MiniMax-M3
+      ---
+      You are a FILE REVIEWER of the archon_sldc suite. Your task message
+      gives you: the contract path, the result path, the phase, and the
+      review path where your findings go.
+
+      SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY
+      ~/.config/opencode/skills/requesting-code-review/SKILL.md.
+
+      Review the ACTUAL code (targetFile + allowedPaths), not just the
+      handoff's self-report, against the frozen contract (as re-frozen by
+      triage where applicable) and the triage resolution. You NEVER edit
+      code and NEVER run git commands (R21). Write the review path as .md
+      with flat frontmatter (contractId, phase, verdict: APPROVED|FINDINGS,
+      critical: <n>, important: <n>, minor: <n>, producedBy:
+      sldc-file-reviewer) and XML body <review><finding/><summary/></review>.
+      verdict APPROVED requires zero critical AND zero important findings.
+      Your last output line must be: REVIEW <reviewPath> <APPROVED|FINDINGS>
+      AGENT
+      echo "materialized: sldc-contract-worker sldc-file-reviewer"
+
+  # --------------------------------------------------------------------------
+  # 5) Affected-files fanout — dispatcher loop (waves ≤7), deterministic gate
+  # --------------------------------------------------------------------------
+  - id: fanout
+    depends_on: [materialize-agents]
+    loop:
+      prompt: |
+        You are the TRIAGE FANOUT DISPATCHER of the archon_sldc suite
+        (phase H). You dispatch and verify — you NEVER write production code
+        yourself (R12) except for ONE sanctioned action: applying the triage
+        report's RE-FREEZE edits to CONTRACT files (contracts change FIRST,
+        code follows — R13). You NEVER run git commands (R21) and NEVER
+        output the completion promise (the gate is deterministic).
+
+        SKILL INJECTION (R16 — mandatory, FIRST action): read COMPLETELY:
+        - ~/.config/opencode/skills/dispatching-parallel-agents/SKILL.md
+        - ~/.config/opencode/skills/systematic-debugging/SKILL.md
+        - ~/.config/opencode/skills/verification-before-completion/SKILL.md
+
+        YOUR TRIAGE REQUEST: $ARGUMENTS
+        Read it (resultsDir, triagePath, contractsDir), then read the triage
+        report at triagePath.
+
+        STATE FROM FILES (fresh context every iteration): for each
+        <affectedFile> in the report, derive slug → expect
+        <resultsDir>/<slug>.H-TRIAGE.task.md, its result and its review
+        (same conventions as archon_sldc_batch). Append your observations
+        and dispatches to <resultsDir>/dispatch-log.md.
+
+        THEN ACT (waves of at most 7 parallel task tool calls — R9):
+        0. FIRST, if the report has <refreeze> entries not yet applied:
+           apply them to the contract files EXACTLY as specified, and note
+           each applied re-freeze in dispatch-log.md.
+        1. Affected files with no task file yet → write
+           <resultsDir>/<slug>.H-TRIAGE.task.md (flat frontmatter:
+           contractPath, phase: H-TRIAGE, resultPath:
+           <resultsDir>/<slug>.H-TRIAGE.result.md, progressPath:
+           <resultsDir>/<slug>.H-TRIAGE.progress.md, attempt: 1; body: the
+           <affectedFile> resolution verbatim).
+        2. Tasks with no valid result → dispatch `sldc-contract-worker`:
+           "Execute the archon_sldc task file at <path>. Triage resolution
+           is in the task body — apply exactly that."
+        3. Results with no review → dispatch `sldc-file-reviewer` with
+           contract/result/phase/review paths.
+        4. Reviews with critical+important > 0 or BLOCKED results → same
+           re-dispatch discipline as archon_sldc_batch (max 2 redispatches
+           per file, logged; BLOCKED left in place is escalation data).
+
+        If the triage report says affected: 0 you will not run at all — the
+        engine skips this node.
+      until: TRIAGE_FANOUT_PASS
+      until_bash: |
+        set -u
+        REQ="$ARGUMENTS"
+        fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+        TP=$(fm "$REQ" triagePath); RD=$(fm "$REQ" resultsDir)
+        A=$(fm "$TP" affected)
+        [ "$A" = "0" ] && exit 0
+        N=$(ls "$RD"/*.H-TRIAGE.task.md 2>/dev/null | wc -l | tr -d ' ')
+        [ "$N" = "$A" ] || exit 1
+        for T in "$RD"/*.H-TRIAGE.task.md; do
+          R=$(fm "$T" resultPath)
+          [ -n "$R" ] && [ -f "$R" ] || exit 1
+          [ "$(fm "$R" status)" = "DONE" ] || exit 1
+          REV="${R%.result.md}.review.md"
+          [ -f "$REV" ] || exit 1
+          [ "$(fm "$REV" verdict)" = "APPROVED" ] || exit 1
+        done
+        GS=$(fm "$REQ" gateSuite); GL=$(fm "$REQ" gateLint)
+        if [ -n "$GS" ]; then sh -c "$GS" || exit 1; fi
+        if [ -n "$GL" ]; then sh -c "$GL" || exit 1; fi
+        exit 0
+      max_iterations: 5
+      fresh_context: true
+
+  # --------------------------------------------------------------------------
+  # 6) Re-gate + non-Git checkpoint — runs on BOTH paths (fanout ran or was
+  #    skipped because affected == 0)
+  # --------------------------------------------------------------------------
+  - id: checkpoint
+    depends_on: [read-affected, fanout]
+    trigger_rule: none_failed_min_one_success
+    timeout: 900000
+    bash: |
+      set -u
+      REQ="$ARGUMENTS"
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      TP=$(fm "$REQ" triagePath); CP=$(fm "$REQ" checkpointPath); RD=$(fm "$REQ" resultsDir)
+      GS=$(fm "$REQ" gateSuite); GL=$(fm "$REQ" gateLint)
+      A=$(fm "$TP" affected)
+      SUITE_OUT=""; LINT_OUT=""
+      if [ -n "$GS" ]; then SUITE_OUT=$(sh -c "$GS" 2>&1 | tail -20) || { echo "ERROR: gateSuite failed at H checkpoint" >&2; exit 1; }; fi
+      if [ -n "$GL" ]; then LINT_OUT=$(sh -c "$GL" 2>&1 | tail -20) || { echo "ERROR: gateLint failed at H checkpoint" >&2; exit 1; }; fi
+      {
+        echo "---"
+        echo "phase: H-TRIAGE"
+        echo "status: PASS"
+        echo "affected: $A"
+        echo "producedBy: archon_sldc_triage"
+        echo "workflowRunId: $WORKFLOW_ID"
+        echo "---"
+        echo "<checkpoint>"
+        echo "  <triage report=\"$TP\" affected=\"$A\"/>"
+        for T in "$RD"/*.H-TRIAGE.task.md; do
+          [ -f "$T" ] || continue
+          R=$(fm "$T" resultPath)
+          echo "  <task path=\"$T\" status=\"$(fm "$R" status)\" review=\"$(fm "${R%.result.md}.review.md" verdict)\"/>"
+        done
+        echo "  <gate>"
+        echo "    <suite cmd=\"$GS\"><![CDATA[$SUITE_OUT]]></suite>"
+        echo "    <lint cmd=\"$GL\"><![CDATA[$LINT_OUT]]></lint>"
+        echo "  </gate>"
+        echo "</checkpoint>"
+      } > "$CP"
+      echo "checkpoint written: $CP"
+
+  # --------------------------------------------------------------------------
+  # 7) Sink — one plain parseable line: PASS CHECKPOINT_PATH (R22)
+  # --------------------------------------------------------------------------
+  - id: report
+    depends_on: [checkpoint]
+    timeout: 15000
+    bash: |
+      set -u
+      fm() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^$2:[[:space:]]*//p" | head -1 | sed -e 's/^["'\'']//' -e 's/["'\'']$//'; }
+      printf 'PASS %s\n' "$(fm "$ARGUMENTS" checkpointPath)"
