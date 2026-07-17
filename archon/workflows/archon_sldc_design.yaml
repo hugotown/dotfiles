@@ -30,7 +30,7 @@ description: >
   approved spec with its hash. Never writes code, never commits.
 
 provider: opencode
-model: medium
+model: design-9
 interactive: true
 worktree:
   enabled: false
@@ -90,7 +90,7 @@ nodes:
   - id: design-verifier
     depends_on: [brainstorm-spec]
     context: fresh
-    model: large
+    model: design-10
     output_type: sldc-design-verification
     prompt: |
       Role: DESIGN VERIFIER of the archon_sldc suite (oracle, fresh context,

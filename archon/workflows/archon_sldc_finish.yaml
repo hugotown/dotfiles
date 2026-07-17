@@ -23,7 +23,7 @@ description: >
   destructive choices). Writes the final report. Never creates commits.
 
 provider: opencode
-model: medium
+model: programming-9
 interactive: true
 worktree:
   enabled: false

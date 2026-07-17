@@ -327,8 +327,9 @@ worktree propio. OUT: los de todas las etapas + reporte final.
   v0.5.0 realmente soporta.
 - **Providers registrados en este build**: `claude, codex, opencode, pi,
   copilot`. La validación de provider es real (probé un provider falso y el
-  loader lo rechaza); `provider: opencode` + `model: medium` (tier) +
-  `until_bash` validan OK.
+  loader lo rechaza); `provider: opencode` + tier como model (probado con el
+  antiguo `medium`; hoy los tiers son `<dimensión>-<nivel>`, p. ej.
+  `programming-9`) + `until_bash` validan OK.
 - **`~/.archon` es symlink a `~/.config/archon`** → `workflows/` de este repo ES
   el directorio de workflows globales.
 - **El loader acepta campos que quizá no ejecuta** (`always_run`, `output_type`,

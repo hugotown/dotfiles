@@ -36,7 +36,7 @@ description: >
   final node is the only one that does (R17).
 
 provider: opencode
-model: medium
+model: programming-9
 worktree:
   enabled: false
 

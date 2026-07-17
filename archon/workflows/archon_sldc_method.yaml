@@ -38,7 +38,7 @@ description: >
   archon_sldc_* stage workflows via nested runs inside one shared worktree.
 
 provider: opencode
-model: medium
+model: planning-9
 interactive: true
 worktree:
   enabled: true

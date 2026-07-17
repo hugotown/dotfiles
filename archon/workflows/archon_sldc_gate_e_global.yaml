@@ -24,7 +24,7 @@ description: >
   FAIL. Never modifies code, never commits.
 
 provider: opencode
-model: large
+model: reasoning-10
 worktree:
   enabled: false
 

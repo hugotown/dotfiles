@@ -23,7 +23,7 @@ description: >
   never commits.
 
 provider: opencode
-model: small
+model: programming-6
 worktree:
   enabled: false
 

@@ -23,7 +23,7 @@ description: >
   fail-closed). Exits non-zero on FAIL. Never modifies code, never commits.
 
 provider: opencode
-model: large
+model: reasoning-10
 worktree:
   enabled: false
 

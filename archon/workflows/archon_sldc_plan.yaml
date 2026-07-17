@@ -37,7 +37,7 @@ description: >
   Deterministically validated outputs. Never writes code, never commits.
 
 provider: opencode
-model: large
+model: planning-10
 worktree:
   enabled: false
 

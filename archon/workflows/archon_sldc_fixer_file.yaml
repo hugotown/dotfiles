@@ -25,7 +25,7 @@ description: >
   DONE|BLOCKED; never commits. DONE results are re-verified deterministically.
 
 provider: opencode
-model: medium
+model: programming-9
 worktree:
   enabled: false
 

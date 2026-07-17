@@ -39,7 +39,7 @@ description: >
   checkpoint (R21). Never commits.
 
 provider: opencode
-model: medium
+model: programming-9
 worktree:
   enabled: false
 

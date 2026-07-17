@@ -28,7 +28,7 @@ description: >
   results are re-verified deterministically (a lying handoff fails the run).
 
 provider: opencode
-model: medium
+model: programming-9
 worktree:
   enabled: false
 

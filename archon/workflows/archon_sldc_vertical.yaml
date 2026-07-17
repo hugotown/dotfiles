@@ -29,7 +29,7 @@ description: >
   gate passes (all DONE + APPROVED + suite/lint green). Never commits.
 
 provider: opencode
-model: medium
+model: programming-9
 worktree:
   enabled: false
 

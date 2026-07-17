@@ -29,7 +29,7 @@ description: >
   Never commits.
 
 provider: opencode
-model: medium
+model: reasoning-9
 worktree:
   enabled: false
 
@@ -61,7 +61,7 @@ nodes:
   - id: triage
     depends_on: [validate-request]
     context: fresh
-    model: large
+    model: reasoning-10
     output_type: sldc-triage
     prompt: |
       You are the CENTRAL TRIAGE ORACLE of the archon_sldc suite (phase H of
