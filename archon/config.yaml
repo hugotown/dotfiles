@@ -1,7 +1,11 @@
 tiers: {}
-defaultAssistant: opencode
+defaultAssistant: pi
 assistants:
-  codex:
-    webSearchMode: live
-    model: minimax/MiniMax-M3
-  opencode: {}
+  # Default models for orchestrator/title-generator queries. Without these,
+  # every serve/CLI invocation logs "provider requires a model" warnings.
+  # Credentials are NOT stored here: pi reads MINIMAX_API_KEY from the
+  # environment (set at OS level) or ~/.pi/agent/auth.json.
+  pi:
+    model: minimax/MiniMax-M2.7-highspeed
+  opencode:
+    model: minimax/MiniMax-M2.7
