@@ -9,6 +9,7 @@
     "pi-interactive-shell": "^0.13.0",
     "pi-intercom": "^0.6.0",
     "pi-interview": "^0.8.7",
+    "pi-messenger": "^0.14.1",
     "pi-model-switch": "^0.1.4",
     "pi-powerline-footer": "^0.7.0",
     "pi-review-loop": "^0.4.4",

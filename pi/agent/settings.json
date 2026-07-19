@@ -18,7 +18,7 @@
     "npm:pi-subagents",
     "npm:pi-intercom",
     "npm:pi-interview",
-    "npp:pi-messenger",
+    "npm:pi-messenger",
     "npm:pi-web-access",
     "npm:pi-discord",
     "npm:pi-side-chat",
