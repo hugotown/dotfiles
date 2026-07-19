@@ -1,0 +1,60 @@
+# Secretos y credenciales
+/.env
+/.env.*
+!/.env.example
+/auth.json
+/auth.lock
+/pairing/
+/platforms/pairing/
+
+# Sesiones y datos privados del usuario
+/sessions/
+/memories/
+/channel_directory.json
+/discord_threads.json
+
+# Estado de ejecución
+/state/
+/state.db
+/state.db-shm
+/state.db-wal
+/state.db-journal
+/kanban/
+/kanban.db
+/kanban.db-shm
+/kanban.db-wal
+/kanban.db-journal
+/cron/*.lock
+/cron/executions.db*
+/cron/ticker_*
+/cron/output/
+/gateway/
+/gateway_state.json
+/gateway-starts.log
+/gateway.lock
+/gateway.pid
+
+# Cachés, descargas y artefactos generados
+/bin/
+/cache/
+/audio_cache/
+/image_cache/
+/sandboxes/
+/models_dev_cache.json
+/ollama_cloud_models_cache.json
+/provider_models_cache.json
+/.update_check
+/.hermes_history
+
+# Metadatos mutables de skills (los skills personalizados siguen siendo versionables)
+/skills/.bundled_manifest
+/skills/.curator_state
+/skills/.usage.json
+/skills/.usage.json.lock
+
+# Logs, locks y copias de seguridad
+/logs/
+*.lock
+*.pid
+*.log
+/config.yaml.bak.*
