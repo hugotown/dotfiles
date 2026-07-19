@@ -21,6 +21,7 @@ telemetry-id
 # Update-check and notice caches
 update-check.json
 tier-notice.json
+telemetry-notice-shown-v4
 
 # Logs
 *.log
