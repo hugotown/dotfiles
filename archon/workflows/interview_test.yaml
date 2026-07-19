@@ -1,0 +1,29 @@
+name: interview_test
+description: >
+  Loop test: each round the node's AI shells out to a nested `pi -p` whose prompt
+  tells it to use the pi-interview-tool and ask the human anything.
+
+provider: pi
+model: minimax/MiniMax-M3
+interactive: true
+worktree:
+  enabled: false
+
+nodes:
+  - id: question
+    timeout: 600000
+    loop:
+      prompt: |
+        Using your bash tool, run EXACTLY this command IN THE FOREGROUND and WAIT for it to
+        fully exit before doing anything else — do NOT background it (no `&`, no `nohup`,
+        no `disown`); and if your bash tool accepts a timeout, give it a LONG one (the nested
+        interview blocks until the human answers, which can take minutes). Keep the
+        `env -u PI_PACKAGE_DIR` prefix — a nested pi launched from inside an Archon pi node
+        otherwise crashes on the PI_PACKAGE_DIR shim:
+          env -u PI_PACKAGE_DIR pi -p "usa el pi-interview-tool y pregúntame cualquier cosa"
+        ONLY after the command has returned, show me its full output. Then emit the token DONE.
+      until: DONE
+      max_iterations: 100
+      fresh_context: true
+      interactive: true
+      gate_message: "INTERVIEW LOOP: responde con `archon workflow approve <run-id> \"<tu respuesta>\"`. NOTA (v0.5.0): si el run queda en `failed`/colgado tras el approve, ejecuta `archon workflow resume <run-id>`."

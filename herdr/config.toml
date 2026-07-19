@@ -73,9 +73,9 @@ width = "70%"
 height = "70%"
 
 [ui]
-sidebar_width = 26
-sidebar_min_width = 18
-sidebar_max_width = 36
+sidebar_width = 14
+sidebar_min_width = 10
+sidebar_max_width = 16
 sidebar_collapsed_mode = "compact"
 mouse_capture = true
 copy_on_select = true
