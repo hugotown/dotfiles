@@ -68,9 +68,3 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
 ---
-
-## Skills
-
-Skills live in `~/.config/agents/skills/<name>/SKILL.md` (progressive disclosure: read `SKILL.md` first; it points to deeper files loaded on demand).
-
-- **herdr-headless** — Control a running herdr server through its Unix socket without attaching the TUI: create panes, launch/drive AI agents (pi, claude), read their output, wait for completion, and clean up. Use when orchestrating an agent in a herdr session from another terminal or running a command in a fresh non-nested shell. → `skills/herdr-headless/SKILL.md`

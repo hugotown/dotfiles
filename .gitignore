@@ -135,6 +135,8 @@ dconf/user
 systemd/user/timers.target.wants/
 systemd/user/tray.target
 
+com.docker.sandboxes
+
 
 # ------------------------------------------------------------
 # Per-folder .gitignore map (rules live in the subfolder)
@@ -152,3 +154,8 @@ systemd/user/tray.target
 #   nixos/                   → nixos/.gitignore
 # Local Pi runtime state
 .atl/
+
+.DS_Store
+__pycache__/
+*.pyc
+.env
