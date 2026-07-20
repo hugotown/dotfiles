@@ -1,8 +1,8 @@
 {
-  "lastChangelogVersion": "0.80.9",
+  "lastChangelogVersion": "0.80.10",
   "theme": "dark",
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-terra",
+  "defaultModel": "gpt-5.6-sol",
   "defaultThinkingLevel": "high",
   "hideThinkingBlock": false,
   "designDeck": {
@@ -17,21 +17,16 @@
     "npm:pi-boomerang",
     "npm:pi-subagents",
     "npm:pi-intercom",
-    "npm:pi-interview",
     "npm:pi-messenger",
-    "npm:pi-web-access",
-    "npm:pi-discord",
     "npm:pi-side-chat",
     "npm:pi-custom-compaction",
     "npm:pi-rewind-hook",
     "npm:pi-skill-palette",
     "npm:pi-review-loop",
     "npm:pi-powerline-footer",
-    "npm:pi-interactive-shell",
     "npm:pi-model-switch",
     "npm:pi-design-deck"
   ],
-  "skills": ["!/Users/hugoruiz/.agents/skills/**"],
   "subagents": {
     "agentOverrides": {
       "scout": {
@@ -90,4 +85,3 @@
     }
   }
 }
-
