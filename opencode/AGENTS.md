@@ -1,1 +1,1 @@
-/Users/hugoruiz/.config/agents/AGENTS.md
+/root/.config/agents/AGENTS.md
