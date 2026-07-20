@@ -17,3 +17,8 @@ agent/intercom/broker.pid
 
 # Generated deck previews
 deck-snapshots/
+
+agent/models-store.json
+
+
+agent/npm
