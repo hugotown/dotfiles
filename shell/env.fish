@@ -2,6 +2,9 @@
 
 # Platform-agnostic paths
 set -gx PNPM_HOME "$HOME/.local/share/pnpm"
+set -gx FIRSTMATE_HOME "$HOME/.config/firstmate-setup"
+set -gx NM_HOME "$FIRSTMATE_HOME/.no-mistakes"
+fish_add_path --prepend --global $FIRSTMATE_HOME/bin
 fish_add_path --prepend --global $PNPM_HOME
 fish_add_path --prepend --global $HOME/.cargo/bin
 fish_add_path --prepend --global $HOME/.npm-global/bin

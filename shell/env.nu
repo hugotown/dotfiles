@@ -2,9 +2,12 @@
 
 # Platform-agnostic paths
 $env.PNPM_HOME = $"($env.HOME)/.local/share/pnpm"
+$env.FIRSTMATE_HOME = $"($env.HOME)/.config/firstmate-setup"
+$env.NM_HOME = $"($env.FIRSTMATE_HOME)/.no-mistakes"
 $env.PATH = (
     $env.PATH
     | split row (char esep)
+    | prepend $"($env.FIRSTMATE_HOME)/bin"
     | prepend $"($env.HOME)/.local/bin"
     | prepend $"($env.HOME)/.npm-global/bin"
     | prepend $"($env.HOME)/.cargo/bin"
