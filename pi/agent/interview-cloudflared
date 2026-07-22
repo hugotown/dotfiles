@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Publica una única sesión de pi-interview mediante un Quick Tunnel.
+# Este estado es independiente de Design Deck para que ambos túneles
+# puedan coexistir sin terminar los procesos del otro.
+
+CLOUDFLARED="$(command -v cloudflared)"
+HERMES="$(command -v hermes || true)"
+DISCORD_DESTINATION="discord:1528683862408953956"
+
+LOCAL_URL="${1:?Interview URL is required}"
+PID_FILE="/tmp/pi-interview-cloudflared.pid"
+PUBLIC_URL_FILE="/tmp/pi-interview-public-url"
+MONITOR_LOG="/tmp/pi-interview-cloudflared-monitor.log"
+HERMES_LOG="/tmp/pi-interview-hermes.log"
+
+LOCAL_ORIGIN="$(printf '%s' "$LOCAL_URL" | sed -E 's#/?\?.*$##')"
+QUERY="${LOCAL_URL#*\?}"
+SESSION_TOKEN="${QUERY#session=}"
+HEALTH_URL="${LOCAL_ORIGIN}/health?${QUERY}"
+CLOUDFLARED_LOG="/tmp/pi-interview-cloudflared-${SESSION_TOKEN}.log"
+
+if [[ "$QUERY" == "$LOCAL_URL" || -z "$SESSION_TOKEN" ]]; then
+  echo "Invalid Interview URL: missing session token" >&2
+  exit 1
+fi
+
+# Solo reemplaza un túnel de entrevista anterior. Nunca toca el túnel
+# ni los archivos PID utilizados por Design Deck.
+if [[ -f "$PID_FILE" ]]; then
+  OLD_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
+  if [[ "$OLD_PID" =~ ^[0-9]+$ ]]; then
+    kill -TERM -- "-$OLD_PID" 2>/dev/null || true
+    sleep 1
+    kill -KILL -- "-$OLD_PID" 2>/dev/null || true
+  fi
+  rm -f "$PID_FILE"
+fi
+
+rm -f "$PUBLIC_URL_FILE" "$CLOUDFLARED_LOG"
+
+setsid "$CLOUDFLARED" tunnel \
+  --config /dev/null \
+  --no-autoupdate \
+  --url "$LOCAL_ORIGIN" \
+  --loglevel info \
+  >"$CLOUDFLARED_LOG" 2>&1 &
+
+CF_PID=$!
+printf '%s\n' "$CF_PID" >"$PID_FILE"
+
+PUBLIC_ORIGIN=""
+for _ in $(seq 1 300); do
+  if ! kill -0 "$CF_PID" 2>/dev/null; then
+    break
+  fi
+
+  PUBLIC_ORIGIN="$(
+    grep -Eo 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' \
+      "$CLOUDFLARED_LOG" |
+      head -n 1 ||
+      true
+  )"
+
+  [[ -n "$PUBLIC_ORIGIN" ]] && break
+  sleep 0.1
+done
+
+if [[ -z "$PUBLIC_ORIGIN" ]]; then
+  kill -TERM -- "-$CF_PID" 2>/dev/null || true
+  wait "$CF_PID" 2>/dev/null || true
+  rm -f "$PID_FILE"
+  echo "cloudflared did not provide a public Interview URL" >&2
+  tail -n 30 "$CLOUDFLARED_LOG" >&2 || true
+  exit 1
+fi
+
+PUBLIC_URL="${PUBLIC_ORIGIN}/?${QUERY}"
+umask 077
+printf '%s\n' "$PUBLIC_URL" >"$PUBLIC_URL_FILE"
+
+if [[ -n "$HERMES" ]]; then
+  HERMES_EXIT=0
+  if command -v timeout >/dev/null 2>&1; then
+    timeout 20s "$HERMES" send \
+      --to "$DISCORD_DESTINATION" \
+      "$PUBLIC_URL" \
+      >>"$HERMES_LOG" 2>&1 ||
+      HERMES_EXIT=$?
+  else
+    "$HERMES" send \
+      --to "$DISCORD_DESTINATION" \
+      "$PUBLIC_URL" \
+      >>"$HERMES_LOG" 2>&1 ||
+      HERMES_EXIT=$?
+  fi
+
+  if ((HERMES_EXIT != 0)) && [[ -t 1 ]]; then
+    printf '\033[1;33mAdvertencia: Hermes no pudo enviar la entrevista a Discord.\033[0m\n' >/dev/tty || true
+  fi
+else
+  printf '%s Hermes no está disponible en PATH.\n' "$(date -Iseconds)" >>"$HERMES_LOG"
+  if [[ -t 1 ]]; then
+    printf '\033[1;33mAdvertencia: Hermes no está disponible en PATH.\033[0m\n' >/dev/tty || true
+  fi
+fi
+
+if [[ -t 1 ]]; then
+  {
+    printf '\n'
+    printf '\033[1;36mEntrevista remota:\033[0m\n'
+    printf '%s\n\n' "$PUBLIC_URL"
+  } >/dev/tty || true
+fi
+
+# El monitor queda desacoplado de Pi. Cuando el servidor de la entrevista
+# deja de responder, termina únicamente el Quick Tunnel de esa entrevista.
+nohup bash -c '
+    set -u
+
+    cf_pid="$1"
+    health_url="$2"
+    pid_file="$3"
+    public_url_file="$4"
+    failures=0
+
+    while kill -0 "$cf_pid" 2>/dev/null; do
+      if curl --silent --fail --max-time 2 "$health_url" >/dev/null; then
+        failures=0
+      else
+        failures=$((failures + 1))
+        if (( failures >= 3 )); then
+          break
+        fi
+      fi
+      sleep 2
+    done
+
+    kill -TERM -- "-$cf_pid" 2>/dev/null || true
+    sleep 2
+    kill -KILL -- "-$cf_pid" 2>/dev/null || true
+    wait "$cf_pid" 2>/dev/null || true
+
+    current_pid="$(cat "$pid_file" 2>/dev/null || true)"
+    if [[ "$current_pid" == "$cf_pid" ]]; then
+      rm -f "$pid_file" "$public_url_file"
+    fi
+  ' monitor \
+  "$CF_PID" \
+  "$HEALTH_URL" \
+  "$PID_FILE" \
+  "$PUBLIC_URL_FILE" \
+  >>"$MONITOR_LOG" 2>&1 </dev/null &
+
+exit 0

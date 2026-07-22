@@ -4,10 +4,8 @@ agent/sessions
 
 # Dependencies
 node_modules/
-bun.lock
 
 # Gemini extension runtime artifacts (generated wherever a tool runs)
-gemini-output/
 
 # Discord bot local credentials
 agent/pi-discord/config.json

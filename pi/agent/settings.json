@@ -1,31 +1,37 @@
 {
   "lastChangelogVersion": "0.80.10",
   "theme": "dark",
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-sol",
+  "defaultProvider": "minimax",
+  "defaultModel": "MiniMax-M3",
   "defaultThinkingLevel": "high",
   "hideThinkingBlock": false,
   "designDeck": {
-    "port": 32123
+    "port": 7777,
+    "browser": "/root/.config/pi/agent/design-deck-cloudflared"
   },
   "interview": {
     "port": 32124,
-    "timeout": 3600
+    "timeout": 3600,
+    "browser": "/root/.config/pi/agent/interview-cloudflared"
   },
   "npmCommand": ["npm"],
   "packages": [
     "npm:pi-boomerang",
-    "npm:pi-subagents",
-    "npm:pi-intercom",
-    "npm:pi-messenger",
-    "npm:pi-side-chat",
     "npm:pi-custom-compaction",
-    "npm:pi-rewind-hook",
-    "npm:pi-skill-palette",
-    "npm:pi-review-loop",
-    "npm:pi-powerline-footer",
+    "npm:pi-design-deck",
+    "npm:pi-interactive-shell",
+    "npm:pi-intercom",
+    "npm:pi-interview",
+    "npm:pi-messenger",
     "npm:pi-model-switch",
-    "npm:pi-design-deck"
+    "npm:pi-powerline-footer",
+    "npm:pi-prompt-template-model",
+    "npm:pi-review-loop",
+    "npm:pi-rewind-hook",
+    "npm:pi-side-chat",
+    "npm:pi-skill-palette",
+    "npm:pi-subagents",
+    "npm:pi-web-access"
   ],
   "subagents": {
     "agentOverrides": {

@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "trigger": {
+    "maxTokens": 209440,
+    "minTokens": 100000,
+    "cooldownMs": 60000
+  },
+  "ui": {
+    "name": "ctx",
+    "showStatus": true,
+    "minimalStatus": false,
+    "quiet": false
+  },
+  "models": [
+    {
+      "model": "openai-codex/gpt-5.6-sol",
+      "thinkingLevel": "high"
+    }
+  ],
+  "summary": {
+    "thinkingLevel": "high",
+    "preservationInstruction": "Preserve exact file paths, function names, commands, error messages, decisions, constraints, progress, and next steps."
+  }
+}
