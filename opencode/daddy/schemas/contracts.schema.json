@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.daddy/contracts.schema.json",
+  "title": "Daddy artifact contracts",
+  "$defs": {
+    "common": {
+      "type": "object",
+      "required": ["schema_version", "run_id", "node_id", "status", "outcome", "summary"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "node_id": {"type": "string", "minLength": 1},
+        "status": {"enum": ["success", "blocked", "failure"]},
+        "outcome": {"type": "string", "minLength": 1},
+        "summary": {"type": "string"},
+        "artifacts": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "run_id", "request", "invocation_directory"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "request": {"type": "string", "minLength": 1},
+        "invocation_directory": {"type": "string", "minLength": 1}
+      }
+    },
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "run_id", "repository_root", "starting_sha", "base_sha",
+        "current_branch", "remote", "has_remote", "base_branch", "provisioning", "environment_files", "status"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "repository_root": {"type": "string", "minLength": 1},
+        "starting_sha": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+        "base_sha": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+        "current_branch": {"type": "string", "minLength": 1},
+        "remote": {"type": ["string", "null"]},
+        "has_remote": {"type": "boolean"},
+        "base_branch": {"type": "string", "minLength": 1},
+        "provisioning": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["strategy", "program", "args"],
+          "properties": {
+            "strategy": {"enum": ["bun", "pnpm", "yarn", "npm", "none"]},
+            "program": {"type": ["string", "null"]},
+            "args": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "environment_files": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "status": {"enum": ["ready", "blocked"]},
+        "reason": {"type": ["string", "null"]}
+      }
+    },
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "run_id", "node_id", "status", "outcome",
+        "summary", "artifacts", "evidence"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "node_id": {"const": "intent"},
+        "status": {"enum": ["success", "blocked"]},
+        "outcome": {"enum": ["sdlc", "issue", "blocked"]},
+        "summary": {"type": "string"},
+        "artifacts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "run_id", "node_id", "status", "outcome",
+        "summary", "artifacts", "acceptance_criteria", "constraints"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "node_id": {"const": "sdlc.spec-design"},
+        "status": {"enum": ["success", "blocked"]},
+        "outcome": {"enum": ["success", "blocked"]},
+        "summary": {"type": "string"},
+        "artifacts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "acceptance_criteria": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "constraints": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "work_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "title", "objective", "complexity", "depends_on",
+        "acceptance_criteria", "affected_paths", "validation_commands"
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"},
+        "title": {"type": "string", "minLength": 1},
+        "objective": {"type": "string", "minLength": 1},
+        "complexity": {"enum": ["high", "mid", "low"]},
+        "depends_on": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "acceptance_criteria": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "affected_paths": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "validation_commands": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "run_id", "node_id", "status", "outcome",
+        "summary", "artifacts", "items", "final_validation_commands"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "node_id": {"type": "string", "pattern": "^(sdlc\\.plan|issue\\.[1-9][0-9]{0,2}\\.plan)$"},
+        "status": {"enum": ["success", "blocked"]},
+        "outcome": {"enum": ["success", "blocked"]},
+        "summary": {"type": "string"},
+        "artifacts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "items": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/work_item"}},
+        "final_validation_commands": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "rca": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "run_id", "node_id", "status", "outcome",
+        "summary", "artifacts", "root_cause", "evidence", "reproduction"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "node_id": {"type": "string", "pattern": "^issue\\.[1-9][0-9]{0,2}\\.rca$"},
+        "status": {"enum": ["success", "blocked"]},
+        "outcome": {"enum": ["success", "blocked"]},
+        "summary": {"type": "string"},
+        "artifacts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "root_cause": {"type": "string", "minLength": 1},
+        "evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "reproduction": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "worker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "run_id", "node_id", "status", "outcome",
+        "summary", "artifacts", "item_id", "changed_paths"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "node_id": {"type": "string", "minLength": 1},
+        "status": {"enum": ["success", "blocked"]},
+        "outcome": {"enum": ["success", "blocked"]},
+        "summary": {"type": "string"},
+        "artifacts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "item_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"},
+        "changed_paths": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+      }
+    },
+    "verification_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "exit_code", "stdout", "stderr"],
+      "properties": {
+        "command": {"type": "string", "minLength": 1},
+        "exit_code": {"type": "integer"},
+        "stdout": {"type": "string"},
+        "stderr": {"type": "string"}
+      }
+    },
+    "item_validation_block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "run_id", "node_id", "item_id", "status", "outcome", "reason", "validation"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "node_id": {"type": "string", "minLength": 1},
+        "item_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"},
+        "status": {"const": "blocked"},
+        "outcome": {"const": "blocked"},
+        "reason": {"const": "item validation infrastructure blocked"},
+        "validation": {"$ref": "#/$defs/verification_result"}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "run_id", "node_id", "status", "outcome", "summary", "results", "verified_commit"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "node_id": {"type": "string", "minLength": 1},
+        "status": {"enum": ["success", "failure", "blocked"]},
+        "outcome": {"enum": ["success", "failure", "blocked", "max-depth"]},
+        "summary": {"type": "string"},
+        "results": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/verification_result"}},
+        "verified_commit": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"}
+      }
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "run_id", "status", "mode", "branch", "commit",
+        "verified_commit", "base_branch", "remote", "pull_request_url", "worktrees_removed"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "status": {"const": "delivered"},
+        "mode": {"enum": ["local-branch", "pull-request", "none"]},
+        "branch": {"type": "string", "minLength": 1},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+        "verified_commit": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+        "base_branch": {"type": "string", "minLength": 1},
+        "remote": {"type": ["string", "null"]},
+        "pull_request_url": {"type": ["string", "null"]},
+        "worktrees_removed": {"type": "boolean"}
+      }
+    },
+    "delivery_pending": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "run_id", "status", "mode", "branch", "commit", "verified_commit", "base_branch", "remote"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "status": {"const": "pending"},
+        "mode": {"enum": ["local-branch", "pull-request", "none"]},
+        "branch": {"type": "string", "minLength": 1},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+        "verified_commit": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+        "base_branch": {"type": "string", "minLength": 1},
+        "remote": {"type": ["string", "null"]}
+      }
+    },
+    "halt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "run_id", "status", "reason", "node_id",
+        "issue_depth", "checkpoint_branch", "checkpoint_commit", "worker_checkpoints", "worktrees_removed"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "status": {"const": "halted"},
+        "reason": {"type": "string", "minLength": 1},
+        "node_id": {"type": ["string", "null"]},
+        "issue_depth": {"type": "integer", "minimum": 0, "maximum": 999},
+        "checkpoint_branch": {"type": ["string", "null"]},
+        "checkpoint_commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40,64}$"},
+        "worker_checkpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["branch", "commit", "node_id"],
+            "properties": {
+              "branch": {"type": "string", "minLength": 1},
+              "commit": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+              "node_id": {"type": ["string", "null"]}
+            }
+          }
+        },
+        "worktrees_removed": {"type": "boolean"}
+      }
+    },
+    "halt_pending": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "run_id", "status", "reason", "node_id", "issue_depth"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "status": {"const": "pending"},
+        "reason": {"type": "string", "minLength": 1},
+        "node_id": {"type": ["string", "null"]},
+        "issue_depth": {"type": "integer", "minimum": 0, "maximum": 999}
+      }
+    },
+    "run_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "run_id", "sequence", "status", "current_nodes",
+        "issue_depth", "repository_root", "integration_branch", "updated_at"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "sequence": {"type": "integer", "minimum": 0},
+        "status": {"enum": ["created", "preflight", "running", "shipping", "delivered", "halted"]},
+        "current_nodes": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "issue_depth": {"type": "integer", "minimum": 0, "maximum": 999},
+        "repository_root": {"type": "string", "minLength": 1},
+        "integration_branch": {"type": ["string", "null"]},
+        "updated_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  }
+}

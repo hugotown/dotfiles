@@ -3,7 +3,6 @@
 # Platform-agnostic paths
 export PNPM_HOME="$HOME/.local/share/pnpm"
 export FIRSTMATE_HOME="$HOME/.config/firstmate-setup"
-export NM_HOME="$FIRSTMATE_HOME/.no-mistakes"
 export PATH="$FIRSTMATE_HOME/bin:$PNPM_HOME:$HOME/.cargo/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
 
 # Homebrew (macOS)

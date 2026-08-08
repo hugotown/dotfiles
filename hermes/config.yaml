@@ -1,7 +1,7 @@
 model:
-  default: MiniMax-M3
-  provider: minimax-oauth
-  base_url: https://api.minimax.io/anthropic
+  default: gpt-5.6-terra
+  provider: openai-codex
+  base_url: https://chatgpt.com/backend-api/codex
 agent:
   max_turns: 150
   verbose: false
@@ -124,6 +124,11 @@ code_execution:
   max_tool_calls: 50
 streaming:
   enabled: false
+onboarding:
+  seen:
+    profile_build_offered: true
+    busy_input_prompt: true
+    tool_progress_prompt: true
 updates:
   pre_update_backup: false
   backup_keep: 5
@@ -213,7 +218,3 @@ known_plugin_toolsets:
     - spotify
   discord:
     - spotify
-onboarding:
-  seen:
-    profile_build_offered: true
-    busy_input_prompt: true
