@@ -1,92 +1,11 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "openai/gpt-5.6-sol",
   "formatter": true,
   "plugin": [],
   "permission": "allow",
   "provider": {},
-  "agent": {
-    "oc-sp-orchestrator": {
-      "description": "Coordinates the complete oc-sp multi-unit pipeline.",
-      "mode": "primary",
-      "model": "openai/gpt-5.6-sol",
-      "variant": "high"
-    },
-    "oc-sp-intent-classifier": {
-      "description": "Classifies requests into independent bug and feature units.",
-      "mode": "primary",
-      "model": "openai/gpt-5.6-sol",
-      "variant": "medium"
-    },
-    "oc-sp-brainstormer": {
-      "description": "Produces approved feature design specifications.",
-      "mode": "primary",
-      "model": "openai/gpt-5.6-sol",
-      "variant": "high"
-    },
-    "oc-sp-debugger": {
-      "description": "Investigates bugs and produces confirmed root-cause analyses.",
-      "mode": "primary",
-      "model": "openai/gpt-5.6-sol",
-      "variant": "high"
-    },
-    "oc-sp-planner": {
-      "description": "Creates file-contract implementation plans.",
-      "mode": "primary",
-      "model": "openai/gpt-5.6-sol",
-      "variant": "high"
-    },
-    "oc-sp-implementation-controller": {
-      "description": "Controls plan execution, integration barriers, and verification.",
-      "mode": "primary",
-      "model": "openai/gpt-5.6-terra",
-      "variant": "high",
-      "permission": {
-        "task": {
-          "*": "deny",
-          "oc-sp-*": "allow"
-        }
-      }
-    },
-    "oc-sp-implementer": {
-      "description": "Implements one exclusively owned RED or GREEN file task.",
-      "mode": "subagent",
-      "model": "openai/gpt-5.6-luna",
-      "variant": "medium"
-    },
-    "oc-sp-fixer": {
-      "description": "Repairs one failed file task or confirmed review finding.",
-      "mode": "subagent",
-      "model": "openai/gpt-5.6-terra",
-      "variant": "high"
-    },
-    "oc-sp-wave-reviewer": {
-      "description": "Performs an independent read-only review of one implementation wave.",
-      "mode": "subagent",
-      "model": "openai/gpt-5.6-terra",
-      "variant": "high",
-      "permission": {
-        "edit": "deny"
-      }
-    },
-    "oc-sp-final-reviewer": {
-      "description": "Performs the independent read-only whole-change review.",
-      "mode": "subagent",
-      "model": "openai/gpt-5.6-sol",
-      "variant": "high",
-      "permission": {
-        "edit": "deny"
-      }
-    },
-    "oc-sp-explorer": {
-      "description": "Gathers codebase evidence without modifying files.",
-      "mode": "subagent",
-      "model": "openai/gpt-5.6-luna",
-      "variant": "low",
-      "permission": {
-        "edit": "deny"
-      }
-    }
-  },
+  "agent": {},
   "share": "disabled",
   "server": {
     "port": 4096,
