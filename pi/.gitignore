@@ -1,0 +1,49 @@
+# pi coding agent - only track configuration files
+# Ignore everything by default
+*
+
+# Track this gitignore
+!.gitignore
+
+# Track the agent config files
+!agent/
+agent/*
+!agent/settings.json
+!agent/interactive-shell.json
+!agent/keybindings.json
+!agent/AGENTS.md
+!agent/subagent-tool-description.md
+!agent/pi-messenger.json
+!agent/aliases.json
+!agent/boomerang.json
+!agent/compaction-policy.json
+!agent/prompt-template-model.json
+!agent/compaction-template.md
+!agent/compaction-template-update.md
+!agent/compaction-templates/
+!agent/compaction-templates/**
+
+# Track user-defined agents, prompts and skills
+!agent/agents/
+!agent/agents/**
+!agent/prompts/
+!agent/prompts/**
+!agent/skills/
+!agent/skills/**
+
+# Track the pi-intercom config only
+!agent/intercom/
+agent/intercom/*
+!agent/intercom/config.json
+
+# Track the pi-subagents extension config only
+!agent/extensions/
+agent/extensions/*
+!agent/extensions/subagent/
+agent/extensions/subagent/*
+!agent/extensions/subagent/config.json
+
+# Track the pi-skill-palette theme only
+!agent/extensions/pi-skill-palette/
+agent/extensions/pi-skill-palette/*
+!agent/extensions/pi-skill-palette/theme.json

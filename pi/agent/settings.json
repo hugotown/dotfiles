@@ -1,0 +1,64 @@
+{
+  "lastChangelogVersion": "0.84.3",
+  "theme": "dark",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-sol",
+  "packages": [
+    "npm:pi-interactive-shell",
+    "npm:pi-subagents",
+    "npm:pi-messenger",
+    "npm:pi-intercom",
+    "npm:pi-interview",
+    "npm:pi-web-access",
+    "npm:pi-boomerang",
+    "npm:pi-custom-compaction",
+    "npm:pi-side-chat",
+    "npm:pi-rewind-hook",
+    "npm:pi-prompt-template-model",
+    "npm:pi-skill-palette",
+    "npm:pi-review-loop",
+    "npm:pi-powerline-footer",
+    "npm:pi-model-switch",
+    "npm:pi-design-deck"
+  ],
+  "subagents": {
+    "agentOverrides": {
+      "scout": {
+        "model": "openai-codex/gpt-5.6-luna"
+      },
+      "researcher": {
+        "model": "openai-codex/gpt-5.6-terra"
+      },
+      "reviewer": {
+        "model": "openai-codex/gpt-5.6-terra"
+      },
+      "delegate": {
+        "model": "openai-codex/gpt-5.6-terra"
+      },
+      "oracle": {
+        "model": "openai-codex/gpt-5.6-sol",
+        "thinking": "high"
+      }
+    }
+  },
+  "interview": {
+    "port": 8377,
+    "generateModel": "openai-codex/gpt-5.6-luna"
+  },
+  "rewind": {
+    "retention": {
+      "maxSnapshots": 2000,
+      "maxAgeDays": 30,
+      "pinLabeledEntries": true
+    }
+  },
+  "reviewerLoop": {
+    "autoTrigger": false
+  },
+  "powerline": {
+    "welcome": false
+  },
+  "designDeck": {
+    "port": 8378
+  }
+}

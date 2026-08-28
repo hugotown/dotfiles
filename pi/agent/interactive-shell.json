@@ -1,0 +1,11 @@
+{
+  "defer": false,
+  "focusShortcut": "alt+shift+s",
+  "spawn": {
+    "defaultAgent": "pi",
+    "commands": {
+      "pi": "pi",
+      "claude": "claude"
+    }
+  }
+}

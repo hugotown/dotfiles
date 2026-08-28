@@ -1,0 +1,7 @@
+{
+  "maxActiveAsyncRunsPerSession": 4,
+  "defaultSessionDir": "~/.pi/agent/sessions/subagent/",
+  "scheduledRuns": {
+    "storeRoot": "~/.local/share/pi-subagents/schedules"
+  }
+}
