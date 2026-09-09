@@ -4,8 +4,7 @@
   "spawn": {
     "defaultAgent": "pi",
     "commands": {
-      "pi": "pi",
-      "claude": "claude"
+      "pi": "pi"
     }
   }
 }

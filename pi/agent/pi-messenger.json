@@ -11,5 +11,6 @@
     "concurrency": {
       "max": 4
     }
-  }
+  },
+  "scopeToFolder": true
 }

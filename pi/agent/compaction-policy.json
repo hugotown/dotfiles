@@ -1,9 +1,20 @@
 {
   "enabled": true,
-  "trigger": { "maxTokens": 200000 },
-  "summaryRetention": { "mode": "percent", "value": 20 },
+  "trigger": {
+    "maxTokens": 200000
+  },
+  "summaryRetention": {
+    "mode": "percent",
+    "value": 20
+  },
   "models": [
-    { "model": "openai-codex/gpt-5.6-luna", "thinkingLevel": "low" },
-    { "model": "openai-codex/gpt-5.6-terra", "thinkingLevel": "low" }
+    {
+      "model": "openai-codex/gpt-5.6-terra",
+      "thinkingLevel": "high"
+    },
+    {
+      "model": "openai-codex/gpt-5.6-sol",
+      "thinkingLevel": "high"
+    }
   ]
 }

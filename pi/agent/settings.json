@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.84.3",
+  "lastChangelogVersion": "0.85.1",
   "theme": "dark",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.6-sol",
@@ -42,8 +42,7 @@
     }
   },
   "interview": {
-    "port": 8377,
-    "generateModel": "openai-codex/gpt-5.6-luna"
+    "generateModel": "openai-codex/gpt-5.6-sol"
   },
   "rewind": {
     "retention": {
@@ -59,6 +58,7 @@
     "welcome": false
   },
   "designDeck": {
-    "port": 8378
-  }
+    "generateModel": "openai-codex/gpt-5.6-sol"
+  },
+  "hideThinkingBlock": false
 }
