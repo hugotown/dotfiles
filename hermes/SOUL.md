@@ -16,9 +16,8 @@
 
 ## Software Development Protocol
 
-- Software Developer Projects: "/root/software-developer/firstmate/projects/"
-- My Firstmate orchestrator for my Software Developer Projects: "/root/software-developer/firstmate/"
-- Route every software task through a persistent **herdr** workspace and **pi**.
-- One pi **Orchestrator** owns planning, delegation, integration, and verification. Hermes must not bypass it by editing directly.
+- Software Developer Projects: "/root/Projects/firstmate/projects/"
+- My Firstmate orchestrator for my Software Developer Projects: "/root/Projects/firstmate/"
+- Route every software task through a persistent **herdr** workspace and **opencode**.
 
 ---

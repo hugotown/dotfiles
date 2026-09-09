@@ -48,9 +48,9 @@ $env.EDITOR = "nvim"
 $env.TERMINAL = "alacritty"
 
 # SOPS secrets — load all files in ~/.config/secrets/ dynamically
-$env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.local/share/sops/age/keys.txt"
+$env.SOPS_AGE_KEY_FILE = $"($env.HOME)/.config/sops/age/keys.txt"
 
-if (which sops | is-not-empty) and ($"($env.HOME)/.local/share/sops/age/keys.txt" | path exists) {
+if (which sops | is-not-empty) and ($"($env.HOME)/.config/sops/age/keys.txt" | path exists) {
     for file in (glob $"($env.HOME)/.config/secrets/*.yaml") {
         try { sops -d $file | from yaml | load-env }
     }

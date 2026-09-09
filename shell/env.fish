@@ -25,9 +25,9 @@ set -gx EDITOR nvim
 set -gx TERMINAL alacritty
 
 # SOPS secrets — load all files in ~/.config/secrets/ dynamically
-set -gx SOPS_AGE_KEY_FILE "$HOME/.local/share/sops/age/keys.txt"
+set -gx SOPS_AGE_KEY_FILE "$HOME/.config/sops/age/keys.txt"
 
-if command -q sops; and command -q yq; and test -f "$HOME/.local/share/sops/age/keys.txt"
+if command -q sops; and command -q yq; and test -f "$HOME/.config/sops/age/keys.txt"
     for secret_file in $HOME/.config/secrets/*.yaml
         test -f $secret_file; or continue
         for pair in (sops -d $secret_file 2>/dev/null | yq 'to_entries[] | .key + "=" + .value' 2>/dev/null)

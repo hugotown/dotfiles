@@ -68,6 +68,10 @@ configstore/
 service-account*.json
 gcp-key*.json
 
+# SOPS age private key — lives at ~/.config/sops/age/keys.txt, i.e. INSIDE
+# this repo. Never track it: it decrypts everything in secrets/.
+sops/
+
 
 # ------------------------------------------------------------
 # Fully-ignored top-level folders
@@ -152,6 +156,7 @@ com.docker.sandboxes
 #   local-dev-infra/         → local-dev-infra/.gitignore
 #   agent-session-analyzer/  → agent-session-analyzer/.gitignore
 #   nixos/                   → nixos/.gitignore
+#   pi/                      → pi/.gitignore
 # Local Pi runtime state
 .atl/
 

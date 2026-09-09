@@ -87,6 +87,8 @@ Counter-intuitive behaviors documented during the audit on 2026-06-07. Future-yo
 
 - **`secrets/*.yaml` are encrypted with SOPS+age, safe to commit.** Each file begins with `KEY: ENC[AES256_GCM,data:...,iv:...,tag:...]` and ends with a SOPS metadata block. If you ever see a yaml in this folder that does NOT start with `ENC[...]`, it is plaintext — `git rm --cached` it immediately and re-encrypt with `sops --encrypt --in-place`.
 
+- **The age private key lives at `~/.config/sops/age/keys.txt` — inside this repo.** Same path on every host (macOS included: `shell/env.*` exports `SOPS_AGE_KEY_FILE`, which overrides the platform default `~/Library/Application Support/sops/age`). Because `~/.config` *is* the git root, that key sits in the working tree, so the root `.gitignore` carries a `sops/` pattern. Never remove it and never `git add -f` anything under `sops/`: that one file decrypts every yaml in `secrets/`. Install with `mkdir -p ~/.config/sops/age && age-keygen -o ~/.config/sops/age/keys.txt && chmod 600 ~/.config/sops/age/keys.txt`.
+
 - **`fish/fish_variables` is tracked on purpose.** Fish writes its universal variables file here. As of 2026-06-07 it only contains a harmless `__fish_initialized` counter. If fish ever starts capturing env vars with secrets, this file will leak them. The fish allowlist intentionally keeps it tracked so that a `git diff` after using fish surfaces any new variable — gives a chance to react.
 
 - **The repo lives at `~/.config` and the git root is also `~/.config`.** Running git commands from inside a subfolder works, but `git check-ignore` always resolves paths relative to the git root, not your cwd.

@@ -8,15 +8,14 @@ keys:
   # TODO: Add keys for other hosts after generating them
   # Run these commands on each host to generate keys:
   #
-  # On mp-i9-16i (macOS):
-  #   mkdir -p ~/Library/Application\ Support/sops/age
-  #   age-keygen -o ~/Library/Application\ Support/sops/age/keys.txt
-  #   age-keygen -y ~/Library/Application\ Support/sops/age/keys.txt
+  # The key lives at ~/.config/sops/age/keys.txt on EVERY host (macOS
+  # included — SOPS_AGE_KEY_FILE is exported by shell/env.* and overrides
+  # the platform default). Same path everywhere, no exceptions.
   #
-  # On lenovo-nixos-btw (NixOS):
   #   mkdir -p ~/.config/sops/age
   #   age-keygen -o ~/.config/sops/age/keys.txt
-  #   age-keygen -y ~/.config/sops/age/keys.txt
+  #   chmod 600 ~/.config/sops/age/keys.txt
+  #   age-keygen -y ~/.config/sops/age/keys.txt   # prints the public key
   #
   # Then uncomment and add the public keys below:
   # - &host_mp_i9_16i age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

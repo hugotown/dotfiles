@@ -20,9 +20,9 @@ export EDITOR=nvim
 export TERMINAL=alacritty
 
 # SOPS secrets — load all files in ~/.config/secrets/ dynamically
-export SOPS_AGE_KEY_FILE="$HOME/.local/share/sops/age/keys.txt"
+export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
 
-if command -v sops >/dev/null 2>&1 && [ -f "$HOME/.local/share/sops/age/keys.txt" ]; then
+if command -v sops >/dev/null 2>&1 && [ -f "$HOME/.config/sops/age/keys.txt" ]; then
     for _f in "$HOME/.config/secrets"/*.yaml; do
         [ -f "$_f" ] || continue
         while IFS= read -r _line; do
