@@ -1,60 +1,68 @@
-# Secretos y credenciales
+# Credentials and machine-specific configuration
 /.env
 /.env.*
 !/.env.example
 /auth.json
 /auth.lock
+/config.yaml
 /pairing/
 /platforms/pairing/
 
-# Sesiones y datos privados del usuario
+# Private conversations, memory, queued messages, and scheduled jobs
 /sessions/
 /memories/
+/pending_messages/
 /channel_directory.json
 /discord_threads.json
+/cron/
 
-# Estado de ejecución
+# Runtime state and local installation metadata
+/.hermes/
 /state/
-/state.db
-/state.db-shm
-/state.db-wal
-/state.db-journal
+/state.db*
 /kanban/
-/kanban.db
-/kanban.db-shm
-/kanban.db-wal
-/kanban.db-journal
-/cron/*.lock
-/cron/executions.db*
-/cron/ticker_*
-/cron/output/
+/kanban.db*
 /gateway/
 /gateway_state.json
 /gateway-starts.log
 /gateway.lock
 /gateway.pid
+/install_id
+/.install_id.lock
+/.codex_gpt55_autoraise_notice
 
-# Cachés, descargas y artefactos generados
+# Caches, downloaded binaries, and generated artifacts
 /bin/
 /cache/
 /audio_cache/
 /image_cache/
 /sandboxes/
+/context_length_cache.yaml
 /models_dev_cache.json
+/models_dev_cache.etag
 /ollama_cloud_models_cache.json
 /provider_models_cache.json
 /.update_check
 /.hermes_history
 
-# Metadatos mutables de skills (los skills personalizados siguen siendo versionables)
+# Generated skill metadata and backups; skill source files remain versionable
 /skills/.bundled_manifest
 /skills/.curator_state
+/skills/.curator_backups/
 /skills/.usage.json
 /skills/.usage.json.lock
 
-# Logs, locks y copias de seguridad
+# Logs, locks, and local configuration backups
 /logs/
 *.lock
 *.pid
 *.log
-/config.yaml.bak.*
+/.env.bak*
+/.env.*.bak*
+/auth.json.bak*
+/config.yaml.bak*
+
+# Python-generated files
+__pycache__/
+*.py[cod]
+.venv/
