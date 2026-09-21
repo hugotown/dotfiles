@@ -1,0 +1,14 @@
+# Terraform-generated files and local inputs (all template subfolders).
+# Keep template sources, tests, docs, and .terraform.lock.hcl versionable.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+.env
+.env.*
+!.env.example
+!.env.template
+crash.log
+crash.*.log

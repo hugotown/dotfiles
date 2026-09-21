@@ -1,5 +1,5 @@
 # Allowlist: only the static config file is tracked.
-# Reject sockets, logs, locks, sessions, and cached release notes.
+# Reject runtime state and generated files.
 *
 !.gitignore
 !config.toml
