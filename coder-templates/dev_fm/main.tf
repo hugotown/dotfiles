@@ -588,6 +588,8 @@ def --wrapped cldy [...args] {
 def --wrapped opencode [...args] { ^opencode --auto ...$args }
 
 def --wrapped codex [...args] { ^codex --yolo ...$args }
+
+def --wrapped kimi [...args] { ^kimi --auto ...$args }
 AGENTS
 
       # El source va al final de config.nu para ganarle a integrations/cldy.nu,
