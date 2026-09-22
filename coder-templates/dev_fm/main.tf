@@ -214,13 +214,17 @@ data "coder_parameter" "dotfiles_repo" {
   order        = 2
 }
 
-resource "coder_script" "dotfiles_config" {
+resource "coder_script" "workspace_setup" {
   count              = data.coder_parameter.dotfiles_repo.value == "" ? 0 : 1
   agent_id           = coder_agent.main.id
-  display_name       = "Dotfiles (~/.config)"
+  display_name       = "Dotfiles y herramientas"
   icon               = "/icon/dotfiles.svg"
   run_on_start       = true
   start_blocks_login = false
+
+  # Log en el volumen persistente. Sin esto la salida vive solo en
+  # /tmp/coder-script-data, que se limpia y deja sin rastro cualquier fallo.
+  log_path = "/home/coder/dev_fm-setup.log"
 
   script = <<-EOT
     #!/usr/bin/env bash
@@ -292,6 +296,181 @@ resource "coder_script" "dotfiles_config" {
     link_config claude    .claude
     link_config pi        .pi
     link_config agents    .agents
+
+    # -----------------------------------------------------------------------
+    # shell/env.local.nu
+    #
+    # Tu shell/env.nu lo referencia con un guardia `path exists`, pero en
+    # nushell `source` se resuelve en tiempo de PARSEO: el guardia se evalua
+    # despues, asi que si el fichero falta revienta el parseo entero y
+    # $env.PATH nunca llega a construirse. En fish y zsh el guardia si
+    # funciona porque alli source es en tiempo de ejecucion.
+    #
+    # Tu hosts/at-apptools/initialize.sh lo genera por host; aqui hacemos lo
+    # mismo. Esta gitignoreado via shell/.gitignore (env.local.*).
+    # -----------------------------------------------------------------------
+    if [ -d "$CFG/shell" ] && [ ! -f "$CFG/shell/env.local.nu" ]; then
+      echo "Creando shell/env.local.nu"
+      printf '# Entorno de este host. Generado por la plantilla dev_fm de Coder.\n' \
+        > "$CFG/shell/env.local.nu"
+    fi
+
+    # -----------------------------------------------------------------------
+    # Homebrew
+    #
+    # Va en /home/linuxbrew/.linuxbrew, su prefijo estandar, que tiene su
+    # propio volumen Docker (ver docker_volume.linuxbrew). Sin ese volumen se
+    # perderia en cada arranque; y fuera del prefijo estandar brew no usa
+    # bottles y compila todo desde fuente, que son horas.
+    # -----------------------------------------------------------------------
+    BREW_BIN="/home/linuxbrew/.linuxbrew/bin/brew"
+
+    if [ ! -x "$BREW_BIN" ]; then
+      echo "Instalando Homebrew (solo la primera vez, tarda unos minutos)..."
+      sudo chown -R "$(id -un):$(id -gn)" /home/linuxbrew
+      NONINTERACTIVE=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    fi
+
+    eval "$("$BREW_BIN" shellenv)"
+
+    if ! grep -q 'coder-dev_fm BREW' "$HOME/.profile" 2>/dev/null; then
+      cat >> "$HOME/.profile" <<'RC'
+
+# coder-dev_fm BREW
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+RC
+    fi
+
+    echo "Instalando herramientas de terminal..."
+    # brew es idempotente: si ya estan, no hace nada.
+    brew install \
+      nushell \
+      starship atuin zoxide \
+      yazi television \
+      ripgrep fd fzf bat eza \
+      gh lazygit \
+      ast-grep jq mise
+
+    # -----------------------------------------------------------------------
+    # Agentes de codigo. Cada instalador escribe en $HOME, que persiste, asi
+    # que el guardia por command -v los salta en arranques posteriores.
+    # -----------------------------------------------------------------------
+    echo "Instalando agentes..."
+
+    install_agent() {
+      name="$1"
+      shift
+      if command -v "$name" >/dev/null 2>&1; then
+        echo "  $name ya instalado"
+      else
+        echo "  instalando $name..."
+        if "$@"; then
+          echo "  $name OK"
+        else
+          echo "  AVISO: fallo la instalacion de $name (codigo $?), sigo con el resto"
+        fi
+      fi
+    }
+
+    run_sh()   { curl -fsSL "$1" | sh; }
+    run_bash() { curl -fsSL "$1" | bash; }
+
+    # -----------------------------------------------------------------------
+    # Node base via nvm, ANTES de mise y a proposito independiente de el.
+    #
+    # Varios instaladores de agentes necesitan node en tiempo de instalacion.
+    # Si dependieran solo de mise, un fallo de mise o unos shims aun no
+    # generados los tumbarian en cascada. nvm vive en ~/.nvm, dentro del
+    # volumen persistente, asi que esto ocurre una sola vez.
+    #
+    # No contamina tu shell: ~/.nvm/versions/... no esta en el PATH de tu
+    # shell/env.nu, asi que el node que uses a diario sigue siendo el de mise.
+    # Este es solo el node de arranque para los instaladores.
+    # -----------------------------------------------------------------------
+    export NVM_DIR="$HOME/.nvm"
+
+    if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+      echo "Instalando nvm..."
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh | bash
+    fi
+
+    # nvm.sh usa variables sin definir, incompatible con `set -u`.
+    set +u
+    . "$NVM_DIR/nvm.sh"
+    if ! nvm ls 24 >/dev/null 2>&1; then
+      echo "Instalando node 24 via nvm..."
+      nvm install 24
+    fi
+    nvm use 24 >/dev/null
+    corepack enable pnpm 2>/dev/null || true
+    set -u
+
+    echo "  node base: $(node -v)  pnpm: $(pnpm -v 2>/dev/null || echo 'n/d')"
+
+    # Ahora mise, con los toolchains que declara tu mise/config.toml.
+    echo "Instalando toolchains declarados en ~/.config/mise/config.toml..."
+    mise install -y || echo "AVISO: mise install fallo, sigo"
+    # reshim explicito: mise crea los shims de forma diferida y sin esto el
+    # instalador de pi puede no encontrar node todavia.
+    mise reshim || true
+    export PATH="$HOME/.local/share/mise/shims:$PATH"
+
+    # Ojo con los nombres de binario: no siempre coinciden con el del producto.
+    # kimi-code instala un ejecutable llamado "kimi".
+    install_agent claude   run_bash https://claude.ai/install.sh
+    install_agent codex    run_sh   https://chatgpt.com/codex/install.sh
+    install_agent kimi     run_bash https://code.kimi.com/kimi-code/install.sh
+    install_agent opencode run_bash https://opencode.ai/v2/install
+    install_agent tuios    run_bash https://raw.githubusercontent.com/Gaurav-Gosain/tuios/main/install.sh
+    install_agent herdr    run_sh   https://herdr.dev/install.sh
+    install_agent pi       run_sh   https://pi.dev/install.sh
+
+    # kimi, opencode y pi no instalan en ~/.local/bin sino en sus propios
+    # directorios, que no estan en el PATH de tu shell/env.nu. El instalador
+    # de pi incluso lo avisa: "your shell is not using that install yet".
+    # En vez de tocar tus dotfiles, los enlazamos donde tu config ya mira.
+    mkdir -p "$HOME/.local/bin"
+    for pair in "$HOME/.kimi-code/bin/kimi" "$HOME/.opencode/bin/opencode" "$HOME/.pi/agent/bin/pi"; do
+      if [ -x "$pair" ]; then
+        ln -sf "$pair" "$HOME/.local/bin/$(basename "$pair")"
+        echo "  enlazado $(basename "$pair") en ~/.local/bin"
+      fi
+    done
+
+    # -----------------------------------------------------------------------
+    # Tu propio bootstrap de shell. Genera ~/.cache/shell/starship.nu y
+    # mise.nu, que config.nu hace source. Sin esto no tienes ni prompt ni
+    # toolchains de mise dentro de nushell. Es el paso 7 de tu
+    # hosts/at-apptools/initialize.sh.
+    #
+    # Va al final a proposito: necesita starship y mise ya instalados.
+    # -----------------------------------------------------------------------
+    if [ -x "$CFG/shell/bootstrap.sh" ] || [ -f "$CFG/shell/bootstrap.sh" ]; then
+      echo "Ejecutando ~/.config/shell/bootstrap.sh..."
+      bash "$CFG/shell/bootstrap.sh" || echo "AVISO: bootstrap.sh fallo, sigo"
+    fi
+
+    # -----------------------------------------------------------------------
+    # nushell como shell por defecto.
+    #
+    # /etc/passwd vive en el contenedor, no en el volumen, asi que esto se
+    # repite en cada arranque. Solo cambiamos el shell si nu arranca limpio:
+    # un shell por defecto roto te dejaria sin terminal web.
+    # -----------------------------------------------------------------------
+    NU="$(command -v nu || true)"
+    if [ -n "$NU" ]; then
+      if nu -c 'print "ok"' >/dev/null 2>&1; then
+        grep -qxF "$NU" /etc/shells || echo "$NU" | sudo tee -a /etc/shells >/dev/null
+        if [ "$SHELL" != "$NU" ]; then
+          sudo chsh -s "$NU" "$(id -un)"
+          echo "Shell por defecto: $NU"
+        fi
+      else
+        echo "AVISO: nu no arranca limpio, dejo el shell por defecto sin tocar"
+      fi
+    fi
+
+    echo "Setup completo."
   EOT
 }
 
@@ -303,6 +482,33 @@ resource "docker_volume" "home" {
   name = "coder-${data.coder_workspace.me.id}-home"
 
   # Conserva el volumen aunque cambien los parametros del workspace.
+  lifecycle {
+    ignore_changes = all
+  }
+
+  labels {
+    label = "coder.owner"
+    value = data.coder_workspace_owner.me.name
+  }
+  labels {
+    label = "coder.owner_id"
+    value = data.coder_workspace_owner.me.id
+  }
+  labels {
+    label = "coder.workspace_id"
+    value = data.coder_workspace.me.id
+  }
+  labels {
+    label = "coder.workspace_name_at_creation"
+    value = data.coder_workspace.me.name
+  }
+}
+
+# Volumen propio para Homebrew. Su prefijo estandar es /home/linuxbrew, fuera
+# de /home/coder, asi que sin esto se reinstalaria entero en cada arranque.
+resource "docker_volume" "linuxbrew" {
+  name = "coder-${data.coder_workspace.me.id}-linuxbrew"
+
   lifecycle {
     ignore_changes = all
   }
@@ -348,6 +554,12 @@ resource "docker_container" "workspace" {
   volumes {
     container_path = local.home
     volume_name    = docker_volume.home.name
+    read_only      = false
+  }
+
+  volumes {
+    container_path = "/home/linuxbrew"
+    volume_name    = docker_volume.linuxbrew.name
     read_only      = false
   }
 
