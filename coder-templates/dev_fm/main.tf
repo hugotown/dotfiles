@@ -31,6 +31,21 @@ variable "timezone" {
   description = "Zona horaria del workspace. Debe existir en /usr/share/zoneinfo."
 }
 
+variable "docker_in_workspace" {
+  type    = bool
+  default = true
+  description = <<-EOT
+    Corre un dockerd dentro del workspace para levantar servicios (postgres,
+    mongo, livekit, cualquier docker-compose). Los puertos publicados quedan en
+    el namespace de red del workspace, asi que Coder los detecta y les da
+    subdominio automaticamente, sin colisionar con otros workspaces.
+
+    Exige privileged en el contenedor, que implica acceso root al host. En
+    Ubuntu 26.04 no hay alternativa: Sysbox, que da lo mismo sin privilegios,
+    solo soporta hasta Ubuntu 22.04. Ponlo en false si compartes este Coder.
+  EOT
+}
+
 provider "docker" {
   host = var.docker_socket != "" ? var.docker_socket : null
 }
@@ -155,6 +170,42 @@ resource "coder_script" "bootstrap_tools" {
       fi
     else
       echo "AVISO: zona horaria $TZ_WANTED no existe en /usr/share/zoneinfo"
+    fi
+
+    # -----------------------------------------------------------------------
+    # dockerd dentro del workspace.
+    #
+    # No hay systemd en el contenedor, asi que se arranca a mano en cada
+    # encendido. setsid lo desprende de este script para que sobreviva cuando
+    # el agente termine de ejecutarlo.
+    #
+    # Los binarios (dockerd, containerd, runc, iptables) ya vienen en la imagen
+    # base. Los contenedores que levantes publican sus puertos en el namespace
+    # de red de ESTE contenedor, que es justo lo que Coder inspecciona: por eso
+    # aparecen solos como subdominio y no chocan con los de otro workspace.
+    # -----------------------------------------------------------------------
+    if [ "${var.docker_in_workspace}" = "true" ]; then
+      if ! docker info >/dev/null 2>&1; then
+        echo "Arrancando dockerd..."
+        sudo mkdir -p /var/lib/docker
+        sudo sh -c 'setsid dockerd --host=unix:///var/run/docker.sock \
+          > /var/log/dockerd.log 2>&1 < /dev/null &'
+
+        for i in $(seq 1 45); do
+          [ -S /var/run/docker.sock ] && break
+          sleep 1
+        done
+        # El socket nace de root:root. En este contenedor solo existen root y
+        # coder, asi que cambiarle el dueno es mas simple y menos fragil que
+        # jugar con el grupo docker, que no aplicaria a la sesion ya abierta.
+        [ -S /var/run/docker.sock ] && sudo chown "$(id -un)" /var/run/docker.sock
+      fi
+
+      if docker info >/dev/null 2>&1; then
+        echo "dockerd listo: $(docker version --format '{{.Server.Version}}')"
+      else
+        echo "AVISO: dockerd no respondio. Revisa /var/log/dockerd.log"
+      fi
     fi
 
     if ! command -v rustup >/dev/null 2>&1; then
@@ -631,6 +682,34 @@ resource "docker_volume" "linuxbrew" {
   }
 }
 
+# Volumen para /var/lib/docker del dockerd interno. Sin el, cada arranque
+# redescargaria todas las imagenes: el resto del contenedor es efimero.
+resource "docker_volume" "docker_lib" {
+  count = var.docker_in_workspace ? 1 : 0
+  name  = "coder-${data.coder_workspace.me.id}-dockerlib"
+
+  lifecycle {
+    ignore_changes = all
+  }
+
+  labels {
+    label = "coder.owner"
+    value = data.coder_workspace_owner.me.name
+  }
+  labels {
+    label = "coder.owner_id"
+    value = data.coder_workspace_owner.me.id
+  }
+  labels {
+    label = "coder.workspace_id"
+    value = data.coder_workspace.me.id
+  }
+  labels {
+    label = "coder.workspace_name_at_creation"
+    value = data.coder_workspace.me.name
+  }
+}
+
 resource "docker_image" "workspace" {
   name         = var.image
   keep_locally = true
@@ -661,6 +740,19 @@ resource "docker_container" "workspace" {
     container_path = "/home/linuxbrew"
     volume_name    = docker_volume.linuxbrew.name
     read_only      = false
+  }
+
+  # Requisito del dockerd interno. Con esto el workspace tiene acceso root al
+  # host; ver la nota en variable "docker_in_workspace".
+  privileged = var.docker_in_workspace
+
+  dynamic "volumes" {
+    for_each = var.docker_in_workspace ? [1] : []
+    content {
+      container_path = "/var/lib/docker"
+      volume_name    = docker_volume.docker_lib[0].name
+      read_only      = false
+    }
   }
 
   labels {
