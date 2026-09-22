@@ -54,17 +54,20 @@ module "personalize" {
   agent_id = coder_agent.main.id
 }
 
-# Terminal web. Usa `bash -l` para que cargue ~/.profile y ~/.bashrc,
-# y por tanto el PATH de cargo y uv que escribe bootstrap_tools.
-module "ttyd" {
-  count        = data.coder_workspace.me.start_count
-  source       = "registry.coder.com/coder-labs/ttyd/coder"
-  version      = "1.0.0"
-  agent_id     = coder_agent.main.id
-  display_name = "Terminal web"
-  command      = "bash -l"
-  order        = 10
-}
+# Sin modulo de terminal: la terminal web nativa de Coder ya cubre el caso.
+# Usa tokens de reconexion y el agente bufferea la salida, asi que la sesion
+# sobrevive a cerrar la pestana y a cortes de red. ttyd, en cambio, lanza un
+# proceso nuevo por pestana y lo mata al cerrarla.
+#
+# Volver a anadirlo solo tiene sentido para una sesion tmux compartida o para
+# exponer un comando concreto como app propia:
+#   module "ttyd" {
+#     count    = data.coder_workspace.me.start_count
+#     source   = "registry.coder.com/coder-labs/ttyd/coder"
+#     version  = "1.0.0"
+#     agent_id = coder_agent.main.id
+#     command  = "tmux new-session -A -s main"
+#   }
 
 # Explorador de archivos web, en lugar de filebrowser (archivado upstream).
 # Nota: modulo de la comunidad, no lleva el sello `verified` de Coder.
