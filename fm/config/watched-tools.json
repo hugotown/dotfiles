@@ -1,0 +1,17 @@
+{
+  "tools": [
+    { "name": "firstmate", "git": { "repo": "/home/coder/firstmate", "remote": "origin" } },
+    { "name": "herdr", "command": "herdr", "version_args": ["--version"] },
+    { "name": "treehouse", "command": "treehouse", "version_args": ["--version"] },
+    {
+      "name": "no-mistakes",
+      "command": "no-mistakes",
+      "version_args": ["--version"],
+      "announce_args": ["--help"],
+      "announce_pattern": "A new version of no-mistakes is available: [^ ]+ -> [^ ]+"
+    },
+    { "name": "claude", "command": "claude", "version_args": ["--version"] },
+    { "name": "codex", "command": "codex", "version_args": ["--version"] },
+    { "name": "opencode", "command": "opencode", "version_args": ["--version"] }
+  ]
+}

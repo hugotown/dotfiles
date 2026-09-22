@@ -1,0 +1,63 @@
+{
+  "rules": [
+    {
+      "when": "Last resort: a previous worker (usually GPT-6 Astra) already attempted this task and failed, got stuck, or produced an unusable result, or the captain says nobody could solve it.",
+      "use": { "harness": "claude", "model": "fable", "effort": "xhigh" },
+      "why": "Captain ranks Claude Fable first and reserves it for problems nobody else could solve. Requires evidence of a prior failed attempt; never the first dispatch for new work."
+    },
+    {
+      "when": "Visual design work reviewed with Lavish: UX or UI design, mockups, interactive prototypes, visual explorations, or design reviews where the deliverable is a design rather than production code.",
+      "use": { "harness": "claude", "model": "fable", "effort": "xhigh" },
+      "why": "Captain assigns Claude Fable to design with Lavish. Building an approved design into production code is a separate task for GPT-5.6 Terra."
+    },
+    {
+      "when": "Hard and ambiguous: it is unclear what is happening or what to build, such as an architectural decision, a bug whose cause is unknown, a deep investigation or audit, planning a complex change, or a risky migration that spans the system.",
+      "use": { "harness": "codex", "model": "gpt-6-astra", "effort": "xhigh" },
+      "why": "Captain ranks GPT-6 Astra second and assigns it to difficult problems; Astra owns the hard work whose difficulty is figuring out the problem itself."
+    },
+    {
+      "when": "Hard but clear: the goal is known but doing it right is technically demanding, such as complex business logic or algorithms, performance work, concurrency, security-sensitive code, or a delicate integration.",
+      "use": { "harness": "codex", "model": "gpt-6-sol", "effort": "xhigh" },
+      "why": "Captain ranks GPT-6 Sol third and assigns it to difficult tasks; Sol owns the hard work whose difficulty is execution rather than understanding."
+    },
+    {
+      "when": "The captain asks for a code review of a PR, branch, module, or change, where the deliverable is review findings rather than a code change.",
+      "use": [
+        { "harness": "claude", "model": "opus", "effort": "high" },
+        { "harness": "codex", "model": "gpt-6-sol", "effort": "high" }
+      ],
+      "why": "Captain rule (2026-09-22): this array is NOT a quota choice. Dispatch BOTH profiles as two independent review scouts running in parallel, each writing its own report. If their results warrant another review (a serious security or data-loss finding, a material disagreement between the two, or large fixes that deserve a fresh look), dispatch a third review scout on codex gpt-6-astra xhigh. Applies only to reviews the captain requests; routine changes rely on their delivery path's own review."
+    },
+    {
+      "when": "Executing a plan that was deliberately designed for maximum parallelism, such as a plan the captain asked to structure so it can be resolved with maximum parallel execution, where the work is carrying out that plan's independent workstreams. A captain request to do several separate tasks in parallel (for example 'resolve issue 2 and issue 3 in parallel') does NOT match; those are separate tasks, each routed by its own rule.",
+      "use": { "harness": "kimi", "model": "kimi-code/k3" },
+      "why": "Captain rule (2026-09-22): Kimi K3 is only for executing maximally parallel plans in swarm mode, and only the K3 model is allowed on Kimi. The brief's Firstmate spec must open with the exact line 'Use swarm to resolve this activities:' followed by the plan's parallel activities and a pointer to the plan. Effort cannot be set on Kimi launches, so K3 runs at its own default (high)."
+    },
+    {
+      "when": "Complicated but clear development: the goal and approach are known but the work is large and laborious with many pieces, such as a big multi-file feature following existing patterns, or building an approved Lavish design into production screens and components.",
+      "use": { "harness": "codex", "model": "gpt-5.6-terra", "effort": "high" },
+      "why": "Captain ranks GPT-5.6 Terra above Sonnet, MiniMax M3, and GPT-6 Luna and chose Terra over Sonnet for turning Lavish designs into code; verify fidelity against the design on the first such task."
+    },
+    {
+      "when": "Medium development: a bounded change in a few files, such as a small feature, a bug fix whose cause is already known, tests for one module, or visual adjustments to screens that already exist.",
+      "use": { "harness": "claude", "model": "sonnet", "effort": "medium" },
+      "why": "Captain ranks Claude Sonnet between Terra and MiniMax M3. This band draws on the Claude quota shared with the firstmate session."
+    },
+    {
+      "when": "The most important of the minor tasks: a small single-spot change that still needs some judgment, such as documentation with reasoning, a configuration tweak, adding a few tests, or copy changes.",
+      "use": { "harness": "opencode", "model": "minimax-coding-plan/MiniMax-M3" },
+      "why": "Captain assigns MiniMax M3 (thinking) through OpenCode to the top of the low-importance band. Effort cannot be set on OpenCode launches; OpenCode's stored thinking variant for MiniMax-M3 applies."
+    },
+    {
+      "when": "Trivial mechanical edit with no judgment: rote rename, typo fix, formatting sweep, dependency bump with no code changes, or simple file gathering.",
+      "use": { "harness": "codex", "model": "gpt-6-luna", "effort": "low" },
+      "why": "Captain ranks GPT-6 Luna below MiniMax M3 for mechanical, unimportant work."
+    },
+    {
+      "when": "Quick read-only lookup: answer where or how something is used, summarize a log or error, or confirm one fact from the code, with no code change.",
+      "use": { "harness": "claude", "model": "haiku", "effort": "low" },
+      "why": "Captain ranks Claude Haiku last; it takes tiny read-only questions."
+    }
+  ],
+  "default": { "harness": "codex", "model": "gpt-5.6-terra", "effort": "medium" }
+}
