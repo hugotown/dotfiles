@@ -60,16 +60,10 @@ resource "coder_agent" "main" {
   arch = data.coder_provisioner.me.arch
   os   = "linux"
 
-  # El volumen de /home/coder nace vacio y tapa lo que traiga la imagen.
-  # Sin esto el usuario no tiene .bashrc, .profile ni nada de /etc/skel.
-  startup_script = <<-EOT
-    set -e
-
-    if [ ! -f ~/.init_done ]; then
-      cp -rT /etc/skel ~
-      touch ~/.init_done
-    fi
-  EOT
+  # Sin startup_script a proposito: el agente convierte startup_script en un
+  # coder_script mas y los lanza TODOS en paralelo (errgroup), sin orden. La
+  # copia de /etc/skel tiene que ir dentro de bootstrap_tools, porque si corre
+  # concurrente puede sobrescribir el .profile que ese mismo script edita.
 
   # Las herramientas instaladas por bootstrap viven en el volumen home.
   env = {
@@ -123,6 +117,17 @@ resource "coder_script" "bootstrap_tools" {
     #!/usr/bin/env bash
     set -euo pipefail
 
+    # Paso 1, y tiene que ser aqui: el volumen de /home/coder nace vacio y tapa
+    # lo que traiga la imagen, asi que sin esto no hay .bashrc ni .profile.
+    # Va en este script y no en coder_agent.startup_script porque el agente
+    # ejecuta todos los scripts en paralelo: una copia de skel concurrente
+    # sobrescribiria el .profile que editamos al final.
+    if [ ! -f "$HOME/.init_done" ]; then
+      echo "Sembrando el home desde /etc/skel..."
+      cp -rT /etc/skel "$HOME"
+      touch "$HOME/.init_done"
+    fi
+
     if ! command -v rustup >/dev/null 2>&1; then
       echo "Instalando rustup..."
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
@@ -137,10 +142,40 @@ resource "coder_script" "bootstrap_tools" {
       echo "uv ya instalado, omitiendo."
     fi
 
-    # Los instaladores no siempre tocan .bashrc de forma consistente.
-    # Añadimos el PATH una sola vez, de forma idempotente.
-    if ! grep -q 'coder-dev_fm PATH' "$HOME/.bashrc" 2>/dev/null; then
-      cat >> "$HOME/.bashrc" <<'RC'
+    # Neovim. La imagen base no lo trae y un `apt install` no sobrevive:
+    # el contenedor se recrea en cada arranque y solo /home/coder persiste.
+    # Por eso va al home, como rustup y uv. Para actualizar, sube la version.
+    NVIM_VERSION="v0.12.5"
+    case "$(uname -m)" in
+      x86_64) NVIM_ARCH="x86_64" ;;
+      aarch64 | arm64) NVIM_ARCH="arm64" ;;
+      *) NVIM_ARCH="" ;;
+    esac
+
+    if [ -z "$NVIM_ARCH" ]; then
+      echo "Arquitectura $(uname -m) sin binario de neovim, omitiendo."
+    elif [ -x "$HOME/.local/nvim/bin/nvim" ]; then
+      echo "neovim ya instalado ($("$HOME/.local/nvim/bin/nvim" --version | head -1)), omitiendo."
+    else
+      echo "Instalando neovim $NVIM_VERSION ($NVIM_ARCH)..."
+      # Directorio propio en vez de volcar sobre ~/.local: el tarball trae
+      # share/nvim/runtime y ahi mismo escriben lazy.nvim y mason.
+      mkdir -p "$HOME/.local/nvim" "$HOME/.local/bin"
+      curl -fsSL "https://github.com/neovim/neovim/releases/download/$NVIM_VERSION/nvim-linux-$NVIM_ARCH.tar.gz" \
+        | tar -xz -C "$HOME/.local/nvim" --strip-components=1
+      ln -sf "$HOME/.local/nvim/bin/nvim" "$HOME/.local/bin/nvim"
+    fi
+
+    # El PATH va en .profile, NO en .bashrc: el .bashrc de Ubuntu empieza con
+    #   case $- in *i*) ;; *) return;; esac
+    # y aborta en shells no interactivos, asi que un bloque al final del archivo
+    # nunca se ejecuta ahi. .profile no tiene esa guarda y lo leen los shells de
+    # login, que es como arranca la terminal web de Coder.
+    #
+    # Nota para fish: fish no lee .profile ni .bashrc. Su PATH tiene que venir
+    # de tu propia config de fish en los dotfiles.
+    if ! grep -q 'coder-dev_fm PATH' "$HOME/.profile" 2>/dev/null; then
+      cat >> "$HOME/.profile" <<'RC'
 
 # coder-dev_fm PATH
 export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
