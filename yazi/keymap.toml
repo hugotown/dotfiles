@@ -48,7 +48,7 @@ prepend_keymap = [
     { on = ["O"],      run = "open --interactive",      desc = "Abrir interactivo (alias)" },
     
     # Abrir con nvim directamente en shell
-    { on = ["I"],      run = '''shell 'nvim "$0"' --block''', desc = "Editar con nvim (bloqueante)" },
+    { on = ["I"],      run = '''shell 'nvim %h' --block''', desc = "Editar con nvim (bloqueante)" },
     
     # =========================================================================
     # BÚSQUEDA Y FILTRADO
@@ -151,7 +151,7 @@ prepend_keymap = [
     # =========================================================================
     
     # Shell commands personalizados
-    { on = [";", "e"], run = '''shell '$EDITOR "$0"' --block''', desc = "Editar con $EDITOR" },
+    { on = [";", "e"], run = '''shell '$EDITOR %h' --block''', desc = "Editar con $EDITOR" },
     { on = [";", "z"], run = '''shell 'zip -r archive.zip "$@"' --interactive''', desc = "Comprimir a ZIP" },
     { on = [";", "x"], run = '''shell 'chmod +x "$0"' --confirm''', desc = "Hacer ejecutable" },
     

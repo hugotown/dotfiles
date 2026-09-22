@@ -58,16 +58,16 @@ ueberzug_offset_y = 0
 
 # Editor de texto por defecto
 edit = [
-    { run = 'nvim "$@"', block = true, desc = "Editar con Neovim", for = "unix" },
+    { run = 'nvim %s', block = true, desc = "Editar con Neovim", for = "unix" },
 ]
 
 text = [
-    { run = 'nvim "$@"', block = true, desc = "Editar con Neovim", for = "unix" },
+    { run = 'nvim %s', block = true, desc = "Editar con Neovim", for = "unix" },
 ]
 
 # Archivos de código
 code = [
-    { run = 'nvim "$@"', block = true, desc = "Editar con Neovim", for = "unix" },
+    { run = 'nvim %s', block = true, desc = "Editar con Neovim", for = "unix" },
 ]
 
 # Imágenes (en macOS con Preview.app o alternativas)
