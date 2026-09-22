@@ -101,9 +101,13 @@ resource "coder_agent" "main" {
   metadata {
     display_name = "Disco home"
     key          = "2_home_disk"
-    script       = "coder stat disk --path $HOME"
-    interval     = 60
-    timeout      = 1
+
+    # Ruta literal, resuelta por Terraform. El agente ejecuta los scripts de
+    # metadata con el shell de login, que aqui es nushell: "$HOME" fallaria con
+    # env_var_not_var, y "$env.HOME" rompería en cuanto el shell fuese otro.
+    script   = "coder stat disk --path ${local.home}"
+    interval = 60
+    timeout  = 1
   }
 }
 
