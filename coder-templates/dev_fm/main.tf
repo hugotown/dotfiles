@@ -415,6 +415,40 @@ resource "coder_script" "workspace_setup" {
           > "$ENV_LOCAL"
       fi
 
+      # ---------------------------------------------------------------------
+      # Wrappers de los agentes para bash.
+      #
+      # Van en shell/env.local.zsh, que tu shell/env.zsh carga al final con un
+      # guardia de runtime, y a su vez shell/bashrc carga env.zsh. Esta
+      # gitignoreado, asi que no ensucia el repo.
+      #
+      # Son funciones y no alias porque cuatro de los cinco se llaman igual que
+      # su binario; `command` salta la funcion y llama al ejecutable, cortando
+      # la recursion. `VAR=1 command ...` deja la variable solo en ese proceso,
+      # equivalente al with-env de la version nushell.
+      #
+      # Tu bashrc define ademas `alias cldy` y `alias oc`. Los alias ganan a
+      # las funciones en bash, pero ambos expanden a `claude` y `opencode`, que
+      # son estas funciones, asi que el resultado final es el mismo.
+      # ---------------------------------------------------------------------
+      ENV_LOCAL_SH="$CFG/shell/env.local.zsh"
+      [ -f "$ENV_LOCAL_SH" ] || \
+        printf '# Entorno de este host. Generado por la plantilla dev_fm de Coder.\n' > "$ENV_LOCAL_SH"
+
+      if grep -q 'dev_fm agents BEGIN' "$ENV_LOCAL_SH" 2>/dev/null; then
+        sed -i '/# dev_fm agents BEGIN/,/# dev_fm agents END/d' "$ENV_LOCAL_SH"
+      fi
+
+      cat >> "$ENV_LOCAL_SH" <<'AGENTSH'
+# dev_fm agents BEGIN
+claude()   { IS_SANDBOX=1 command claude "$@"; }
+cldy()     { IS_SANDBOX=1 command claude --dangerously-skip-permissions "$@"; }
+opencode() { command opencode --auto "$@"; }
+codex()    { command codex --yolo "$@"; }
+kimi()     { command kimi --auto "$@"; }
+# dev_fm agents END
+AGENTSH
+      echo "Wrappers de agentes para bash en shell/env.local.zsh"
     fi
 
     fi # fin del bloque condicional de dotfiles
@@ -604,24 +638,21 @@ AGENTS
     fi
 
     # -----------------------------------------------------------------------
-    # nushell como shell por defecto.
+    # Shell por defecto: bash, el de la imagen. No se hace chsh.
     #
-    # /etc/passwd vive en el contenedor, no en el volumen, asi que esto se
-    # repite en cada arranque. Solo cambiamos el shell si nu arranca limpio:
-    # un shell por defecto roto te dejaria sin terminal web.
+    # /etc/passwd vive en el contenedor y no en el volumen, asi que vuelve a
+    # /bin/bash en cada arranque por si solo. nushell sigue instalado y
+    # disponible escribiendo `nu`; lo que cambia es con cual te recibe la
+    # terminal web.
+    #
+    # Registramos nu en /etc/shells de todos modos: sin eso, un `chsh` manual
+    # tuyo seria rechazado.
     # -----------------------------------------------------------------------
     NU="$(command -v nu || true)"
     if [ -n "$NU" ]; then
-      if nu -c 'print "ok"' >/dev/null 2>&1; then
-        grep -qxF "$NU" /etc/shells || echo "$NU" | sudo tee -a /etc/shells >/dev/null
-        if [ "$SHELL" != "$NU" ]; then
-          sudo chsh -s "$NU" "$(id -un)"
-          echo "Shell por defecto: $NU"
-        fi
-      else
-        echo "AVISO: nu no arranca limpio, dejo el shell por defecto sin tocar"
-      fi
+      grep -qxF "$NU" /etc/shells || echo "$NU" | sudo tee -a /etc/shells >/dev/null
     fi
+    echo "Shell por defecto: $(getent passwd "$(id -un)" | cut -d: -f7)"
 
     echo "Setup completo."
   EOT
