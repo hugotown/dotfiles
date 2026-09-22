@@ -71,6 +71,10 @@ data "coder_external_auth" "github" {
 locals {
   username = data.coder_workspace_owner.me.name
   home     = "/home/coder"
+
+  # Se inyecta en el script en base64 para que Terraform no intente interpolar
+  # los `${...}` de las plantillas de JavaScript.
+  port_proxy_js = filebase64("${path.module}/files/port-proxy.js")
 }
 
 # ---------------------------------------------------------------------------
@@ -620,6 +624,38 @@ AGENTS
         fi
       else
         echo "AVISO: nu no arranca limpio, dejo el shell por defecto sin tocar"
+      fi
+    fi
+
+    # -----------------------------------------------------------------------
+    # port-proxy: espejo de cada puerto en puerto+10000
+    #
+    # Coder pasa el subdominio en Host y X-Forwarded-Host. Muchas herramientas
+    # de desarrollo llevan lista blanca de hosts y devuelven 403 a cualquier
+    # valor que no reconozcan: Vite sin allowedHosts, servidores de review como
+    # lavish-axi, etc. El espejo reescribe ambas cabeceras a 127.0.0.1:<puerto>
+    # y con eso pasan, sin configurar nada en la app.
+    #
+    # Descubre puertos nuevos solo cada 5s, asi que no hay que declarar nada
+    # por servicio ni saber de antemano cuales vas a levantar.
+    # -----------------------------------------------------------------------
+    mkdir -p "$HOME/.local/libexec" "$HOME/.cache"
+    printf '%s' '${local.port_proxy_js}' | base64 -d > "$HOME/.local/libexec/port-proxy.js"
+
+    PP_PID="$HOME/.cache/port-proxy.pid"
+    # Un pgrep por nombre no sirve: el texto de este script contiene la cadena
+    # "port-proxy.js" y se encontraria a si mismo.
+    if [ -f "$PP_PID" ] && kill -0 "$(cat "$PP_PID")" 2>/dev/null; then
+      echo "port-proxy ya corriendo (pid $(cat "$PP_PID"))"
+    else
+      NODE_BIN="$(command -v node || true)"
+      if [ -n "$NODE_BIN" ]; then
+        setsid "$NODE_BIN" "$HOME/.local/libexec/port-proxy.js" \
+          > "$HOME/.cache/port-proxy.log" 2>&1 < /dev/null &
+        echo $! > "$PP_PID"
+        echo "port-proxy arrancado (cada puerto N se espeja en N+10000)"
+      else
+        echo "AVISO: sin node, port-proxy no arranca"
       fi
     fi
 
