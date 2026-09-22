@@ -355,10 +355,15 @@ resource "coder_script" "workspace_setup" {
     # Tu hosts/at-apptools/initialize.sh lo genera por host; aqui hacemos lo
     # mismo. Esta gitignoreado via shell/.gitignore (env.local.*).
     # -----------------------------------------------------------------------
-    if [ -d "$CFG/shell" ] && [ ! -f "$CFG/shell/env.local.nu" ]; then
-      echo "Creando shell/env.local.nu"
-      printf '# Entorno de este host. Generado por la plantilla dev_fm de Coder.\n' \
-        > "$CFG/shell/env.local.nu"
+    ENV_LOCAL="$CFG/shell/env.local.nu"
+
+    if [ -d "$CFG/shell" ]; then
+      if [ ! -f "$ENV_LOCAL" ]; then
+        echo "Creando shell/env.local.nu"
+        printf '# Entorno de este host. Generado por la plantilla dev_fm de Coder.\n' \
+          > "$ENV_LOCAL"
+      fi
+
     fi
 
     fi # fin del bloque condicional de dotfiles
@@ -496,6 +501,53 @@ RC
     if [ -x "$CFG/shell/bootstrap.sh" ] || [ -f "$CFG/shell/bootstrap.sh" ]; then
       echo "Ejecutando ~/.config/shell/bootstrap.sh..."
       bash "$CFG/shell/bootstrap.sh" || echo "AVISO: bootstrap.sh fallo, sigo"
+    fi
+
+    # -----------------------------------------------------------------------
+    # Alias de los agentes para nushell.
+    #
+    # Son `def --wrapped` y no `alias`: tres de los cuatro se llaman igual que
+    # su binario y `alias claude = claude ...` recursaria. El `^` fuerza el
+    # ejecutable externo. Y `export X=1 && cmd` no existe en nushell: no hay
+    # `export` ni `&&`, asi que la variable va con with-env, que ademas la
+    # acota a esa invocacion en vez de dejarla puesta en toda la sesion.
+    #
+    # El fichero vive en ~/.cache/shell, fuera del repo de dotfiles, para que
+    # el `git reset --hard` de arriba no se lo lleve por delante y no aparezca
+    # en tu `git status`. config.nu ya carga dos ficheros de ese directorio.
+    #
+    # Tiene que engancharse en config.nu y no en env.local.nu: nushell evalua
+    # env.nu en un alcance aparte y los `def` de ahi no llegan a la sesion.
+    # Comprobado: via env.nu se definen 0 comandos, via config.nu los 4.
+    # -----------------------------------------------------------------------
+    if [ -f "$CFG/nushell/config.nu" ]; then
+      mkdir -p "$HOME/.cache/shell"
+
+      cat > "$HOME/.cache/shell/dev_fm-agents.nu" <<'AGENTS'
+# Generado por la plantilla dev_fm de Coder. Los cambios se sobrescriben.
+
+def --wrapped claude [...args] {
+  with-env {IS_SANDBOX: "1"} { ^claude ...$args }
+}
+
+def --wrapped cldy [...args] {
+  with-env {IS_SANDBOX: "1"} { ^claude --dangerously-skip-permissions ...$args }
+}
+
+def --wrapped opencode [...args] { ^opencode --auto ...$args }
+
+def --wrapped codex [...args] { ^codex --yolo ...$args }
+AGENTS
+
+      # El source va al final de config.nu para ganarle a integrations/cldy.nu,
+      # que define su propio alias cldy. Se reaplica en cada arranque porque el
+      # reset --hard restaura config.nu; si commiteas esta linea a tu repo, el
+      # grep la detecta y deja de tocar el fichero.
+      if ! grep -q 'dev_fm-agents' "$CFG/nushell/config.nu"; then
+        printf '\n# Alias de agentes, anadido por la plantilla dev_fm de Coder\nsource ~/.cache/shell/dev_fm-agents.nu\n' \
+          >> "$CFG/nushell/config.nu"
+      fi
+      echo "Alias de agentes listos (claude, cldy, opencode, codex)"
     fi
 
     # -----------------------------------------------------------------------
