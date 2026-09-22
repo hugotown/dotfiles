@@ -33,15 +33,22 @@ module "git-clone" {
   version  = "2.0.3"
   agent_id = coder_agent.main.id
   url      = data.coder_parameter.repo_url.value
-  base_dir = "~/projects"
+
+  # Sin base_dir. El modulo compone
+  #   base_dir != "" ? "<base_dir>/<nombre>" : "~/<nombre>"
+  # asi que omitirlo clona en ~/firstmate en vez de ~/projects/firstmate.
 }
 
 data "coder_parameter" "repo_url" {
   name         = "repo_url"
   display_name = "Repositorio"
-  description  = "URL del repositorio a clonar en ~/projects al crear el workspace. Vacio desactiva el clonado."
+  description  = <<-EOT
+    URL del repositorio a clonar. Aterriza en ~/<nombre-del-repo>.
+    Ejemplo: https://github.com/kunchenguid/firstmate
+    Dejalo vacio para no clonar nada.
+  EOT
   type         = "string"
-  default      = "https://github.com/kunchenguid/firstmate"
+  default      = ""
   mutable      = true
   order        = 1
 }

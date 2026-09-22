@@ -236,15 +236,20 @@ PERS
 data "coder_parameter" "dotfiles_repo" {
   name         = "dotfiles_repo"
   display_name = "Dotfiles"
-  description  = "Repositorio que se materializa como ~/.config. Vacio desactiva la sincronizacion."
+  description  = <<-EOT
+    Repositorio que se materializa COMO ~/.config, no como un directorio dentro.
+    Ejemplo: https://github.com/hugotown/dotfiles.git
+    Dejalo vacio para no sincronizar ~/.config; las herramientas se instalan igual.
+  EOT
   type         = "string"
-  default      = "https://github.com/hugotown/dotfiles.git"
+  default      = ""
   mutable      = true
   order        = 2
 }
 
 resource "coder_script" "workspace_setup" {
-  count              = data.coder_parameter.dotfiles_repo.value == "" ? 0 : 1
+  # Sin count: las herramientas se instalan tengas dotfiles o no. Solo el
+  # bloque de sincronizacion de ~/.config mira si el parametro viene vacio.
   agent_id           = coder_agent.main.id
   display_name       = "Dotfiles y herramientas"
   icon               = "/icon/dotfiles.svg"
@@ -264,6 +269,18 @@ resource "coder_script" "workspace_setup" {
     CFG="$HOME/.config"
 
     mkdir -p "$CFG"
+
+    # Todo el bloque de dotfiles es opcional. Si no hay repo configurado se
+    # salta la sincronizacion, los symlinks y env.local.nu, pero las
+    # herramientas de mas abajo se instalan igual.
+    #
+    # El cuerpo del else no va indentado a proposito: indentarlo obligaria a
+    # reescribir 80 lineas solo por estetica, y bash no lo necesita.
+    if [ -z "$REPO_URL" ]; then
+    echo "Sin repositorio de dotfiles configurado."
+    echo "Omito ~/.config, symlinks y env.local.nu. Las herramientas siguen."
+    else
+
     cd "$CFG"
 
     if [ ! -d .git ]; then
@@ -343,6 +360,8 @@ resource "coder_script" "workspace_setup" {
       printf '# Entorno de este host. Generado por la plantilla dev_fm de Coder.\n' \
         > "$CFG/shell/env.local.nu"
     fi
+
+    fi # fin del bloque condicional de dotfiles
 
     # -----------------------------------------------------------------------
     # Homebrew
