@@ -24,8 +24,10 @@ module "git-config" {
 }
 
 # Clona un repositorio al arrancar. Si ya existe, no hace nada.
+# El count se anula cuando repo_url viene vacio: sin esta guarda el script
+# del modulo aborta con "No clone path specified!" al derivar la ruta.
 module "git-clone" {
-  count    = data.coder_workspace.me.start_count
+  count    = data.coder_parameter.repo_url.value == "" ? 0 : data.coder_workspace.me.start_count
   source   = "registry.coder.com/coder/git-clone/coder"
   version  = "2.0.3"
   agent_id = coder_agent.main.id

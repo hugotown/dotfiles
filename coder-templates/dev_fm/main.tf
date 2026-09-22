@@ -37,6 +37,16 @@ data "coder_provisioner" "me" {}
 data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 
+# Obliga a autorizar GitHub antes de construir el workspace, y deja las
+# credenciales en el helper de git del agente: git-clone y las operaciones
+# manuales pueden leer repos privados sin pedir usuario ni contrasena.
+#
+# Usa el proveedor integrado de Coder (device flow), asi que no hay que
+# registrar una OAuth App ni guardar client secrets en el servidor.
+data "coder_external_auth" "github" {
+  id = "github"
+}
+
 locals {
   username = data.coder_workspace_owner.me.name
   home     = "/home/coder"
