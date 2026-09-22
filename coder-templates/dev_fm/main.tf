@@ -254,6 +254,44 @@ resource "coder_script" "dotfiles_config" {
 
     echo "~/.config sincronizado:"
     git --no-pager log -1 --format='  %h  %s'
+
+    # Herramientas que insisten en escribir en $HOME en vez de respetar
+    # XDG_CONFIG_HOME. Las apuntamos a ~/.config para que su estado quede
+    # dentro del repo y se versione como el resto.
+    #
+    # Va aqui y no en personalize: personalize corre en paralelo con este
+    # script, asi que no puede asumir que ~/.config ya existe. Aqui el orden
+    # esta garantizado porque es el mismo script.
+    echo "Enlazando directorios de herramientas:"
+
+    link_config() {
+      src="$1" # nombre dentro de ~/.config
+      dst="$2" # ruta en $HOME
+
+      mkdir -p "$CFG/$src"
+
+      if [ -L "$HOME/$dst" ]; then
+        # Ya es symlink: lo reapuntamos por si cambio el destino.
+        ln -sfn "$CFG/$src" "$HOME/$dst"
+      elif [ -e "$HOME/$dst" ]; then
+        # Directorio o fichero real. Lo apartamos en vez de borrarlo: perder
+        # credenciales o historial de una de estas herramientas seria caro.
+        backup="$HOME/$dst.bak.$(date +%s)"
+        echo "  ~/$dst existe y no es symlink, lo muevo a $backup"
+        mv "$HOME/$dst" "$backup"
+        ln -s "$CFG/$src" "$HOME/$dst"
+      else
+        ln -s "$CFG/$src" "$HOME/$dst"
+      fi
+
+      echo "  ~/$dst -> ~/.config/$src"
+    }
+
+    link_config codex     .codex
+    link_config kimi-code .kimi-code
+    link_config claude    .claude
+    link_config pi        .pi
+    link_config agents    .agents
   EOT
 }
 
