@@ -196,6 +196,68 @@ PERS
 }
 
 # ---------------------------------------------------------------------------
+# Dotfiles: el repo se materializa COMO ~/.config
+#
+# No usamos el modulo dotfiles del registry; ver la nota en modules.tf.
+# Script propio para que tenga su entrada de log en la UI. Puede correr en
+# paralelo con bootstrap_tools sin riesgo: /etc/skel de la imagen base no
+# contiene .config, asi que no hay ningun fichero en disputa.
+# ---------------------------------------------------------------------------
+
+data "coder_parameter" "dotfiles_repo" {
+  name         = "dotfiles_repo"
+  display_name = "Dotfiles"
+  description  = "Repositorio que se materializa como ~/.config. Vacio desactiva la sincronizacion."
+  type         = "string"
+  default      = "https://github.com/hugotown/dotfiles.git"
+  mutable      = true
+  order        = 2
+}
+
+resource "coder_script" "dotfiles_config" {
+  count              = data.coder_parameter.dotfiles_repo.value == "" ? 0 : 1
+  agent_id           = coder_agent.main.id
+  display_name       = "Dotfiles (~/.config)"
+  icon               = "/icon/dotfiles.svg"
+  run_on_start       = true
+  start_blocks_login = false
+
+  script = <<-EOT
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    REPO_URL="${data.coder_parameter.dotfiles_repo.value}"
+    BRANCH="main"
+    CFG="$HOME/.config"
+
+    mkdir -p "$CFG"
+    cd "$CFG"
+
+    if [ ! -d .git ]; then
+      echo "Inicializando ~/.config como repositorio git..."
+      git init -q
+    fi
+
+    if git remote get-url origin >/dev/null 2>&1; then
+      git remote set-url origin "$REPO_URL"
+    else
+      git remote add origin "$REPO_URL"
+    fi
+
+    echo "Trayendo $BRANCH desde $REPO_URL..."
+    git fetch --depth=1 origin "$BRANCH"
+
+    # Sobrescribe sin preguntar, por decision explicita. reset --hard pisa los
+    # cambios locales y los ficheros sin seguimiento que choquen con el repo.
+    # Lo que no esta en el repo (copyparty/, uv/) sobrevive intacto.
+    git reset --hard "origin/$BRANCH"
+
+    echo "~/.config sincronizado:"
+    git --no-pager log -1 --format='  %h  %s'
+  EOT
+}
+
+# ---------------------------------------------------------------------------
 # Infraestructura Docker
 # ---------------------------------------------------------------------------
 

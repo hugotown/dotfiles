@@ -6,13 +6,14 @@
 # reproducibles. Para actualizar, sube el numero a mano y vuelve a empujar.
 # ---------------------------------------------------------------------------
 
-# Pregunta al usuario por su repo de dotfiles y lo aplica con `coder dotfiles`.
-module "dotfiles" {
-  count    = data.coder_workspace.me.start_count
-  source   = "registry.coder.com/coder/dotfiles/coder"
-  version  = "1.4.2"
-  agent_id = coder_agent.main.id
-}
+# Sin modulo dotfiles a proposito. `coder dotfiles` clona a ~/dotfiles y luego
+# busca install.sh/bootstrap.sh/setup.sh en la raiz del repo; si no lo encuentra
+# cae a enlazar solo los ficheros de la raiz que empiezan por "." excluyendo
+# .git*. El repo hugotown/dotfiles no tiene ninguno de esos scripts y su raiz
+# solo tiene .gitattributes y .gitignore, asi que el modulo no haria nada.
+#
+# Ese repo ES ~/.config (lo dice su README), asi que lo materializamos
+# directamente ahi. Ver coder_script.dotfiles_config en main.tf.
 
 # Escribe ~/.gitconfig con el nombre y email de la cuenta de Coder.
 module "git-config" {
@@ -38,9 +39,9 @@ module "git-clone" {
 data "coder_parameter" "repo_url" {
   name         = "repo_url"
   display_name = "Repositorio"
-  description  = "URL del repositorio a clonar en ~/projects al crear el workspace."
+  description  = "URL del repositorio a clonar en ~/projects al crear el workspace. Vacio desactiva el clonado."
   type         = "string"
-  default      = ""
+  default      = "https://github.com/kunchenguid/firstmate"
   mutable      = true
   order        = 1
 }
