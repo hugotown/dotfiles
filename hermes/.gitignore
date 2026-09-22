@@ -1,68 +1,39 @@
-# Credentials and machine-specific configuration
-/.env
-/.env.*
-!/.env.example
-/auth.json
-/auth.lock
-/config.yaml
-/pairing/
-/platforms/pairing/
+# Hermes convive con mucho estado de runtime (sessions/, state.db, kanban/,
+# caches, logs, snapshots) y con credenciales (.env, auth.json), todo dentro de
+# este mismo directorio. La lista negra anterior se quedaba corta cada vez que
+# Hermes estrenaba un archivo generado (p. ej. .skills_prompt_snapshot.json).
+#
+# Igual que atuin/, fish/, gh-dash/, herdr/, pi/ y tuios/ en este repo:
+# deny-all + allowlist. Lo que no esté permitido explícitamente NO se versiona,
+# así nada generado se cuela solo en un repositorio público.
+*
 
-# Private conversations, memory, queued messages, and scheduled jobs
-/sessions/
-/memories/
-/pending_messages/
-/channel_directory.json
-/discord_threads.json
-/cron/
+# --- Config declarativa (segura de publicar) ---
+!.gitignore
+!config.yaml
+!SOUL.md
+!.env.example
 
-# Runtime state and local installation metadata
-/.hermes/
-/state/
-/state.db*
-/kanban/
-/kanban.db*
-/gateway/
-/gateway_state.json
-/gateway-starts.log
-/gateway.lock
-/gateway.pid
-/install_id
-/.install_id.lock
-/.codex_gpt55_autoraise_notice
+# --- Skills versionadas ---
+!skills/
+!skills/**
 
-# Caches, downloaded binaries, and generated artifacts
-/bin/
-/cache/
-/audio_cache/
-/image_cache/
-/sandboxes/
-/context_length_cache.yaml
-/models_dev_cache.json
-/models_dev_cache.etag
-/ollama_cloud_models_cache.json
-/provider_models_cache.json
-/.update_check
-/.hermes_history
+# ...pero no el estado que el curator/uso escriben dentro de skills/
+skills/.bundled_manifest
+skills/.curator_state
+skills/.curator_backups/
+skills/.usage.json
+skills/.usage.json.lock
 
-# Generated skill metadata and backups; skill source files remain versionable
-/skills/.bundled_manifest
-/skills/.curator_state
-/skills/.curator_backups/
-/skills/.usage.json
-/skills/.usage.json.lock
+# Red de seguridad heredada del .gitignore raiz (*token*, *session*, *password*,
+# *cookie*, *history*): "!skills/**" la anularia en todo el subarbol, asi que la
+# repetimos aqui. Un archivo nuevo con nombre sospechoso no se publica solo;
+# para versionarlo hay que revisarlo y anadir su excepcion explicita abajo.
+skills/**/*token*
+skills/**/*session*
+skills/**/*password*
+skills/**/*cookie*
+skills/**/*history*
 
-# Logs, locks, and local configuration backups
-/logs/
-*.lock
-*.pid
-*.log
-/.env.bak*
-/.env.*.bak*
-/auth.json.bak*
-/config.yaml.bak*
-
-# Python-generated files
-__pycache__/
-*.py[cod]
-.venv/
+# Excepciones revisadas (codigo de skill, sin credenciales dentro):
+!skills/software-development/github/scripts/git-credential-token.py
