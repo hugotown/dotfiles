@@ -25,6 +25,12 @@ variable "image" {
   description = "Imagen base del workspace. Trae sudo, git, curl y build-essential."
 }
 
+variable "timezone" {
+  type        = string
+  default     = "America/Monterrey"
+  description = "Zona horaria del workspace. Debe existir en /usr/share/zoneinfo."
+}
+
 provider "docker" {
   host = var.docker_socket != "" ? var.docker_socket : null
 }
@@ -67,8 +73,13 @@ resource "coder_agent" "main" {
 
   # Las herramientas instaladas por bootstrap viven en el volumen home.
   env = {
-    CARGO_HOME = "${local.home}/.cargo"
+    CARGO_HOME  = "${local.home}/.cargo"
     RUSTUP_HOME = "${local.home}/.rustup"
+
+    # Cubre a los programas que respetan TZ. Los que leen /etc/localtime
+    # directamente los atiende bootstrap_tools, que ademas lo rehace en cada
+    # arranque porque /etc vive en el contenedor, no en el volumen.
+    TZ = var.timezone
   }
 
   metadata {
@@ -126,6 +137,20 @@ resource "coder_script" "bootstrap_tools" {
       echo "Sembrando el home desde /etc/skel..."
       cp -rT /etc/skel "$HOME"
       touch "$HOME/.init_done"
+    fi
+
+    # Zona horaria. La variable TZ del agente no basta: git, los logs y
+    # cualquier programa que lea /etc/localtime seguirian en UTC. Y como /etc
+    # vive en el contenedor y no en el volumen, hay que rehacerlo cada arranque.
+    TZ_WANTED="${var.timezone}"
+    if [ -f "/usr/share/zoneinfo/$TZ_WANTED" ]; then
+      if [ "$(readlink -f /etc/localtime 2>/dev/null)" != "/usr/share/zoneinfo/$TZ_WANTED" ]; then
+        sudo ln -sf "/usr/share/zoneinfo/$TZ_WANTED" /etc/localtime
+        echo "$TZ_WANTED" | sudo tee /etc/timezone >/dev/null
+        echo "Zona horaria: $TZ_WANTED ($(date +%Z%z))"
+      fi
+    else
+      echo "AVISO: zona horaria $TZ_WANTED no existe en /usr/share/zoneinfo"
     fi
 
     if ! command -v rustup >/dev/null 2>&1; then
