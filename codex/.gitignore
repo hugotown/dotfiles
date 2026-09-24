@@ -1,0 +1,7 @@
+# Allowlist: only the static config files are tracked.
+# Codex writes auth.json, SQLite state, caches, sessions, and logs here —
+# reject everything else.
+*
+!.gitignore
+!config.toml
+!hooks.json

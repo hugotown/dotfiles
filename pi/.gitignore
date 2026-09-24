@@ -47,3 +47,11 @@ agent/extensions/subagent/*
 !agent/extensions/pi-skill-palette/
 agent/extensions/pi-skill-palette/*
 !agent/extensions/pi-skill-palette/theme.json
+
+# Safety net inherited from the root .gitignore: the "!agent/**/**"
+# re-includes above would override it, so repeat it here.
+agent/**/*token*
+agent/**/*session*
+agent/**/*password*
+agent/**/*cookie*
+agent/**/*history*

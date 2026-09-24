@@ -33,7 +33,9 @@
 
 # Auto-generated files that shouldn't be tracked
 WARP.md
-CLAUDE.md
+
+# Core dumps
+core.[0-9]*
 
 # Nix build outputs
 result
@@ -107,6 +109,15 @@ wofi/
 # Machine-specific environment variables
 environment.d/
 
+# copyparty - salts, TLS cert, session DB (runtime state only)
+copyparty/
+
+# uv - installer receipt (machine-specific)
+uv/
+
+# varlock - anonymous telemetry id only
+varlock/
+
 # System configuration (machine-specific)
 user-dirs.dirs
 user-dirs.locale
@@ -121,6 +132,7 @@ user-dirs.locale
 # Claude Code - conversation history, sessions, transcripts
 claude/*
 !claude/settings.json
+!claude/CLAUDE.md
 
 # PulseAudio
 pulse/cookie
@@ -135,9 +147,8 @@ fcitx5/conf/cached_layouts
 # dconf user config
 dconf/user
 
-# systemd user services with hardcoded paths
-systemd/user/timers.target.wants/
-systemd/user/tray.target
+# systemd user units - generated with hardcoded, machine-specific paths
+systemd/
 
 com.docker.sandboxes
 
@@ -145,22 +156,19 @@ com.docker.sandboxes
 # ------------------------------------------------------------
 # Per-folder .gitignore map (rules live in the subfolder)
 # ------------------------------------------------------------
-#   agents/                  → agents/.gitignore
-#   shell/                   → shell/.gitignore
-#   tmux/                    → tmux/.gitignore
-#   hammerspoon/             → hammerspoon/.gitignore
-#   karabiner/               → karabiner/.gitignore
-#   opencode/                → opencode/.gitignore
-#   nvim/                    → nvim/.gitignore
-#   .opencode/               → .opencode/.gitignore
-#   local-dev-infra/         → local-dev-infra/.gitignore
-#   agent-session-analyzer/  → agent-session-analyzer/.gitignore
-#   nixos/                   → nixos/.gitignore
-#   pi/                      → pi/.gitignore
+#   Allowlist (deny-all + explicit exceptions):
+#     atuin/ codex/ fish/ gemini/ gh-dash/ herdr/ hermes/ hosts/
+#     kimi-code/ pi/ secrets/ tuios/
+#   Blocklist (partial ignores):
+#     archon/ coder-templates/ hammerspoon/ karabiner/ nixos/ nvim/
+#     opencode/ shell/ tmux/ yazi/
+#
+# Allowlists that re-include whole subtrees (!dir/**) override the
+# global sensitive patterns above, so they must repeat them locally.
+
 # Local Pi runtime state
 .atl/
 
-.DS_Store
+# Python bytecode
 __pycache__/
 *.pyc
-.env

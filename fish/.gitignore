@@ -10,3 +10,11 @@
 !functions/**
 !completions/
 !completions/**
+
+# Safety net inherited from the root .gitignore: "!conf.d/**" and friends
+# would override it, so repeat it here.
+**/*token*
+**/*session*
+**/*password*
+**/*cookie*
+**/*history*
