@@ -1,0 +1,6 @@
+# Allowlist: only the static config file is tracked.
+# no-mistakes writes its binary, SQLite state, logs, evidence, repo clones,
+# and worktrees here — reject everything else.
+*
+!.gitignore
+!config.yaml

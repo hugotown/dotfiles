@@ -85,8 +85,14 @@ chromium/
 brave-flags.conf
 chromium-flags.conf
 
-# GitHub CLI - sensitive authentication data
-gh/
+# agent-browser - downloaded Chrome builds, pid/socket files (runtime only)
+agent-browser/
+
+# chrome-devtools-axi - snapshot counter (runtime state only)
+chrome-devtools-axi/
+
+# lavish-axi - server log and review session state (runtime only)
+lavish-axi/
 
 # Google Cloud SDK - OAuth tokens, ADC, service account keys
 gcloud/
@@ -157,8 +163,8 @@ com.docker.sandboxes
 # Per-folder .gitignore map (rules live in the subfolder)
 # ------------------------------------------------------------
 #   Allowlist (deny-all + explicit exceptions):
-#     atuin/ codex/ fish/ gemini/ gh-dash/ herdr/ hermes/ hosts/
-#     kimi-code/ pi/ secrets/ tuios/
+#     atuin/ codex/ fish/ gemini/ gh/ gh-dash/ herdr/ hermes/ hosts/
+#     kimi-code/ no-mistakes/ pi/ secrets/ tuios/
 #   Blocklist (partial ignores):
 #     archon/ coder-templates/ hammerspoon/ karabiner/ nixos/ nvim/
 #     opencode/ shell/ tmux/ yazi/
