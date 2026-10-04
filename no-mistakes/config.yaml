@@ -9,7 +9,7 @@
 # "devin" is an ACP alias for acp:devin using devin acp via acpx
 # "acp:devin" also uses that Devin default command
 # Use acp:<target> to run an optional user-installed acpx target, for example acp:gemini
-agent: [codex, claude, opencode]  # temporary (firstmate 2026-10-03): opencode-go low until ~10:55Z; restore [opencode, codex, claude]
+agent: [codex, claude, opencode]  # temporary (firstmate 2026-10-04, copied from sonarh-preasyst): opencode-go exhausted until 2026-10-05; restore [opencode, codex, claude]
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and ACP aliases
 # acpx_path: acpx
