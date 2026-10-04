@@ -30,3 +30,11 @@ end
 
 # Added by Antigravity CLI installer
 set -gx PATH "/Users/hugoruiz/.local/bin" $PATH
+
+if status is-interactive
+    atuin init fish | source
+end
+
+
+# Added by Antigravity CLI installer
+set -gx PATH "/home/coder/.local/bin" $PATH

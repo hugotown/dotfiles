@@ -66,3 +66,10 @@ storage = "file"
 key = "oauth/kimi-code-env-0e4f99c69cc27850"
 oauth_host = "https://auth.kimi.ai"
 
+# BEGIN FIRSTMATE KIMI TURN-END HOOK
+[[hooks]]
+event = "Stop"
+matcher = "^$"
+command = "bash \"$HOME/.kimi-code/fm-turn-end.sh\" >/dev/null 2>&1 || true"
+timeout = 1
+# END FIRSTMATE KIMI TURN-END HOOK

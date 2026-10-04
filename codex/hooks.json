@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "atuin hook claude-code"
+            "command": "atuin hook codex"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "atuin hook claude-code"
+            "command": "atuin hook codex"
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "atuin hook claude-code"
+            "command": "atuin hook codex"
           }
         ]
       }
@@ -65,15 +65,5 @@
         ]
       }
     ]
-  },
-  "tui": "fullscreen",
-  "skipDangerousModePermissionPrompt": true,
-  "theme": "dark",
-  "env": {
-    "FM_HOME": "/home/coder/fm-home",
-    "LAVISH_AXI_ALLOWED_HOSTS": "4387--main--neotech-mx--hugotown.coder.hugoruiz.dev",
-    "CHROME_DEVTOOLS_AXI_CHROME_ARGS": "--no-sandbox",
-    "GIT_AUTHOR_EMAIL": "7987506+hugotown@users.noreply.github.com",
-    "GIT_COMMITTER_EMAIL": "7987506+hugotown@users.noreply.github.com"
   }
 }
